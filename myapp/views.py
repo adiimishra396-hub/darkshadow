@@ -1,16 +1,19 @@
 from django.shortcuts import render, redirect
-from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
 from django.contrib.auth.models import User
 from django.contrib import messages
-from django.utils.decorators import method_decorator
-from django.views.decorators.cache import never_cache
-from .models import UserProfile, Payment
 from django.db.models import Sum
+from decimal import Decimal
+from .models import UserProfile, Payment, Wallet, WalletTransaction
 
-# Hardcoded permanent admin credentials
 ADMIN_USERNAME = 'admin'
-ADMIN_EMAIL = 'admin@gmail.com'
+ADMIN_EMAIL    = 'admin@gmail.com'
 ADMIN_PASSWORD = '123456'
+
+
+def _get_or_create_wallet(user):
+    wallet, _ = Wallet.objects.get_or_create(user=user)
+    return wallet
 
 
 def home(request):
@@ -19,10 +22,7 @@ def home(request):
 
 def login_view(request):
     if request.user.is_authenticated:
-        if request.user.is_superuser:
-            return redirect('admin_panel')
-        return redirect('home')
-
+        return redirect('admin_panel' if request.user.is_superuser else 'home')
     if request.method == 'POST':
         username = request.POST.get('username', '').strip()
         password = request.POST.get('password', '').strip()
@@ -34,31 +34,26 @@ def login_view(request):
                     user.save()
                 login(request, user)
                 return redirect('admin_panel')
-            else:
-                login(request, user)
-                messages.success(request, f'Welcome back, {user.first_name or user.username}! 🎉')
-                return redirect('home')
-        else:
-            messages.error(request, 'Invalid username or password. Please try again.')
+            login(request, user)
+            messages.success(request, f'Welcome back, {user.first_name or user.username}! 🎉')
+            return redirect('home')
+        messages.error(request, 'Invalid username or password. Please try again.')
     return render(request, 'login.html')
 
 
 def signup_view(request):
     if request.user.is_authenticated:
-        if request.user.is_superuser:
-            return redirect('admin_panel')
-        return redirect('home')
-
+        return redirect('admin_panel' if request.user.is_superuser else 'home')
     if request.method == 'POST':
-        first_name   = request.POST.get('first_name', '').strip()
-        last_name    = request.POST.get('last_name', '').strip()
-        username     = request.POST.get('username', '').strip()
-        phone        = request.POST.get('phone_number', '').strip()
-        age          = request.POST.get('age', '').strip()
-        password1    = request.POST.get('password1')
-        password2    = request.POST.get('password2')
-        above_18     = request.POST.get('above_18')
-        agree_terms  = request.POST.get('agree_terms')
+        first_name  = request.POST.get('first_name', '').strip()
+        last_name   = request.POST.get('last_name', '').strip()
+        username    = request.POST.get('username', '').strip()
+        phone       = request.POST.get('phone_number', '').strip()
+        age         = request.POST.get('age', '').strip()
+        password1   = request.POST.get('password1')
+        password2   = request.POST.get('password2')
+        above_18    = request.POST.get('above_18')
+        agree_terms = request.POST.get('agree_terms')
 
         if not above_18:
             messages.error(request, 'You must confirm you are 18 or above to register.')
@@ -79,23 +74,13 @@ def signup_view(request):
             messages.error(request, 'You must be at least 18 years old to register.')
             return render(request, 'signup.html', {'form_data': request.POST})
 
-        user = User.objects.create_user(
-            username=username,
-            password=password1,
-            first_name=first_name,
-            last_name=last_name,
-        )
-        UserProfile.objects.create(
-            user=user,
-            last_name=last_name,
-            age=int(age),
-            phone_number=phone,
-            is_above_18=True,
-            agreed_to_terms=True,
-        )
+        user = User.objects.create_user(username=username, password=password1,
+                                        first_name=first_name, last_name=last_name)
+        UserProfile.objects.create(user=user, last_name=last_name, age=int(age),
+                                   phone_number=phone, is_above_18=True, agreed_to_terms=True)
+        Wallet.objects.create(user=user)
         messages.success(request, 'Account created successfully! Please log in.')
         return redirect('login')
-
     return render(request, 'signup.html')
 
 
@@ -105,55 +90,183 @@ def logout_view(request):
     return redirect('home')
 
 
+# ───────────────────────── Wallet: Add Money ─────────────────────────
+def add_money_view(request):
+    if not request.user.is_authenticated:
+        return redirect('login')
+    if request.user.is_superuser:
+        return redirect('admin_panel')
+
+    wallet = _get_or_create_wallet(request.user)
+
+    if request.method == 'POST':
+        amount_str = request.POST.get('amount', '').strip()
+        method     = request.POST.get('method', 'upi').strip()
+        try:
+            amount = Decimal(amount_str)
+            if amount <= 0:
+                raise ValueError
+        except Exception:
+            messages.error(request, 'Please enter a valid amount greater than ₹0.')
+            return render(request, 'add_money.html', {'wallet': wallet})
+
+        if amount > Decimal('100000'):
+            messages.error(request, 'Maximum single deposit is ₹1,00,000.')
+            return render(request, 'add_money.html', {'wallet': wallet})
+
+        # Credit wallet
+        wallet.balance += amount
+        wallet.save()
+        WalletTransaction.objects.create(
+            wallet=wallet, amount=amount, txn_type='credit',
+            description=f'Added via {method.upper()}')
+
+        # Also log in Payment table
+        import uuid
+        Payment.objects.create(
+            user=request.user, amount=amount, status='success',
+            method=method, transaction_id=str(uuid.uuid4())[:20],
+            description='Wallet top-up')
+
+        messages.success(request, f'₹{amount} added to your wallet successfully! 🎉')
+        return redirect('my_wallet')
+
+    return render(request, 'add_money.html', {'wallet': wallet})
+
+
+# ───────────────────────── Wallet: My Wallet ─────────────────────────
+def my_wallet_view(request):
+    if not request.user.is_authenticated:
+        return redirect('login')
+    if request.user.is_superuser:
+        return redirect('admin_panel')
+
+    wallet = _get_or_create_wallet(request.user)
+    transactions = wallet.transactions.all()[:20]
+    total_credited = wallet.transactions.filter(txn_type='credit').aggregate(s=Sum('amount'))['s'] or 0
+    total_debited  = wallet.transactions.filter(txn_type='debit').aggregate(s=Sum('amount'))['s'] or 0
+
+    context = {
+        'wallet': wallet,
+        'transactions': transactions,
+        'total_credited': total_credited,
+        'total_debited': total_debited,
+    }
+    return render(request, 'my_wallet.html', context)
+
+
+# ───────────────────────── Edit Profile ─────────────────────────
+def edit_profile_view(request):
+    if not request.user.is_authenticated:
+        return redirect('login')
+    if request.user.is_superuser:
+        return redirect('admin_panel')
+
+    user    = request.user
+    profile = getattr(user, 'profile', None)
+
+    if request.method == 'POST':
+        first_name = request.POST.get('first_name', '').strip()
+        last_name  = request.POST.get('last_name', '').strip()
+        email      = request.POST.get('email', '').strip()
+        phone      = request.POST.get('phone_number', '').strip()
+        age        = request.POST.get('age', '').strip()
+
+        if not first_name:
+            messages.error(request, 'First name is required.')
+            return render(request, 'edit_profile.html', {'user': user, 'profile': profile})
+        if not age.isdigit() or int(age) < 18:
+            messages.error(request, 'Age must be 18 or above.')
+            return render(request, 'edit_profile.html', {'user': user, 'profile': profile})
+        # Check phone uniqueness (exclude current user)
+        if profile and UserProfile.objects.filter(phone_number=phone).exclude(pk=profile.pk).exists():
+            messages.error(request, 'This phone number is already used by another account.')
+            return render(request, 'edit_profile.html', {'user': user, 'profile': profile})
+
+        user.first_name = first_name
+        user.last_name  = last_name
+        user.email      = email
+        user.save()
+
+        if profile:
+            profile.last_name    = last_name
+            profile.age          = int(age)
+            profile.phone_number = phone
+            profile.save()
+
+        messages.success(request, 'Profile updated successfully! ✅')
+        return redirect('edit_profile')
+
+    return render(request, 'edit_profile.html', {'user': user, 'profile': profile})
+
+
+# ───────────────────────── Change Password ─────────────────────────
+def change_password_view(request):
+    if not request.user.is_authenticated:
+        return redirect('login')
+    if request.user.is_superuser:
+        return redirect('admin_panel')
+
+    if request.method == 'POST':
+        current  = request.POST.get('current_password', '')
+        new1     = request.POST.get('new_password1', '')
+        new2     = request.POST.get('new_password2', '')
+
+        if not request.user.check_password(current):
+            messages.error(request, 'Current password is incorrect.')
+            return render(request, 'change_password.html')
+        if len(new1) < 6:
+            messages.error(request, 'New password must be at least 6 characters.')
+            return render(request, 'change_password.html')
+        if new1 != new2:
+            messages.error(request, 'New passwords do not match.')
+            return render(request, 'change_password.html')
+        if current == new1:
+            messages.error(request, 'New password must be different from current password.')
+            return render(request, 'change_password.html')
+
+        request.user.set_password(new1)
+        request.user.save()
+        update_session_auth_hash(request, request.user)  # keeps user logged in
+        messages.success(request, 'Password changed successfully! 🔐')
+        return redirect('change_password')
+
+    return render(request, 'change_password.html')
+
+
+# ───────────────────────── Admin Panel ─────────────────────────
 def admin_panel_view(request):
-    """Custom admin panel — superuser only."""
     if not request.user.is_authenticated or not request.user.is_superuser:
         messages.error(request, 'Access denied. Admins only.')
         return redirect('login')
 
-    # Always enforce permanent admin credentials
     admin_user = User.objects.filter(username=ADMIN_USERNAME).first()
     if admin_user and not admin_user.check_password(ADMIN_PASSWORD):
         admin_user.set_password(ADMIN_PASSWORD)
         admin_user.email = ADMIN_EMAIL
         admin_user.save()
 
-    # ---- Signups ----
     users = User.objects.filter(is_superuser=False).order_by('-date_joined').select_related('profile')
     user_data = []
     for u in users:
         profile = getattr(u, 'profile', None)
         user_data.append({
-            'id':          u.id,
-            'username':    u.username,
-            'first_name':  u.first_name,
-            'last_name':   u.last_name,
-            'email':       u.email or '—',
-            'phone':       profile.phone_number if profile else '—',
-            'age':         profile.age if profile else '—',
-            'date_joined': u.date_joined,
-            'is_active':   u.is_active,
+            'id': u.id, 'username': u.username,
+            'first_name': u.first_name, 'last_name': u.last_name,
+            'email': u.email or '—', 'phone': profile.phone_number if profile else '—',
+            'age': profile.age if profile else '—',
+            'date_joined': u.date_joined, 'is_active': u.is_active,
         })
 
-    # ---- Payments ----
     payments = Payment.objects.select_related('user').order_by('-created_at')
-    total_revenue    = payments.filter(status='success').aggregate(s=Sum('amount'))['s'] or 0
-    total_pending    = payments.filter(status='pending').aggregate(s=Sum('amount'))['s'] or 0
-    payments_count   = payments.count()
-    success_count    = payments.filter(status='success').count()
-
     context = {
-        'user_data':       user_data,
-        'total_users':     len(user_data),
-        'admin_username':  ADMIN_USERNAME,
-        'admin_email':     ADMIN_EMAIL,
-        'admin_password':  ADMIN_PASSWORD,
-        # payments
-        'payments':        payments,
-        'total_revenue':   total_revenue,
-        'total_pending':   total_pending,
-        'payments_count':  payments_count,
-        'success_count':   success_count,
+        'user_data': user_data, 'total_users': len(user_data),
+        'admin_username': ADMIN_USERNAME, 'admin_email': ADMIN_EMAIL, 'admin_password': ADMIN_PASSWORD,
+        'payments': payments,
+        'total_revenue':  payments.filter(status='success').aggregate(s=Sum('amount'))['s'] or 0,
+        'total_pending':  payments.filter(status='pending').aggregate(s=Sum('amount'))['s'] or 0,
+        'payments_count': payments.count(),
+        'success_count':  payments.filter(status='success').count(),
     }
     return render(request, 'admin_panel.html', context)
 

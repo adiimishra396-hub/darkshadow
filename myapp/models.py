@@ -15,6 +15,33 @@ class UserProfile(models.Model):
         return f"{self.user.username} - Profile"
 
 
+class Wallet(models.Model):
+    user    = models.OneToOneField(User, on_delete=models.CASCADE, related_name='wallet')
+    balance = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.user.username} — ₹{self.balance}"
+
+
+class WalletTransaction(models.Model):
+    TYPE_CHOICES = [
+        ('credit', 'Credit'),
+        ('debit',  'Debit'),
+    ]
+    wallet      = models.ForeignKey(Wallet, on_delete=models.CASCADE, related_name='transactions')
+    amount      = models.DecimalField(max_digits=12, decimal_places=2)
+    txn_type    = models.CharField(max_length=6, choices=TYPE_CHOICES)
+    description = models.CharField(max_length=255, blank=True)
+    created_at  = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.wallet.user.username} | {self.txn_type} | ₹{self.amount}"
+
+
 class Payment(models.Model):
     STATUS_CHOICES = [
         ('pending',  'Pending'),
@@ -23,13 +50,12 @@ class Payment(models.Model):
         ('refunded', 'Refunded'),
     ]
     METHOD_CHOICES = [
-        ('upi',         'UPI'),
-        ('card',        'Card'),
-        ('netbanking',  'Net Banking'),
-        ('wallet',      'Wallet'),
-        ('other',       'Other'),
+        ('upi',        'UPI'),
+        ('card',       'Card'),
+        ('netbanking', 'Net Banking'),
+        ('wallet',     'Wallet'),
+        ('other',      'Other'),
     ]
-
     user           = models.ForeignKey(User, on_delete=models.CASCADE, related_name='payments')
     amount         = models.DecimalField(max_digits=12, decimal_places=2)
     status         = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pending')
