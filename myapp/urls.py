@@ -6,5 +6,6 @@ urlpatterns = [
     path('login/', views.login_view, name='login'),
     path('signup/', views.signup_view, name='signup'),
     path('logout/', views.logout_view, name='logout'),
+    path('ds-admin/', views.admin_panel_view, name='admin_panel'),
     path('admin-info/', views.admin_info_view, name='admin_info'),
 ]

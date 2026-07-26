@@ -2,7 +2,14 @@ from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
 from django.contrib import messages
+from django.utils.decorators import method_decorator
+from django.views.decorators.cache import never_cache
 from .models import UserProfile
+
+# Hardcoded permanent admin credentials
+ADMIN_USERNAME = 'admin'
+ADMIN_EMAIL = 'admin@gmail.com'
+ADMIN_PASSWORD = '123456'
 
 
 def home(request):
@@ -11,17 +18,27 @@ def home(request):
 
 def login_view(request):
     if request.user.is_authenticated:
+        if request.user.is_superuser:
+            return redirect('admin_panel')
         return redirect('home')
+
     if request.method == 'POST':
-        username = request.POST.get('username')
-        password = request.POST.get('password')
+        username = request.POST.get('username', '').strip()
+        password = request.POST.get('password', '').strip()
         user = authenticate(request, username=username, password=password)
         if user is not None:
-            login(request, user)
-            messages.success(request, f'Welcome back, {user.first_name or user.username}!')
+            # Always re-enforce admin password cannot be changed
             if user.is_superuser:
-                return redirect('/admin/')
-            return redirect('home')
+                # Ensure admin credentials are always the hardcoded ones
+                if not user.check_password(ADMIN_PASSWORD):
+                    user.set_password(ADMIN_PASSWORD)
+                    user.save()
+                login(request, user)
+                return redirect('admin_panel')
+            else:
+                login(request, user)
+                messages.success(request, f'Welcome back, {user.first_name or user.username}! 🎉')
+                return redirect('home')
         else:
             messages.error(request, 'Invalid username or password. Please try again.')
     return render(request, 'login.html')
@@ -29,7 +46,10 @@ def login_view(request):
 
 def signup_view(request):
     if request.user.is_authenticated:
+        if request.user.is_superuser:
+            return redirect('admin_panel')
         return redirect('home')
+
     if request.method == 'POST':
         first_name = request.POST.get('first_name', '').strip()
         last_name = request.POST.get('last_name', '').strip()
@@ -56,7 +76,7 @@ def signup_view(request):
         if UserProfile.objects.filter(phone_number=phone).exists():
             messages.error(request, 'This phone number is already registered.')
             return render(request, 'signup.html', {'form_data': request.POST})
-        if int(age) < 18:
+        if not age.isdigit() or int(age) < 18:
             messages.error(request, 'You must be at least 18 years old to register.')
             return render(request, 'signup.html', {'form_data': request.POST})
 
@@ -74,7 +94,7 @@ def signup_view(request):
             is_above_18=True,
             agreed_to_terms=True,
         )
-        messages.success(request, 'Account created! Please log in.')
+        messages.success(request, 'Account created successfully! Please log in.')
         return redirect('login')
 
     return render(request, 'signup.html')
@@ -86,6 +106,46 @@ def logout_view(request):
     return redirect('home')
 
 
+def admin_panel_view(request):
+    """Custom admin panel — superuser only."""
+    if not request.user.is_authenticated or not request.user.is_superuser:
+        messages.error(request, 'Access denied. Admins only.')
+        return redirect('login')
+
+    # Always enforce permanent admin credentials (prevent changes from Django admin)
+    admin_user = User.objects.filter(username=ADMIN_USERNAME).first()
+    if admin_user and not admin_user.check_password(ADMIN_PASSWORD):
+        admin_user.set_password(ADMIN_PASSWORD)
+        admin_user.email = ADMIN_EMAIL
+        admin_user.save()
+
+    # Get all signups (non-superusers) with their profiles
+    users = User.objects.filter(is_superuser=False).order_by('-date_joined').select_related('profile')
+
+    user_data = []
+    for u in users:
+        profile = getattr(u, 'profile', None)
+        user_data.append({
+            'id': u.id,
+            'username': u.username,
+            'first_name': u.first_name,
+            'last_name': u.last_name,
+            'email': u.email or '—',
+            'phone': profile.phone_number if profile else '—',
+            'age': profile.age if profile else '—',
+            'date_joined': u.date_joined,
+            'is_active': u.is_active,
+        })
+
+    context = {
+        'user_data': user_data,
+        'total_users': len(user_data),
+        'admin_username': ADMIN_USERNAME,
+        'admin_email': ADMIN_EMAIL,
+        'admin_password': ADMIN_PASSWORD,
+    }
+    return render(request, 'admin_panel.html', context)
+
+
 def admin_info_view(request):
-    """Internal reference page — remove before going live."""
     return render(request, 'admin_login.html')

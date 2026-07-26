@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Panel — Darkshadow</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Rajdhani:wght@500;600;700&family=Sora:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#0A1A3C;--blue:#1E5FFF;--blue-deep:#0F2E82;
+    --gold:#FFC107;--gold-deep:#E5A800;
+    --dark:#060f28;--dark2:#0d1e45;
+    --white:#fff;--grey:#9FB0D8;
+    --green:#22c55e;--red:#ef4444;
+    --line:rgba(255,255,255,0.08);
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{
+    font-family:'Sora',sans-serif;
+    background:var(--dark);
+    color:var(--white);
+    min-height:100vh;
+    background-image:
+      radial-gradient(circle at 5% 10%, rgba(30,95,255,0.15) 0%,transparent 40%),
+      radial-gradient(circle at 95% 90%, rgba(255,193,7,0.08) 0%,transparent 40%);
+  }
+  a{text-decoration:none;color:inherit;}
+
+  /* ===== Sidebar ===== */
+  .layout{display:flex;min-height:100vh;}
+  .sidebar{
+    width:240px;min-height:100vh;
+    background:rgba(255,255,255,0.03);
+    border-right:1px solid var(--line);
+    display:flex;flex-direction:column;
+    padding:28px 0;
+    position:fixed;left:0;top:0;bottom:0;
+    z-index:50;
+  }
+  .sb-logo{
+    display:flex;align-items:center;gap:10px;
+    padding:0 20px 28px;
+    border-bottom:1px solid var(--line);
+    margin-bottom:20px;
+  }
+  .sb-logo .icon-box{
+    width:36px;height:36px;border-radius:8px;
+    background:linear-gradient(135deg,var(--blue-deep),var(--blue));
+    border:2px solid var(--gold-deep);
+    display:flex;align-items:center;justify-content:center;
+    font-family:'Orbitron',sans-serif;font-weight:900;font-size:15px;color:var(--gold);
+  }
+  .sb-logo .brand{display:flex;flex-direction:column;}
+  .sb-logo .bname{
+    font-family:'Orbitron',sans-serif;font-weight:900;font-size:13px;
+    letter-spacing:2px;color:var(--white);
+  }
+  .sb-logo .btag{
+    font-family:'Rajdhani',sans-serif;font-weight:700;font-size:9px;
+    letter-spacing:2px;text-transform:uppercase;color:var(--gold-deep);
+  }
+  .sb-nav{flex:1;padding:0 12px;}
+  .sb-nav a{
+    display:flex;align-items:center;gap:10px;
+    padding:12px 14px;border-radius:10px;
+    font-family:'Rajdhani',sans-serif;font-weight:700;
+    font-size:14px;letter-spacing:0.5px;text-transform:uppercase;
+    color:var(--grey);transition:background .2s,color .2s;
+    margin-bottom:4px;
+  }
+  .sb-nav a.active,
+  .sb-nav a:hover{background:rgba(30,95,255,0.15);color:var(--white);}
+  .sb-nav a.active{border-left:3px solid var(--gold);padding-left:11px;}
+  .sb-nav .icon{font-size:16px;width:20px;text-align:center;}
+  .sb-divider{border:none;border-top:1px solid var(--line);margin:12px 20px;}
+  .sb-logout{
+    padding:0 12px;
+  }
+  .sb-logout a{
+    display:flex;align-items:center;gap:10px;
+    padding:12px 14px;border-radius:10px;
+    font-family:'Rajdhani',sans-serif;font-weight:700;
+    font-size:14px;letter-spacing:0.5px;text-transform:uppercase;
+    color:#ef4444;transition:background .2s;
+  }
+  .sb-logout a:hover{background:rgba(239,68,68,0.1);}
+
+  /* ===== Main content ===== */
+  .main{margin-left:240px;flex:1;padding:32px 36px;}
+
+  /* Topbar */
+  .topbar{
+    display:flex;justify-content:space-between;align-items:center;
+    margin-bottom:32px;
+  }
+  .topbar h1{
+    font-family:'Orbitron',sans-serif;font-weight:900;
+    font-size:20px;letter-spacing:1px;
+  }
+  .topbar .admin-tag{
+    display:flex;align-items:center;gap:10px;
+    background:rgba(255,255,255,0.05);
+    border:1px solid var(--line);
+    border-radius:40px;padding:8px 16px;
+  }
+  .admin-tag .dot{width:8px;height:8px;border-radius:50%;background:var(--green);}
+  .admin-tag span{
+    font-family:'Rajdhani',sans-serif;font-weight:700;
+    font-size:13px;letter-spacing:0.5px;color:var(--grey);
+  }
+
+  /* Stats cards */
+  .stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:32px;}
+  .stat-card{
+    background:rgba(255,255,255,0.04);
+    border:1px solid var(--line);
+    border-radius:14px;padding:22px;
+    transition:border-color .2s;
+  }
+  .stat-card:hover{border-color:rgba(255,193,7,0.3);}
+  .stat-card .sc-label{
+    font-family:'Rajdhani',sans-serif;font-weight:700;
+    font-size:11px;letter-spacing:1.5px;text-transform:uppercase;
+    color:var(--grey);margin-bottom:8px;
+  }
+  .stat-card .sc-val{
+    font-family:'Rajdhani',sans-serif;font-weight:700;
+    font-size:30px;color:var(--white);line-height:1;
+  }
+  .stat-card .sc-sub{font-size:12px;color:var(--grey);margin-top:4px;}
+  .stat-card.gold{border-color:rgba(255,193,7,0.25);}
+  .stat-card.gold .sc-val{color:var(--gold);}
+
+  /* Admin credentials card */
+  .cred-card{
+    background:rgba(255,193,7,0.06);
+    border:1px solid rgba(255,193,7,0.25);
+    border-radius:16px;padding:24px 28px;
+    margin-bottom:32px;
+  }
+  .cred-card .cred-head{
+    display:flex;align-items:center;gap:10px;
+    margin-bottom:18px;
+  }
+  .cred-card .cred-head h3{
+    font-family:'Rajdhani',sans-serif;font-weight:700;
+    font-size:14px;letter-spacing:1.5px;text-transform:uppercase;
+    color:var(--gold);
+  }
+  .cred-card .lock-icon{
+    background:rgba(255,193,7,0.15);border-radius:6px;
+    width:28px;height:28px;display:flex;align-items:center;
+    justify-content:center;font-size:14px;
+  }
+  .cred-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+  .cred-item{
+    background:rgba(255,255,255,0.05);
+    border:1px solid var(--line);border-radius:10px;
+    padding:14px 16px;
+    display:flex;justify-content:space-between;align-items:center;
+  }
+  .cred-item .ci-left .ci-lbl{
+    font-family:'Rajdhani',sans-serif;font-weight:700;
+    font-size:10px;letter-spacing:1.5px;text-transform:uppercase;
+    color:var(--grey);margin-bottom:4px;
+  }
+  .cred-item .ci-left .ci-val{
+    font-size:14px;color:var(--white);font-weight:600;letter-spacing:0.3px;
+  }
+  .cred-item .copy-btn{
+    background:rgba(255,193,7,0.1);border:1px solid rgba(255,193,7,0.2);
+    border-radius:6px;padding:6px 10px;
+    font-family:'Rajdhani',sans-serif;font-weight:700;
+    font-size:11px;letter-spacing:1px;text-transform:uppercase;
+    color:var(--gold);cursor:pointer;transition:background .2s;
+  }
+  .cred-item .copy-btn:hover{background:rgba(255,193,7,0.2);}
+  .cred-warning{
+    margin-top:14px;
+    font-size:12px;color:#6B7690;
+    font-family:'Rajdhani',sans-serif;letter-spacing:0.3px;
+    display:flex;align-items:center;gap:6px;
+  }
+
+  /* Section heading */
+  .section-head{
+    display:flex;justify-content:space-between;align-items:center;
+    margin-bottom:16px;
+  }
+  .section-head h2{
+    font-family:'Rajdhani',sans-serif;font-weight:700;
+    font-size:16px;letter-spacing:1px;text-transform:uppercase;
+    color:var(--white);
+  }
+  .section-head .badge{
+    background:rgba(30,95,255,0.15);border:1px solid rgba(30,95,255,0.3);
+    color:#6fa3ff;font-family:'Rajdhani',sans-serif;font-weight:700;
+    font-size:12px;padding:4px 12px;border-radius:20px;
+  }
+
+  /* Users table */
+  .table-wrap{
+    background:rgba(255,255,255,0.03);
+    border:1px solid var(--line);
+    border-radius:16px;overflow:hidden;
+    margin-bottom:32px;
+  }
+  .tbl-head{
+    display:grid;
+    grid-template-columns: 40px 1fr 1fr 1fr 1fr 90px 80px;
+    padding:12px 20px;
+    background:rgba(255,255,255,0.06);
+    font-family:'Rajdhani',sans-serif;font-weight:700;
+    font-size:11px;letter-spacing:1.5px;text-transform:uppercase;
+    color:var(--grey);border-bottom:1px solid var(--line);
+  }
+  .tbl-row{
+    display:grid;
+    grid-template-columns: 40px 1fr 1fr 1fr 1fr 90px 80px;
+    padding:14px 20px;
+    font-size:13.5px;
+    border-bottom:1px solid var(--line);
+    align-items:center;
+    transition:background .15s;
+  }
+  .tbl-row:last-child{border-bottom:none;}
+  .tbl-row:hover{background:rgba(255,255,255,0.03);}
+  .tbl-row .idx{color:var(--grey);font-size:12px;}
+  .tbl-row .uname{font-weight:600;color:var(--white);}
+  .tbl-row .phone,.tbl-row .age-val,.tbl-row .joined{color:var(--grey);font-size:13px;}
+  .status-badge{
+    display:inline-flex;align-items:center;gap:5px;
+    padding:4px 10px;border-radius:20px;
+    font-family:'Rajdhani',sans-serif;font-weight:700;
+    font-size:11px;letter-spacing:0.5px;text-transform:uppercase;
+  }
+  .status-badge.active{background:rgba(34,197,94,0.15);color:#86efac;}
+  .status-badge.inactive{background:rgba(239,68,68,0.15);color:#fca5a5;}
+  .status-badge .dot{width:5px;height:5px;border-radius:50%;}
+  .status-badge.active .dot{background:#22c55e;}
+  .status-badge.inactive .dot{background:#ef4444;}
+
+  .empty-state{
+    text-align:center;padding:60px 20px;
+    color:var(--grey);
+    font-family:'Rajdhani',sans-serif;font-weight:600;
+    font-size:14px;letter-spacing:0.5px;
+  }
+  .empty-state .empty-icon{font-size:36px;margin-bottom:12px;opacity:0.5;}
+
+  /* Toast */
+  .toast{
+    position:fixed;bottom:24px;right:24px;
+    background:var(--navy);color:var(--gold);
+    padding:12px 20px;border-radius:10px;
+    font-family:'Rajdhani',sans-serif;font-weight:700;font-size:13px;
+    border:1px solid rgba(255,193,7,0.3);
+    opacity:0;transition:opacity .3s;pointer-events:none;
+    box-shadow:0 8px 24px rgba(0,0,0,0.4);
+  }
+  .toast.show{opacity:1;}
+
+  @media(max-width:900px){
+    .sidebar{width:60px;}
+    .sb-logo .brand,.sb-nav a span,.sb-logout a span{display:none;}
+    .sb-logo{padding:0 12px 20px;justify-content:center;}
+    .main{margin-left:60px;padding:24px 20px;}
+    .stats-row{grid-template-columns:1fr 1fr;}
+    .cred-grid{grid-template-columns:1fr;}
+    .tbl-head,.tbl-row{
+      grid-template-columns:40px 1fr 1fr 90px;
+    }
+    .tbl-row .phone,.tbl-row .age-val,.tbl-row .joined{display:none;}
+  }
+</style>
+</head>
+<body>
+
+<div class="layout">
+
+  <!-- ===== Sidebar ===== -->
+  <aside class="sidebar">
+    <div class="sb-logo">
+      <div class="icon-box">D</div>
+      <div class="brand">
+        <span class="bname">DARK</span>
+        <span class="btag">Admin Panel</span>
+      </div>
+    </div>
+    <nav class="sb-nav">
+      <a href="/ds-admin/" class="active">
+        <span class="icon">&#128100;</span>
+        <span>Signups</span>
+      </a>
+    </nav>
+    <hr class="sb-divider">
+    <div class="sb-logout">
+      <a href="/logout/">
+        <span class="icon">&#128682;</span>
+        <span>Log Out</span>
+      </a>
+    </div>
+  </aside>
+
+  <!-- ===== Main ===== -->
+  <main class="main">
+
+    <!-- Topbar -->
+    <div class="topbar">
+      <h1>&#9881; Admin Panel</h1>
+      <div class="admin-tag">
+        <span class="dot"></span>
+        <span>{{ admin_username }} &nbsp;&mdash;&nbsp; Superadmin</span>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-row">
+      <div class="stat-card gold">
+        <div class="sc-label">Total Signups</div>
+        <div class="sc-val">{{ total_users }}</div>
+        <div class="sc-sub">Registered users</div>
+      </div>
+      <div class="stat-card">
+        <div class="sc-label">Active Users</div>
+        <div class="sc-val">{% for u in user_data %}{% if u.is_active %}1{% endif %}{% endfor %}</div>
+        <div class="sc-sub">Currently active</div>
+      </div>
+      <div class="stat-card">
+        <div class="sc-label">Platform</div>
+        <div class="sc-val" style="font-size:18px;">Darkshadow</div>
+        <div class="sc-sub">darkshadow.website</div>
+      </div>
+      <div class="stat-card">
+        <div class="sc-label">Admin Access</div>
+        <div class="sc-val" style="font-size:18px;color:var(--green);">&#10003; Live</div>
+        <div class="sc-sub">Panel operational</div>
+      </div>
+    </div>
+
+    <!-- Admin Credentials Card -->
+    <div class="cred-card">
+      <div class="cred-head">
+        <div class="lock-icon">&#128274;</div>
+        <h3>Permanent Admin Credentials &mdash; Cannot Be Changed</h3>
+      </div>
+      <div class="cred-grid">
+        <div class="cred-item">
+          <div class="ci-left">
+            <div class="ci-lbl">Username</div>
+            <div class="ci-val">{{ admin_username }}</div>
+          </div>
+          <button class="copy-btn" onclick="copy('{{ admin_username }}')">Copy</button>
+        </div>
+        <div class="cred-item">
+          <div class="ci-left">
+            <div class="ci-lbl">Email</div>
+            <div class="ci-val">{{ admin_email }}</div>
+          </div>
+          <button class="copy-btn" onclick="copy('{{ admin_email }}')">Copy</button>
+        </div>
+        <div class="cred-item">
+          <div class="ci-left">
+            <div class="ci-lbl">Password</div>
+            <div class="ci-val">{{ admin_password }}</div>
+          </div>
+          <button class="copy-btn" onclick="copy('{{ admin_password }}')">Copy</button>
+        </div>
+      </div>
+      <div class="cred-warning">
+        &#9888; These credentials are hardcoded in the codebase. Any changes made elsewhere are automatically reverted on next login.
+      </div>
+    </div>
+
+    <!-- Signups Table -->
+    <div class="section-head">
+      <h2>&#128100; All Signups</h2>
+      <span class="badge">{{ total_users }} Users</span>
+    </div>
+
+    <div class="table-wrap">
+      {% if user_data %}
+        <div class="tbl-head">
+          <div>#</div>
+          <div>Name / Username</div>
+          <div>Phone</div>
+          <div>Age</div>
+          <div>Joined</div>
+          <div>Status</div>
+          <div></div>
+        </div>
+        {% for u in user_data %}
+        <div class="tbl-row">
+          <div class="idx">{{ forloop.counter }}</div>
+          <div>
+            <div class="uname">{{ u.first_name }} {{ u.last_name }}</div>
+            <div style="font-size:12px;color:var(--grey);">@{{ u.username }}</div>
+          </div>
+          <div class="phone">{{ u.phone }}</div>
+          <div class="age-val">{{ u.age }}</div>
+          <div class="joined" style="font-size:12px;">{{ u.date_joined|date:"d M Y" }}</div>
+          <div>
+            {% if u.is_active %}
+            <span class="status-badge active"><span class="dot"></span>Active</span>
+            {% else %}
+            <span class="status-badge inactive"><span class="dot"></span>Inactive</span>
+            {% endif %}
+          </div>
+          <div></div>
+        </div>
+        {% endfor %}
+      {% else %}
+        <div class="empty-state">
+          <div class="empty-icon">&#128100;</div>
+          No signups yet. Users who register will appear here.
+        </div>
+      {% endif %}
+    </div>
+
+  </main>
+</div>
+
+<div class="toast" id="toast">&#10003; Copied!</div>
+
+<script>
+  function copy(val){
+    navigator.clipboard.writeText(val);
+    const t = document.getElementById('toast');
+    t.classList.add('show');
+    setTimeout(()=>t.classList.remove('show'), 2000);
+  }
+</script>
+</body>
+</html>
