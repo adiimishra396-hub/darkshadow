@@ -13,7 +13,7 @@ SECRET_KEY = os.environ.get(
     'django-insecure-cp577)0^wm^b3!u6*#x3$tt*&prekq#c@r^x$!ektp7&618fv6'
 )
 
-DEBUG = os.environ.get('DEBUG', 'False') == 'True'
+DEBUG = True
 
 ALLOWED_HOSTS = [
     'darkshadow.website',
