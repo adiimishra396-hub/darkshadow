@@ -88,25 +88,30 @@
     background:var(--white);
     border-bottom:1px solid var(--line);
   }
+  /* Header gets its own wider side padding so nothing touches the edges */
+  header .wrap{
+    padding:0 40px;
+  }
   nav{
     display:flex;align-items:center;justify-content:space-between;
-    padding:24px 0;
+    padding:16px 0;
+    gap:24px;
   }
 
   /* ===== Enhanced Logo ===== */
-  .logo{display:flex;align-items:center;gap:12px;text-decoration:none;}
+  .logo{display:flex;align-items:center;gap:14px;text-decoration:none;flex-shrink:0;}
   .logo .icon-box{
-    width:44px;height:44px;border-radius:10px;
+    width:48px;height:48px;border-radius:11px;
     background:linear-gradient(135deg, var(--blue-deep) 0%, var(--blue) 100%);
     border:2px solid var(--gold-deep);
     display:flex;align-items:center;justify-content:center;
-    font-size:20px;color:var(--gold);
+    font-size:22px;color:var(--gold);
     font-family:'Orbitron',sans-serif;font-weight:900;
     box-shadow:0 4px 16px rgba(30,95,255,0.35), inset 0 1px 0 rgba(255,255,255,0.15);
     transition:box-shadow .2s;
   }
   .logo:hover .icon-box{box-shadow:0 6px 22px rgba(30,95,255,0.55), 0 0 0 3px rgba(255,193,7,0.2);}
-  .logo .brand{display:flex;flex-direction:column;line-height:1.1;}
+  .logo .brand{display:flex;flex-direction:column;line-height:1.15;}
   .logo .brand-name{
     font-family:'Orbitron',sans-serif;font-weight:900;font-size:20px;letter-spacing:3px;
     background:linear-gradient(135deg, var(--navy) 0%, var(--blue) 55%, var(--gold-deep) 100%);
@@ -115,14 +120,14 @@
   .logo .brand-tag{
     font-family:'Rajdhani',sans-serif;font-weight:700;font-size:9px;
     letter-spacing:2.5px;text-transform:uppercase;color:var(--gold-deep);
-    -webkit-text-fill-color:var(--gold-deep);margin-top:2px;
+    -webkit-text-fill-color:var(--gold-deep);margin-top:3px;
   }
 
-  .nav-links{display:flex;gap:32px;align-items:center;}
+  .nav-links{display:flex;gap:34px;align-items:center;}
   .nav-links a{
     font-family:'Rajdhani',sans-serif;font-weight:600;font-size:15px;
     letter-spacing:0.5px;text-transform:uppercase;color:var(--navy);
-    position:relative;padding:4px 0;
+    position:relative;padding:4px 0;white-space:nowrap;
   }
   .nav-links a::after{
     content:'';position:absolute;bottom:-2px;left:0;width:0;height:2px;
@@ -130,9 +135,15 @@
   }
   .nav-links a:hover::after{width:100%;}
 
-  .nav-cta{display:flex;gap:16px;align-items:center;}
-  .btn-small{padding:10px 22px;font-size:14px;}
-  .menu-toggle{display:none;background:none;border:none;font-size:26px;color:var(--navy);cursor:pointer;}
+  /* ===== Nav CTA — more space & fixed sizes ===== */
+  .nav-cta{display:flex;gap:12px;align-items:center;flex-shrink:0;}
+  .btn-small{
+    padding:11px 28px;
+    font-size:14px;
+    min-width:96px;
+    white-space:nowrap;
+  }
+  .menu-toggle{display:none;background:none;border:none;font-size:26px;color:var(--navy);cursor:pointer;margin-left:8px;}
 
   /* ===== Hero ===== */
   .hero{
@@ -452,6 +463,10 @@
   .reveal.in-view{opacity:1;transform:translateY(0);}
 
   /* Responsive */
+  @media(max-width:1080px){
+    header .wrap{padding:0 28px;}
+    .nav-links{gap:22px;}
+  }
   @media(max-width:980px){
     .hero-inner{grid-template-columns:1fr;}
     .hero h1{font-size:42px;}
@@ -467,6 +482,7 @@
   @media(max-width:640px){
     .nav-links,.nav-cta .btn-outline{display:none;}
     .menu-toggle{display:block;}
+    header .wrap{padding:0 20px;}
     .hero{padding:60px 0 70px;}
     .hero h1{font-size:32px;}
     .hero-stats{flex-wrap:wrap;gap:20px;}
@@ -527,7 +543,7 @@
       </ul>
       <div class="nav-cta">
         {% if user.is_authenticated %}
-          <span style="font-family:'Rajdhani',sans-serif;font-weight:700;font-size:14px;color:var(--navy);">Hi, {{ user.first_name|default:user.username }} &#128075;</span>
+          <span style="font-family:'Rajdhani',sans-serif;font-weight:700;font-size:14px;color:var(--navy);white-space:nowrap;">Hi, {{ user.first_name|default:user.username }} &#128075;</span>
           <a href="/logout/" class="btn btn-outline btn-small">Log Out</a>
         {% else %}
           <a href="/login/" class="btn btn-outline btn-small">Log In</a>
@@ -763,21 +779,16 @@
   </footer>
 
 <script>
-  // Menu toggle
   const menuToggle = document.querySelector('.menu-toggle');
   const navLinks = document.querySelector('.nav-links');
   if(menuToggle){
     menuToggle.addEventListener('click', ()=>{ navLinks.classList.toggle('open'); });
   }
-
-  // Scroll reveal
   const revealEls = document.querySelectorAll('.reveal');
   const observer = new IntersectionObserver((entries)=>{
     entries.forEach(entry=>{ if(entry.isIntersecting) entry.target.classList.add('in-view'); });
   }, {threshold:0.1});
   revealEls.forEach(el=>observer.observe(el));
-
-  // Welcome popup — show once per session
   function closePopup(){
     document.getElementById('welcomePopup').classList.remove('active');
     sessionStorage.setItem('popupSeen','1');
@@ -789,7 +800,6 @@
       }, 1200);
     }
   });
-  // Close on overlay click (outside box)
   document.getElementById('welcomePopup').addEventListener('click', function(e){
     if(e.target === this) closePopup();
   });
