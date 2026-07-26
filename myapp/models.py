@@ -13,3 +13,34 @@ class UserProfile(models.Model):
 
     def __str__(self):
         return f"{self.user.username} - Profile"
+
+
+class Payment(models.Model):
+    STATUS_CHOICES = [
+        ('pending',  'Pending'),
+        ('success',  'Success'),
+        ('failed',   'Failed'),
+        ('refunded', 'Refunded'),
+    ]
+    METHOD_CHOICES = [
+        ('upi',         'UPI'),
+        ('card',        'Card'),
+        ('netbanking',  'Net Banking'),
+        ('wallet',      'Wallet'),
+        ('other',       'Other'),
+    ]
+
+    user           = models.ForeignKey(User, on_delete=models.CASCADE, related_name='payments')
+    amount         = models.DecimalField(max_digits=12, decimal_places=2)
+    status         = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pending')
+    method         = models.CharField(max_length=15, choices=METHOD_CHOICES, default='upi')
+    transaction_id = models.CharField(max_length=100, blank=True, null=True, unique=True)
+    description    = models.CharField(max_length=255, blank=True)
+    created_at     = models.DateTimeField(auto_now_add=True)
+    updated_at     = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.user.username} | ₹{self.amount} | {self.status}"

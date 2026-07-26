@@ -11,7 +11,7 @@
     --gold:#FFC107;--gold-deep:#E5A800;
     --dark:#060f28;--dark2:#0d1e45;
     --white:#fff;--grey:#9FB0D8;
-    --green:#22c55e;--red:#ef4444;
+    --green:#22c55e;--red:#ef4444;--orange:#f97316;
     --line:rgba(255,255,255,0.08);
   }
   *{margin:0;padding:0;box-sizing:border-box;}
@@ -66,16 +66,14 @@
     font-family:'Rajdhani',sans-serif;font-weight:700;
     font-size:14px;letter-spacing:0.5px;text-transform:uppercase;
     color:var(--grey);transition:background .2s,color .2s;
-    margin-bottom:4px;
+    margin-bottom:4px;cursor:pointer;
   }
   .sb-nav a.active,
   .sb-nav a:hover{background:rgba(30,95,255,0.15);color:var(--white);}
   .sb-nav a.active{border-left:3px solid var(--gold);padding-left:11px;}
   .sb-nav .icon{font-size:16px;width:20px;text-align:center;}
   .sb-divider{border:none;border-top:1px solid var(--line);margin:12px 20px;}
-  .sb-logout{
-    padding:0 12px;
-  }
+  .sb-logout{padding:0 12px;}
   .sb-logout a{
     display:flex;align-items:center;gap:10px;
     padding:12px 14px;border-radius:10px;
@@ -85,7 +83,7 @@
   }
   .sb-logout a:hover{background:rgba(239,68,68,0.1);}
 
-  /* ===== Main content ===== */
+  /* ===== Main ===== */
   .main{margin-left:240px;flex:1;padding:32px 36px;}
 
   /* Topbar */
@@ -130,6 +128,8 @@
   .stat-card .sc-sub{font-size:12px;color:var(--grey);margin-top:4px;}
   .stat-card.gold{border-color:rgba(255,193,7,0.25);}
   .stat-card.gold .sc-val{color:var(--gold);}
+  .stat-card.green-card{border-color:rgba(34,197,94,0.25);}
+  .stat-card.green-card .sc-val{color:var(--green);}
 
   /* Admin credentials card */
   .cred-card{
@@ -176,8 +176,7 @@
   }
   .cred-item .copy-btn:hover{background:rgba(255,193,7,0.2);}
   .cred-warning{
-    margin-top:14px;
-    font-size:12px;color:#6B7690;
+    margin-top:14px;font-size:12px;color:#6B7690;
     font-family:'Rajdhani',sans-serif;letter-spacing:0.3px;
     display:flex;align-items:center;gap:6px;
   }
@@ -198,47 +197,88 @@
     font-size:12px;padding:4px 12px;border-radius:20px;
   }
 
-  /* Users table */
+  /* Tables */
   .table-wrap{
     background:rgba(255,255,255,0.03);
     border:1px solid var(--line);
     border-radius:16px;overflow:hidden;
     margin-bottom:32px;
   }
-  .tbl-head{
+  /* Signups table */
+  .tbl-head-signups{
     display:grid;
-    grid-template-columns: 40px 1fr 1fr 1fr 1fr 90px 80px;
+    grid-template-columns: 40px 1.4fr 1fr 60px 1fr 90px;
     padding:12px 20px;
     background:rgba(255,255,255,0.06);
     font-family:'Rajdhani',sans-serif;font-weight:700;
     font-size:11px;letter-spacing:1.5px;text-transform:uppercase;
     color:var(--grey);border-bottom:1px solid var(--line);
   }
-  .tbl-row{
+  .tbl-row-signups{
     display:grid;
-    grid-template-columns: 40px 1fr 1fr 1fr 1fr 90px 80px;
+    grid-template-columns: 40px 1.4fr 1fr 60px 1fr 90px;
     padding:14px 20px;
     font-size:13.5px;
     border-bottom:1px solid var(--line);
     align-items:center;
     transition:background .15s;
   }
-  .tbl-row:last-child{border-bottom:none;}
-  .tbl-row:hover{background:rgba(255,255,255,0.03);}
-  .tbl-row .idx{color:var(--grey);font-size:12px;}
-  .tbl-row .uname{font-weight:600;color:var(--white);}
-  .tbl-row .phone,.tbl-row .age-val,.tbl-row .joined{color:var(--grey);font-size:13px;}
+  /* Payments table */
+  .tbl-head-payments{
+    display:grid;
+    grid-template-columns: 40px 1.2fr 1fr 90px 90px 1.2fr 90px;
+    padding:12px 20px;
+    background:rgba(255,255,255,0.06);
+    font-family:'Rajdhani',sans-serif;font-weight:700;
+    font-size:11px;letter-spacing:1.5px;text-transform:uppercase;
+    color:var(--grey);border-bottom:1px solid var(--line);
+  }
+  .tbl-row-payments{
+    display:grid;
+    grid-template-columns: 40px 1.2fr 1fr 90px 90px 1.2fr 90px;
+    padding:14px 20px;
+    font-size:13.5px;
+    border-bottom:1px solid var(--line);
+    align-items:center;
+    transition:background .15s;
+  }
+  .tbl-row-signups:last-child,.tbl-row-payments:last-child{border-bottom:none;}
+  .tbl-row-signups:hover,.tbl-row-payments:hover{background:rgba(255,255,255,0.03);}
+  .tbl-row-signups .idx,.tbl-row-payments .idx{color:var(--grey);font-size:12px;}
+  .tbl-row-signups .uname{font-weight:600;color:var(--white);}
+  .tbl-row-signups .phone,.tbl-row-signups .age-val,.tbl-row-signups .joined{color:var(--grey);font-size:13px;}
+  .tbl-row-payments .puser{font-weight:600;color:var(--white);}
+  .tbl-row-payments .pamount{
+    font-family:'Rajdhani',sans-serif;font-weight:700;font-size:15px;
+    color:var(--gold);
+  }
+  .tbl-row-payments .pdate,.tbl-row-payments .ptxn{color:var(--grey);font-size:12px;}
+
+  /* Status badges */
   .status-badge{
     display:inline-flex;align-items:center;gap:5px;
     padding:4px 10px;border-radius:20px;
     font-family:'Rajdhani',sans-serif;font-weight:700;
     font-size:11px;letter-spacing:0.5px;text-transform:uppercase;
   }
-  .status-badge.active{background:rgba(34,197,94,0.15);color:#86efac;}
-  .status-badge.inactive{background:rgba(239,68,68,0.15);color:#fca5a5;}
   .status-badge .dot{width:5px;height:5px;border-radius:50%;}
-  .status-badge.active .dot{background:#22c55e;}
-  .status-badge.inactive .dot{background:#ef4444;}
+  .status-badge.active,.status-badge.success{background:rgba(34,197,94,0.15);color:#86efac;}
+  .status-badge.active .dot,.status-badge.success .dot{background:#22c55e;}
+  .status-badge.inactive,.status-badge.failed{background:rgba(239,68,68,0.15);color:#fca5a5;}
+  .status-badge.inactive .dot,.status-badge.failed .dot{background:#ef4444;}
+  .status-badge.pending{background:rgba(249,115,22,0.15);color:#fdba74;}
+  .status-badge.pending .dot{background:#f97316;}
+  .status-badge.refunded{background:rgba(99,102,241,0.15);color:#a5b4fc;}
+  .status-badge.refunded .dot{background:#818cf8;}
+
+  /* Method badge */
+  .method-badge{
+    display:inline-block;
+    padding:3px 9px;border-radius:6px;
+    background:rgba(30,95,255,0.12);color:#6fa3ff;
+    font-family:'Rajdhani',sans-serif;font-weight:700;
+    font-size:11px;letter-spacing:0.5px;text-transform:uppercase;
+  }
 
   .empty-state{
     text-align:center;padding:60px 20px;
@@ -247,6 +287,10 @@
     font-size:14px;letter-spacing:0.5px;
   }
   .empty-state .empty-icon{font-size:36px;margin-bottom:12px;opacity:0.5;}
+
+  /* ===== Tab panel ===== */
+  .tab-content{display:none;}
+  .tab-content.active{display:block;}
 
   /* Toast */
   .toast{
@@ -267,10 +311,14 @@
     .main{margin-left:60px;padding:24px 20px;}
     .stats-row{grid-template-columns:1fr 1fr;}
     .cred-grid{grid-template-columns:1fr;}
-    .tbl-head,.tbl-row{
+    .tbl-head-signups,.tbl-row-signups{
       grid-template-columns:40px 1fr 1fr 90px;
     }
-    .tbl-row .phone,.tbl-row .age-val,.tbl-row .joined{display:none;}
+    .tbl-row-signups .age-val,.tbl-row-signups .joined{display:none;}
+    .tbl-head-payments,.tbl-row-payments{
+      grid-template-columns:40px 1fr 1fr 90px;
+    }
+    .tbl-row-payments .ptxn,.tbl-row-payments .pdate,.tbl-row-payments .pmethod{display:none;}
   }
 </style>
 </head>
@@ -288,9 +336,13 @@
       </div>
     </div>
     <nav class="sb-nav">
-      <a href="/ds-admin/" class="active">
+      <a href="#" id="tab-signups-link" class="active" onclick="switchTab('signups', this); return false;">
         <span class="icon">&#128100;</span>
         <span>Signups</span>
+      </a>
+      <a href="#" id="tab-payments-link" onclick="switchTab('payments', this); return false;">
+        <span class="icon">&#128179;</span>
+        <span>Payments</span>
       </a>
     </nav>
     <hr class="sb-divider">
@@ -314,108 +366,182 @@
       </div>
     </div>
 
-    <!-- Stats -->
-    <div class="stats-row">
-      <div class="stat-card gold">
-        <div class="sc-label">Total Signups</div>
-        <div class="sc-val">{{ total_users }}</div>
-        <div class="sc-sub">Registered users</div>
-      </div>
-      <div class="stat-card">
-        <div class="sc-label">Active Users</div>
-        <div class="sc-val">{% for u in user_data %}{% if u.is_active %}1{% endif %}{% endfor %}</div>
-        <div class="sc-sub">Currently active</div>
-      </div>
-      <div class="stat-card">
-        <div class="sc-label">Platform</div>
-        <div class="sc-val" style="font-size:18px;">Darkshadow</div>
-        <div class="sc-sub">darkshadow.website</div>
-      </div>
-      <div class="stat-card">
-        <div class="sc-label">Admin Access</div>
-        <div class="sc-val" style="font-size:18px;color:var(--green);">&#10003; Live</div>
-        <div class="sc-sub">Panel operational</div>
-      </div>
-    </div>
+    <!-- =================== SIGNUPS TAB =================== -->
+    <div id="tab-signups" class="tab-content active">
 
-    <!-- Admin Credentials Card -->
-    <div class="cred-card">
-      <div class="cred-head">
-        <div class="lock-icon">&#128274;</div>
-        <h3>Permanent Admin Credentials &mdash; Cannot Be Changed</h3>
-      </div>
-      <div class="cred-grid">
-        <div class="cred-item">
-          <div class="ci-left">
-            <div class="ci-lbl">Username</div>
-            <div class="ci-val">{{ admin_username }}</div>
-          </div>
-          <button class="copy-btn" onclick="copy('{{ admin_username }}')">Copy</button>
+      <!-- Stats -->
+      <div class="stats-row">
+        <div class="stat-card gold">
+          <div class="sc-label">Total Signups</div>
+          <div class="sc-val">{{ total_users }}</div>
+          <div class="sc-sub">Registered users</div>
         </div>
-        <div class="cred-item">
-          <div class="ci-left">
-            <div class="ci-lbl">Email</div>
-            <div class="ci-val">{{ admin_email }}</div>
-          </div>
-          <button class="copy-btn" onclick="copy('{{ admin_email }}')">Copy</button>
+        <div class="stat-card">
+          <div class="sc-label">Active Users</div>
+          <div class="sc-val">{% with 0 as cnt %}{% for u in user_data %}{% if u.is_active %}{% with cnt|add:1 as cnt %}{% endwith %}{% endif %}{% endfor %}{{ user_data|length }}{% endwith %}</div>
+          <div class="sc-sub">Currently active</div>
         </div>
-        <div class="cred-item">
-          <div class="ci-left">
-            <div class="ci-lbl">Password</div>
-            <div class="ci-val">{{ admin_password }}</div>
-          </div>
-          <button class="copy-btn" onclick="copy('{{ admin_password }}')">Copy</button>
+        <div class="stat-card">
+          <div class="sc-label">Platform</div>
+          <div class="sc-val" style="font-size:18px;">Darkshadow</div>
+          <div class="sc-sub">darkshadow.website</div>
+        </div>
+        <div class="stat-card">
+          <div class="sc-label">Admin Access</div>
+          <div class="sc-val" style="font-size:18px;color:var(--green);">&#10003; Live</div>
+          <div class="sc-sub">Panel operational</div>
         </div>
       </div>
-      <div class="cred-warning">
-        &#9888; These credentials are hardcoded in the codebase. Any changes made elsewhere are automatically reverted on next login.
-      </div>
-    </div>
 
-    <!-- Signups Table -->
-    <div class="section-head">
-      <h2>&#128100; All Signups</h2>
-      <span class="badge">{{ total_users }} Users</span>
-    </div>
+      <!-- Admin Credentials -->
+      <div class="cred-card">
+        <div class="cred-head">
+          <div class="lock-icon">&#128274;</div>
+          <h3>Permanent Admin Credentials &mdash; Cannot Be Changed</h3>
+        </div>
+        <div class="cred-grid">
+          <div class="cred-item">
+            <div class="ci-left">
+              <div class="ci-lbl">Username</div>
+              <div class="ci-val">{{ admin_username }}</div>
+            </div>
+            <button class="copy-btn" onclick="copy('{{ admin_username }}')">Copy</button>
+          </div>
+          <div class="cred-item">
+            <div class="ci-left">
+              <div class="ci-lbl">Email</div>
+              <div class="ci-val">{{ admin_email }}</div>
+            </div>
+            <button class="copy-btn" onclick="copy('{{ admin_email }}')">Copy</button>
+          </div>
+          <div class="cred-item">
+            <div class="ci-left">
+              <div class="ci-lbl">Password</div>
+              <div class="ci-val">{{ admin_password }}</div>
+            </div>
+            <button class="copy-btn" onclick="copy('{{ admin_password }}')">Copy</button>
+          </div>
+        </div>
+        <div class="cred-warning">
+          &#9888; These credentials are hardcoded in the codebase. Any changes made elsewhere are automatically reverted on next login.
+        </div>
+      </div>
 
-    <div class="table-wrap">
-      {% if user_data %}
-        <div class="tbl-head">
-          <div>#</div>
-          <div>Name / Username</div>
-          <div>Phone</div>
-          <div>Age</div>
-          <div>Joined</div>
-          <div>Status</div>
-          <div></div>
-        </div>
-        {% for u in user_data %}
-        <div class="tbl-row">
-          <div class="idx">{{ forloop.counter }}</div>
-          <div>
-            <div class="uname">{{ u.first_name }} {{ u.last_name }}</div>
-            <div style="font-size:12px;color:var(--grey);">@{{ u.username }}</div>
+      <!-- Signups Table -->
+      <div class="section-head">
+        <h2>&#128100; All Signups</h2>
+        <span class="badge">{{ total_users }} Users</span>
+      </div>
+      <div class="table-wrap">
+        {% if user_data %}
+          <div class="tbl-head-signups">
+            <div>#</div>
+            <div>Name / Username</div>
+            <div>Phone</div>
+            <div>Age</div>
+            <div>Joined</div>
+            <div>Status</div>
           </div>
-          <div class="phone">{{ u.phone }}</div>
-          <div class="age-val">{{ u.age }}</div>
-          <div class="joined" style="font-size:12px;">{{ u.date_joined|date:"d M Y" }}</div>
-          <div>
-            {% if u.is_active %}
-            <span class="status-badge active"><span class="dot"></span>Active</span>
-            {% else %}
-            <span class="status-badge inactive"><span class="dot"></span>Inactive</span>
-            {% endif %}
+          {% for u in user_data %}
+          <div class="tbl-row-signups">
+            <div class="idx">{{ forloop.counter }}</div>
+            <div>
+              <div class="uname">{{ u.first_name }} {{ u.last_name }}</div>
+              <div style="font-size:12px;color:var(--grey);">@{{ u.username }}</div>
+            </div>
+            <div class="phone">{{ u.phone }}</div>
+            <div class="age-val">{{ u.age }}</div>
+            <div class="joined" style="font-size:12px;">{{ u.date_joined|date:"d M Y" }}</div>
+            <div>
+              {% if u.is_active %}
+              <span class="status-badge active"><span class="dot"></span>Active</span>
+              {% else %}
+              <span class="status-badge inactive"><span class="dot"></span>Inactive</span>
+              {% endif %}
+            </div>
           </div>
-          <div></div>
+          {% endfor %}
+        {% else %}
+          <div class="empty-state">
+            <div class="empty-icon">&#128100;</div>
+            No signups yet. Users who register will appear here.
+          </div>
+        {% endif %}
+      </div>
+
+    </div><!-- /tab-signups -->
+
+
+    <!-- =================== PAYMENTS TAB =================== -->
+    <div id="tab-payments" class="tab-content">
+
+      <!-- Payment Stats -->
+      <div class="stats-row">
+        <div class="stat-card green-card">
+          <div class="sc-label">Total Revenue</div>
+          <div class="sc-val">&#8377;{{ total_revenue }}</div>
+          <div class="sc-sub">Successful payments</div>
         </div>
-        {% endfor %}
-      {% else %}
-        <div class="empty-state">
-          <div class="empty-icon">&#128100;</div>
-          No signups yet. Users who register will appear here.
+        <div class="stat-card gold">
+          <div class="sc-label">Pending Amount</div>
+          <div class="sc-val">&#8377;{{ total_pending }}</div>
+          <div class="sc-sub">Awaiting confirmation</div>
         </div>
-      {% endif %}
-    </div>
+        <div class="stat-card">
+          <div class="sc-label">Total Transactions</div>
+          <div class="sc-val">{{ payments_count }}</div>
+          <div class="sc-sub">All time</div>
+        </div>
+        <div class="stat-card">
+          <div class="sc-label">Successful</div>
+          <div class="sc-val" style="color:var(--green);">{{ success_count }}</div>
+          <div class="sc-sub">Completed payments</div>
+        </div>
+      </div>
+
+      <!-- Payments Table -->
+      <div class="section-head">
+        <h2>&#128179; All Payments</h2>
+        <span class="badge">{{ payments_count }} Transactions</span>
+      </div>
+      <div class="table-wrap">
+        {% if payments %}
+          <div class="tbl-head-payments">
+            <div>#</div>
+            <div>User</div>
+            <div>Amount</div>
+            <div>Method</div>
+            <div>Status</div>
+            <div>Txn ID</div>
+            <div>Date</div>
+          </div>
+          {% for p in payments %}
+          <div class="tbl-row-payments">
+            <div class="idx">{{ forloop.counter }}</div>
+            <div>
+              <div class="puser">{{ p.user.first_name|default:p.user.username }}</div>
+              <div style="font-size:12px;color:var(--grey);">@{{ p.user.username }}</div>
+            </div>
+            <div class="pamount">&#8377;{{ p.amount }}</div>
+            <div class="pmethod"><span class="method-badge">{{ p.get_method_display }}</span></div>
+            <div>
+              <span class="status-badge {{ p.status }}">
+                <span class="dot"></span>{{ p.get_status_display }}
+              </span>
+            </div>
+            <div class="ptxn">{{ p.transaction_id|default:"—" }}</div>
+            <div class="pdate">{{ p.created_at|date:"d M Y" }}</div>
+          </div>
+          {% endfor %}
+        {% else %}
+          <div class="empty-state">
+            <div class="empty-icon">&#128179;</div>
+            No payments recorded yet. Transactions will appear here once users make payments.
+          </div>
+        {% endif %}
+      </div>
+
+    </div><!-- /tab-payments -->
 
   </main>
 </div>
@@ -423,11 +549,34 @@
 <div class="toast" id="toast">&#10003; Copied!</div>
 
 <script>
+  /* ===== Tab switcher ===== */
+  function switchTab(name, el) {
+    // Hide all tab content
+    document.querySelectorAll('.tab-content').forEach(function(t){ t.classList.remove('active'); });
+    // Remove active from all sidebar links
+    document.querySelectorAll('.sb-nav a').forEach(function(a){ a.classList.remove('active'); });
+    // Show selected tab
+    document.getElementById('tab-' + name).classList.add('active');
+    el.classList.add('active');
+    // Persist in sessionStorage so refresh keeps tab
+    sessionStorage.setItem('adminTab', name);
+  }
+
+  // Restore last active tab on page load
+  (function(){
+    var saved = sessionStorage.getItem('adminTab');
+    if(saved && saved !== 'signups'){
+      var link = document.getElementById('tab-' + saved + '-link');
+      if(link) switchTab(saved, link);
+    }
+  })();
+
+  /* ===== Copy to clipboard ===== */
   function copy(val){
     navigator.clipboard.writeText(val);
-    const t = document.getElementById('toast');
+    var t = document.getElementById('toast');
     t.classList.add('show');
-    setTimeout(()=>t.classList.remove('show'), 2000);
+    setTimeout(function(){ t.classList.remove('show'); }, 2000);
   }
 </script>
 </body>

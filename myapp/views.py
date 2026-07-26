@@ -4,7 +4,8 @@ from django.contrib.auth.models import User
 from django.contrib import messages
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import never_cache
-from .models import UserProfile
+from .models import UserProfile, Payment
+from django.db.models import Sum
 
 # Hardcoded permanent admin credentials
 ADMIN_USERNAME = 'admin'
@@ -27,9 +28,7 @@ def login_view(request):
         password = request.POST.get('password', '').strip()
         user = authenticate(request, username=username, password=password)
         if user is not None:
-            # Always re-enforce admin password cannot be changed
             if user.is_superuser:
-                # Ensure admin credentials are always the hardcoded ones
                 if not user.check_password(ADMIN_PASSWORD):
                     user.set_password(ADMIN_PASSWORD)
                     user.save()
@@ -51,15 +50,15 @@ def signup_view(request):
         return redirect('home')
 
     if request.method == 'POST':
-        first_name = request.POST.get('first_name', '').strip()
-        last_name = request.POST.get('last_name', '').strip()
-        username = request.POST.get('username', '').strip()
-        phone = request.POST.get('phone_number', '').strip()
-        age = request.POST.get('age', '').strip()
-        password1 = request.POST.get('password1')
-        password2 = request.POST.get('password2')
-        above_18 = request.POST.get('above_18')
-        agree_terms = request.POST.get('agree_terms')
+        first_name   = request.POST.get('first_name', '').strip()
+        last_name    = request.POST.get('last_name', '').strip()
+        username     = request.POST.get('username', '').strip()
+        phone        = request.POST.get('phone_number', '').strip()
+        age          = request.POST.get('age', '').strip()
+        password1    = request.POST.get('password1')
+        password2    = request.POST.get('password2')
+        above_18     = request.POST.get('above_18')
+        agree_terms  = request.POST.get('agree_terms')
 
         if not above_18:
             messages.error(request, 'You must confirm you are 18 or above to register.')
@@ -112,37 +111,49 @@ def admin_panel_view(request):
         messages.error(request, 'Access denied. Admins only.')
         return redirect('login')
 
-    # Always enforce permanent admin credentials (prevent changes from Django admin)
+    # Always enforce permanent admin credentials
     admin_user = User.objects.filter(username=ADMIN_USERNAME).first()
     if admin_user and not admin_user.check_password(ADMIN_PASSWORD):
         admin_user.set_password(ADMIN_PASSWORD)
         admin_user.email = ADMIN_EMAIL
         admin_user.save()
 
-    # Get all signups (non-superusers) with their profiles
+    # ---- Signups ----
     users = User.objects.filter(is_superuser=False).order_by('-date_joined').select_related('profile')
-
     user_data = []
     for u in users:
         profile = getattr(u, 'profile', None)
         user_data.append({
-            'id': u.id,
-            'username': u.username,
-            'first_name': u.first_name,
-            'last_name': u.last_name,
-            'email': u.email or '—',
-            'phone': profile.phone_number if profile else '—',
-            'age': profile.age if profile else '—',
+            'id':          u.id,
+            'username':    u.username,
+            'first_name':  u.first_name,
+            'last_name':   u.last_name,
+            'email':       u.email or '—',
+            'phone':       profile.phone_number if profile else '—',
+            'age':         profile.age if profile else '—',
             'date_joined': u.date_joined,
-            'is_active': u.is_active,
+            'is_active':   u.is_active,
         })
 
+    # ---- Payments ----
+    payments = Payment.objects.select_related('user').order_by('-created_at')
+    total_revenue    = payments.filter(status='success').aggregate(s=Sum('amount'))['s'] or 0
+    total_pending    = payments.filter(status='pending').aggregate(s=Sum('amount'))['s'] or 0
+    payments_count   = payments.count()
+    success_count    = payments.filter(status='success').count()
+
     context = {
-        'user_data': user_data,
-        'total_users': len(user_data),
-        'admin_username': ADMIN_USERNAME,
-        'admin_email': ADMIN_EMAIL,
-        'admin_password': ADMIN_PASSWORD,
+        'user_data':       user_data,
+        'total_users':     len(user_data),
+        'admin_username':  ADMIN_USERNAME,
+        'admin_email':     ADMIN_EMAIL,
+        'admin_password':  ADMIN_PASSWORD,
+        # payments
+        'payments':        payments,
+        'total_revenue':   total_revenue,
+        'total_pending':   total_pending,
+        'payments_count':  payments_count,
+        'success_count':   success_count,
     }
     return render(request, 'admin_panel.html', context)
 
