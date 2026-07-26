@@ -2,12 +2,16 @@
 Django settings for darkshadow project.
 """
 
+import os
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-cp577)0^wm^b3!u6*#x3$tt*&prekq#c@r^x$!ektp7&618fv6'
+SECRET_KEY = os.environ.get(
+    'SECRET_KEY',
+    'django-insecure-cp577)0^wm^b3!u6*#x3$tt*&prekq#c@r^x$!ektp7&618fv6'
+)
 
 DEBUG = False
 
@@ -18,20 +22,20 @@ ALLOWED_HOSTS = [
     '127.0.0.1',
 ]
 
-# ── CSRF trusted origins ──
+# CSRF trusted origins
 CSRF_TRUSTED_ORIGINS = [
     'https://darkshadow.website',
     'https://www.darkshadow.website',
 ]
 
-# ── Auth redirects — CRITICAL: stops Django defaulting to /admin/login/ ──
+# Auth redirects — prevents Django from redirecting to /admin/login/
 LOGIN_URL = '/login/'
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/'
 
 # Application definition
 INSTALLED_APPS = [
-    # django.contrib.admin removed — we use our own custom /ds-admin/ panel
+    # django.contrib.admin intentionally removed — using custom /ds-admin/
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
@@ -70,12 +74,13 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'darkshadow.wsgi.application'
 
-# Database
+# Database — uses DATABASE_URL env var on hosting, falls back to local SQLite
+import dj_database_url
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
+    'default': dj_database_url.config(
+        default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}",
+        conn_max_age=600,
+    )
 }
 
 # Password validation
@@ -92,14 +97,20 @@ TIME_ZONE = 'Asia/Kolkata'
 USE_I18N = True
 USE_TZ = True
 
-# Static files
+# Static files — WhiteNoise serves them in production
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
-STATICFILES_DIRS = [BASE_DIR / 'myapp' / 'static']
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
+# Only add STATICFILES_DIRS if the folder actually exists (avoids startup crash)
+_static_dir = BASE_DIR / 'myapp' / 'static'
+if _static_dir.exists():
+    STATICFILES_DIRS = [_static_dir]
+
+# Use simple (non-manifest) storage to avoid missing-file 500s during collectstatic
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# Session & CSRF cookie security (HTTPS)
+# Session & CSRF cookie security (HTTPS only)
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
