@@ -73,14 +73,14 @@ TEMPLATES = [
 WSGI_APPLICATION = 'darkshadow.wsgi.application'
 
 # Database
-# • On hosting: set DATABASE_URL env var → uses PostgreSQL (persistent)
-# • Fallback: SQLite at /tmp/db.sqlite3 (survives within same dyno session)
 DATABASES = {
-    'default': dj_database_url.config(
-        default='sqlite:////tmp/db.sqlite3',
-        conn_max_age=600,
-    )
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
+    }
 }
+
+
 
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
