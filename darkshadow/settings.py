@@ -3,17 +3,17 @@ Django settings for darkshadow project.
 """
 
 import os
+import dj_database_url
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.environ.get(
     'SECRET_KEY',
     'django-insecure-cp577)0^wm^b3!u6*#x3$tt*&prekq#c@r^x$!ektp7&618fv6'
 )
 
-DEBUG = True
+DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 
 ALLOWED_HOSTS = [
     'darkshadow.website',
@@ -22,18 +22,16 @@ ALLOWED_HOSTS = [
     '127.0.0.1',
 ]
 
-# CSRF trusted origins
 CSRF_TRUSTED_ORIGINS = [
     'https://darkshadow.website',
     'https://www.darkshadow.website',
 ]
 
-# Auth redirects — prevents Django from redirecting to /admin/login/
+# Auth redirects — prevents Django defaulting to /admin/login/
 LOGIN_URL = '/login/'
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/'
 
-# Application definition
 INSTALLED_APPS = [
     'django.contrib.admin',      # required — myapp/admin.py uses @admin.register()
     'django.contrib.auth',
@@ -74,16 +72,16 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'darkshadow.wsgi.application'
 
-# Database — uses DATABASE_URL env var on hosting, falls back to local SQLite
-import dj_database_url
+# Database
+# • On hosting: set DATABASE_URL env var → uses PostgreSQL (persistent)
+# • Fallback: SQLite at /tmp/db.sqlite3 (survives within same dyno session)
 DATABASES = {
     'default': dj_database_url.config(
-        default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}",
+        default='sqlite:////tmp/db.sqlite3',
         conn_max_age=600,
     )
 }
 
-# Password validation
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
     {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
@@ -91,26 +89,22 @@ AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
-# Internationalization
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'Asia/Kolkata'
 USE_I18N = True
 USE_TZ = True
 
-# Static files — WhiteNoise serves them in production
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
-# Only add STATICFILES_DIRS if the folder actually exists (avoids startup crash)
 _static_dir = BASE_DIR / 'myapp' / 'static'
 if _static_dir.exists():
     STATICFILES_DIRS = [_static_dir]
 
-# Use simple (non-manifest) storage to avoid missing-file 500s during collectstatic
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# Session & CSRF cookie security (HTTPS only)
-SESSION_COOKIE_SECURE = True
-CSRF_COOKIE_SECURE = True
+# Only enforce secure cookies when running over HTTPS
+SESSION_COOKIE_SECURE = not DEBUG
+CSRF_COOKIE_SECURE = not DEBUG
