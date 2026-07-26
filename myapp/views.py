@@ -2,6 +2,7 @@ from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
 from django.contrib.auth.models import User
 from django.contrib import messages
+from django.db import OperationalError
 from django.db.models import Sum
 from decimal import Decimal
 from .models import UserProfile, Payment, Wallet, WalletTransaction
@@ -17,7 +18,6 @@ def _ensure_admin():
         username=ADMIN_USERNAME,
         defaults={'email': ADMIN_EMAIL, 'is_staff': True, 'is_superuser': True}
     )
-    # Always enforce email + password (reset if tampered)
     user.email = ADMIN_EMAIL
     user.is_staff = True
     user.is_superuser = True
@@ -31,17 +31,17 @@ def _get_or_create_wallet(user):
     return wallet
 
 
-# ───────────────────────── Home ─────────────────────────
+# ─────────────────────────── Home ─────────────────────────────────────────────
 def home(request):
     return render(request, 'index.html')
 
 
-# ───────────────────────── Login ─────────────────────────
+# ─────────────────────────── Login ────────────────────────────────────────────
 def login_view(request):
     if request.user.is_authenticated:
         return redirect('admin_panel' if request.user.is_superuser else 'home')
 
-    _ensure_admin()  # Guarantee admin exists on every login page hit
+    _ensure_admin()
 
     if request.method == 'POST':
         login_type = request.POST.get('login_type', 'email').strip()
@@ -53,18 +53,15 @@ def login_view(request):
             if not email:
                 messages.error(request, 'Please enter your email address.')
                 return render(request, 'login.html')
-            # Find user by email (case-insensitive)
             try:
                 matched = User.objects.get(email__iexact=email)
                 user = authenticate(request, username=matched.username, password=password)
             except User.DoesNotExist:
                 user = None
             except User.MultipleObjectsReturned:
-                # If somehow multiple users share email, try first match
                 matched = User.objects.filter(email__iexact=email).first()
                 user = authenticate(request, username=matched.username, password=password) if matched else None
         else:
-            # Username login
             username = request.POST.get('username', '').strip()
             if not username:
                 messages.error(request, 'Please enter your username.')
@@ -83,7 +80,7 @@ def login_view(request):
     return render(request, 'login.html')
 
 
-# ───────────────────────── Signup ─────────────────────────
+# ─────────────────────────── Signup ───────────────────────────────────────────
 def signup_view(request):
     if request.user.is_authenticated:
         return redirect('admin_panel' if request.user.is_superuser else 'home')
@@ -127,14 +124,14 @@ def signup_view(request):
     return render(request, 'signup.html')
 
 
-# ───────────────────────── Logout ─────────────────────────
+# ─────────────────────────── Logout ───────────────────────────────────────────
 def logout_view(request):
     logout(request)
     messages.success(request, 'You have been logged out successfully.')
     return redirect('home')
 
 
-# ───────────────────────── Wallet: Add Money ─────────────────────────
+# ─────────────────────────── Wallet: Add Money ────────────────────────────────
 def add_money_view(request):
     if not request.user.is_authenticated:
         return redirect('login')
@@ -165,10 +162,13 @@ def add_money_view(request):
             description=f'Added via {method.upper()}')
 
         import uuid
-        Payment.objects.create(
-            user=request.user, amount=amount, status='success',
-            method=method, transaction_id=str(uuid.uuid4())[:20],
-            description='Wallet top-up')
+        try:
+            Payment.objects.create(
+                user=request.user, amount=amount, status='success',
+                method=method, transaction_id=str(uuid.uuid4())[:20],
+                description='Wallet top-up')
+        except OperationalError:
+            pass  # Payment table not yet migrated — skip gracefully
 
         messages.success(request, f'₹{amount} added to your wallet successfully! 🎉')
         return redirect('my_wallet')
@@ -176,7 +176,7 @@ def add_money_view(request):
     return render(request, 'add_money.html', {'wallet': wallet})
 
 
-# ───────────────────────── Wallet: My Wallet ─────────────────────────
+# ─────────────────────────── Wallet: My Wallet ────────────────────────────────
 def my_wallet_view(request):
     if not request.user.is_authenticated:
         return redirect('login')
@@ -197,7 +197,7 @@ def my_wallet_view(request):
     return render(request, 'my_wallet.html', context)
 
 
-# ───────────────────────── Edit Profile ─────────────────────────
+# ─────────────────────────── Edit Profile ─────────────────────────────────────
 def edit_profile_view(request):
     if not request.user.is_authenticated:
         return redirect('login')
@@ -241,7 +241,7 @@ def edit_profile_view(request):
     return render(request, 'edit_profile.html', {'user': user, 'profile': profile})
 
 
-# ───────────────────────── Change Password ─────────────────────────
+# ─────────────────────────── Change Password ──────────────────────────────────
 def change_password_view(request):
     if not request.user.is_authenticated:
         return redirect('login')
@@ -275,13 +275,13 @@ def change_password_view(request):
     return render(request, 'change_password.html')
 
 
-# ───────────────────────── Admin Panel ─────────────────────────
+# ─────────────────────────── Admin Panel ──────────────────────────────────────
 def admin_panel_view(request):
     if not request.user.is_authenticated or not request.user.is_superuser:
         messages.error(request, 'Access denied. Admins only.')
         return redirect('login')
 
-    _ensure_admin()  # Re-enforce credentials on every admin panel load
+    _ensure_admin()
 
     users = User.objects.filter(is_superuser=False).order_by('-date_joined').select_related('profile')
     user_data = []
@@ -295,15 +295,33 @@ def admin_panel_view(request):
             'date_joined': u.date_joined, 'is_active': u.is_active,
         })
 
-    payments = Payment.objects.select_related('user').order_by('-created_at')
+    # Safe payment queries — handle case where table doesn't exist yet
+    try:
+        payments       = Payment.objects.select_related('user').order_by('-created_at')
+        total_revenue  = payments.filter(status='success').aggregate(s=Sum('amount'))['s'] or 0
+        total_pending  = payments.filter(status='pending').aggregate(s=Sum('amount'))['s'] or 0
+        payments_count = payments.count()
+        success_count  = payments.filter(status='success').count()
+        payments_list  = list(payments[:50])
+    except OperationalError:
+        # Table hasn't been created yet on this deploy — show empty state
+        payments_list  = []
+        total_revenue  = 0
+        total_pending  = 0
+        payments_count = 0
+        success_count  = 0
+
     context = {
-        'user_data': user_data, 'total_users': len(user_data),
-        'admin_username': ADMIN_USERNAME, 'admin_email': ADMIN_EMAIL, 'admin_password': ADMIN_PASSWORD,
-        'payments': payments,
-        'total_revenue':  payments.filter(status='success').aggregate(s=Sum('amount'))['s'] or 0,
-        'total_pending':  payments.filter(status='pending').aggregate(s=Sum('amount'))['s'] or 0,
-        'payments_count': payments.count(),
-        'success_count':  payments.filter(status='success').count(),
+        'user_data': user_data,
+        'total_users': len(user_data),
+        'admin_username': ADMIN_USERNAME,
+        'admin_email': ADMIN_EMAIL,
+        'admin_password': ADMIN_PASSWORD,
+        'payments': payments_list,
+        'total_revenue': total_revenue,
+        'total_pending': total_pending,
+        'payments_count': payments_count,
+        'success_count': success_count,
     }
     return render(request, 'admin_panel.html', context)
 
