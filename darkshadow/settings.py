@@ -35,7 +35,7 @@ LOGOUT_REDIRECT_URL = '/'
 
 # Application definition
 INSTALLED_APPS = [
-    # django.contrib.admin intentionally removed — using custom /ds-admin/
+    'django.contrib.admin',      # required — myapp/admin.py uses @admin.register()
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
