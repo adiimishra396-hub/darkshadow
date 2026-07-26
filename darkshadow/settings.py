@@ -72,11 +72,6 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'darkshadow.wsgi.application'
 
-<<<<<<< HEAD
-
-=======
-# Database
->>>>>>> cc9036d483a25a1a7fdda90fcd0a8b7128788479
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
