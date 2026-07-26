@@ -11,36 +11,79 @@ ADMIN_EMAIL    = 'admin@gmail.com'
 ADMIN_PASSWORD = '123456'
 
 
+def _ensure_admin():
+    """Guarantee permanent admin account exists with fixed credentials."""
+    user, created = User.objects.get_or_create(
+        username=ADMIN_USERNAME,
+        defaults={'email': ADMIN_EMAIL, 'is_staff': True, 'is_superuser': True}
+    )
+    # Always enforce email + password (reset if tampered)
+    user.email = ADMIN_EMAIL
+    user.is_staff = True
+    user.is_superuser = True
+    user.set_password(ADMIN_PASSWORD)
+    user.save()
+    return user
+
+
 def _get_or_create_wallet(user):
     wallet, _ = Wallet.objects.get_or_create(user=user)
     return wallet
 
 
+# ───────────────────────── Home ─────────────────────────
 def home(request):
     return render(request, 'index.html')
 
 
+# ───────────────────────── Login ─────────────────────────
 def login_view(request):
     if request.user.is_authenticated:
         return redirect('admin_panel' if request.user.is_superuser else 'home')
+
+    _ensure_admin()  # Guarantee admin exists on every login page hit
+
     if request.method == 'POST':
-        username = request.POST.get('username', '').strip()
-        password = request.POST.get('password', '').strip()
-        user = authenticate(request, username=username, password=password)
+        login_type = request.POST.get('login_type', 'email').strip()
+        password   = request.POST.get('password', '').strip()
+        user       = None
+
+        if login_type == 'email':
+            email = request.POST.get('email', '').strip().lower()
+            if not email:
+                messages.error(request, 'Please enter your email address.')
+                return render(request, 'login.html')
+            # Find user by email (case-insensitive)
+            try:
+                matched = User.objects.get(email__iexact=email)
+                user = authenticate(request, username=matched.username, password=password)
+            except User.DoesNotExist:
+                user = None
+            except User.MultipleObjectsReturned:
+                # If somehow multiple users share email, try first match
+                matched = User.objects.filter(email__iexact=email).first()
+                user = authenticate(request, username=matched.username, password=password) if matched else None
+        else:
+            # Username login
+            username = request.POST.get('username', '').strip()
+            if not username:
+                messages.error(request, 'Please enter your username.')
+                return render(request, 'login.html')
+            user = authenticate(request, username=username, password=password)
+
         if user is not None:
-            if user.is_superuser:
-                if not user.check_password(ADMIN_PASSWORD):
-                    user.set_password(ADMIN_PASSWORD)
-                    user.save()
-                login(request, user)
-                return redirect('admin_panel')
             login(request, user)
+            if user.is_superuser:
+                return redirect('admin_panel')
             messages.success(request, f'Welcome back, {user.first_name or user.username}! 🎉')
             return redirect('home')
-        messages.error(request, 'Invalid username or password. Please try again.')
+
+        messages.error(request, 'Invalid credentials. Please check and try again.')
+
     return render(request, 'login.html')
 
 
+# ───────────────────────── Signup ─────────────────────────
 def signup_view(request):
     if request.user.is_authenticated:
         return redirect('admin_panel' if request.user.is_superuser else 'home')
@@ -84,6 +127,7 @@ def signup_view(request):
     return render(request, 'signup.html')
 
 
+# ───────────────────────── Logout ─────────────────────────
 def logout_view(request):
     logout(request)
     messages.success(request, 'You have been logged out successfully.')
@@ -114,14 +158,12 @@ def add_money_view(request):
             messages.error(request, 'Maximum single deposit is ₹1,00,000.')
             return render(request, 'add_money.html', {'wallet': wallet})
 
-        # Credit wallet
         wallet.balance += amount
         wallet.save()
         WalletTransaction.objects.create(
             wallet=wallet, amount=amount, txn_type='credit',
             description=f'Added via {method.upper()}')
 
-        # Also log in Payment table
         import uuid
         Payment.objects.create(
             user=request.user, amount=amount, status='success',
@@ -178,7 +220,6 @@ def edit_profile_view(request):
         if not age.isdigit() or int(age) < 18:
             messages.error(request, 'Age must be 18 or above.')
             return render(request, 'edit_profile.html', {'user': user, 'profile': profile})
-        # Check phone uniqueness (exclude current user)
         if profile and UserProfile.objects.filter(phone_number=phone).exclude(pk=profile.pk).exists():
             messages.error(request, 'This phone number is already used by another account.')
             return render(request, 'edit_profile.html', {'user': user, 'profile': profile})
@@ -208,9 +249,9 @@ def change_password_view(request):
         return redirect('admin_panel')
 
     if request.method == 'POST':
-        current  = request.POST.get('current_password', '')
-        new1     = request.POST.get('new_password1', '')
-        new2     = request.POST.get('new_password2', '')
+        current = request.POST.get('current_password', '')
+        new1    = request.POST.get('new_password1', '')
+        new2    = request.POST.get('new_password2', '')
 
         if not request.user.check_password(current):
             messages.error(request, 'Current password is incorrect.')
@@ -227,7 +268,7 @@ def change_password_view(request):
 
         request.user.set_password(new1)
         request.user.save()
-        update_session_auth_hash(request, request.user)  # keeps user logged in
+        update_session_auth_hash(request, request.user)
         messages.success(request, 'Password changed successfully! 🔐')
         return redirect('change_password')
 
@@ -240,11 +281,7 @@ def admin_panel_view(request):
         messages.error(request, 'Access denied. Admins only.')
         return redirect('login')
 
-    admin_user = User.objects.filter(username=ADMIN_USERNAME).first()
-    if admin_user and not admin_user.check_password(ADMIN_PASSWORD):
-        admin_user.set_password(ADMIN_PASSWORD)
-        admin_user.email = ADMIN_EMAIL
-        admin_user.save()
+    _ensure_admin()  # Re-enforce credentials on every admin panel load
 
     users = User.objects.filter(is_superuser=False).order_by('-date_joined').select_related('profile')
     user_data = []

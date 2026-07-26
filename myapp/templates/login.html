@@ -27,168 +27,56 @@
       radial-gradient(circle at 90% 80%, rgba(255,193,7,0.12) 0%, transparent 40%);
   }
   a{text-decoration:none;color:inherit;}
-
-  /* ===== Navbar ===== */
-  header{
-    border-bottom:1px solid rgba(255,255,255,0.08);
-    padding:20px 0;
-  }
+  header{border-bottom:1px solid rgba(255,255,255,0.08);padding:20px 0;}
   .wrap{max-width:1200px;margin:0 auto;padding:0 24px;}
   .nav-inner{display:flex;align-items:center;justify-content:space-between;}
-  .logo{
-    display:flex;align-items:center;gap:10px;
-    font-family:'Orbitron',sans-serif;font-weight:900;
-    font-size:20px;letter-spacing:2px;color:var(--white);
-  }
-  .logo .icon-box{
-    width:40px;height:40px;border-radius:10px;
-    background:linear-gradient(135deg,var(--blue-deep),var(--blue));
-    border:2px solid var(--gold-deep);
-    display:flex;align-items:center;justify-content:center;
-    font-size:18px;color:var(--gold);font-family:'Orbitron',sans-serif;font-weight:900;
-    box-shadow:0 4px 15px rgba(30,95,255,0.4);
-  }
+  .logo{display:flex;align-items:center;gap:10px;font-family:'Orbitron',sans-serif;font-weight:900;font-size:20px;letter-spacing:2px;color:var(--white);}
+  .logo .icon-box{width:40px;height:40px;border-radius:10px;background:linear-gradient(135deg,var(--blue-deep),var(--blue));border:2px solid var(--gold-deep);display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--gold);font-family:'Orbitron',sans-serif;font-weight:900;box-shadow:0 4px 15px rgba(30,95,255,0.4);}
   .logo .brand{display:flex;flex-direction:column;line-height:1.1;}
-  .logo .brand-name{
-    font-family:'Orbitron',sans-serif;font-weight:900;font-size:18px;letter-spacing:3px;
-    background:linear-gradient(135deg,#fff 0%,var(--gold) 100%);
-    -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
-  }
-  .logo .brand-tag{
-    font-family:'Rajdhani',sans-serif;font-weight:600;font-size:9px;
-    letter-spacing:2.5px;text-transform:uppercase;color:var(--gold-deep);
-    -webkit-text-fill-color:var(--gold-deep);
-  }
-  .nav-right a{
-    font-family:'Rajdhani',sans-serif;font-weight:700;font-size:13px;
-    letter-spacing:1px;text-transform:uppercase;color:#9FB0D8;
-    transition:color .2s;
-  }
+  .logo .brand-name{font-family:'Orbitron',sans-serif;font-weight:900;font-size:18px;letter-spacing:3px;background:linear-gradient(135deg,#fff 0%,var(--gold) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+  .logo .brand-tag{font-family:'Rajdhani',sans-serif;font-weight:600;font-size:9px;letter-spacing:2.5px;text-transform:uppercase;color:var(--gold-deep);-webkit-text-fill-color:var(--gold-deep);}
+  .nav-right a{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:13px;letter-spacing:1px;text-transform:uppercase;color:#9FB0D8;transition:color .2s;}
   .nav-right a:hover{color:var(--gold);}
   .nav-right span{color:#4a5568;margin:0 10px;}
-
-  /* ===== Main card ===== */
   .page-body{flex:1;display:flex;align-items:center;justify-content:center;padding:40px 24px;}
-  .auth-card{
-    background:rgba(255,255,255,0.04);
-    border:1px solid rgba(255,255,255,0.1);
-    backdrop-filter:blur(12px);
-    border-radius:20px;
-    padding:44px 48px;
-    width:100%;max-width:460px;
-    box-shadow:0 30px 80px rgba(0,0,0,0.5);
-  }
-  .auth-card .card-eyebrow{
-    font-family:'Rajdhani',sans-serif;font-weight:700;font-size:12px;
-    letter-spacing:2px;text-transform:uppercase;color:var(--gold);
-    margin-bottom:10px;display:block;
-  }
-  .auth-card h1{
-    font-family:'Orbitron',sans-serif;font-weight:900;font-size:26px;
-    letter-spacing:1px;margin-bottom:6px;color:var(--white);
-  }
-  .auth-card .sub{
-    font-size:13px;color:#9FB0D8;margin-bottom:32px;line-height:1.5;
-  }
+  .auth-card{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);backdrop-filter:blur(12px);border-radius:20px;padding:44px 48px;width:100%;max-width:460px;box-shadow:0 30px 80px rgba(0,0,0,0.5);}
+  .auth-card .card-eyebrow{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:12px;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-bottom:10px;display:block;}
+  .auth-card h1{font-family:'Orbitron',sans-serif;font-weight:900;font-size:26px;letter-spacing:1px;margin-bottom:6px;color:var(--white);}
+  .auth-card .sub{font-size:13px;color:#9FB0D8;margin-bottom:32px;line-height:1.5;}
   .auth-card .sub a{color:var(--gold);font-weight:600;}
   .auth-card .sub a:hover{text-decoration:underline;}
-
-  /* Messages */
   .messages{margin-bottom:20px;}
-  .msg{
-    padding:12px 16px;border-radius:8px;font-size:13px;margin-bottom:8px;
-    font-family:'Rajdhani',sans-serif;font-weight:600;letter-spacing:0.3px;
-  }
+  .msg{padding:12px 16px;border-radius:8px;font-size:13px;margin-bottom:8px;font-family:'Rajdhani',sans-serif;font-weight:600;letter-spacing:0.3px;}
   .msg.error{background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.4);color:#fca5a5;}
   .msg.success{background:rgba(34,197,94,0.15);border:1px solid rgba(34,197,94,0.4);color:#86efac;}
-
-  /* Form fields */
   .field{margin-bottom:20px;}
-  .field label{
-    display:block;font-family:'Rajdhani',sans-serif;font-weight:700;
-    font-size:12px;letter-spacing:1px;text-transform:uppercase;
-    color:#9FB0D8;margin-bottom:8px;
-  }
-  .field input{
-    width:100%;padding:14px 16px;
-    background:rgba(255,255,255,0.06);
-    border:1px solid rgba(255,255,255,0.12);
-    border-radius:10px;color:var(--white);
-    font-family:'Sora',sans-serif;font-size:14px;
-    transition:border-color .2s,box-shadow .2s;
-    outline:none;
-  }
-  .field input:focus{
-    border-color:var(--blue);
-    box-shadow:0 0 0 3px rgba(30,95,255,0.2);
-  }
+  .field label{display:block;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:12px;letter-spacing:1px;text-transform:uppercase;color:#9FB0D8;margin-bottom:8px;}
+  .field input{width:100%;padding:14px 16px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:10px;color:var(--white);font-family:'Sora',sans-serif;font-size:14px;transition:border-color .2s,box-shadow .2s;outline:none;}
+  .field input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(30,95,255,0.2);}
   .field input::placeholder{color:#4a5774;}
-
-  .field-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
-
-  /* Password toggle */
   .pwd-wrap{position:relative;}
   .pwd-wrap input{padding-right:44px;}
-  .pwd-eye{
-    position:absolute;right:14px;top:50%;transform:translateY(-50%);
-    background:none;border:none;color:#6B7690;cursor:pointer;font-size:16px;
-    line-height:1;
-  }
-
-  /* Forgot */
-  .forgot{
-    text-align:right;margin-top:-10px;margin-bottom:20px;
-  }
-  .forgot a{
-    font-family:'Rajdhani',sans-serif;font-weight:600;font-size:12px;
-    letter-spacing:0.5px;color:var(--gold);text-transform:uppercase;
-  }
+  .pwd-eye{position:absolute;right:14px;top:50%;transform:translateY(-50%);background:none;border:none;color:#6B7690;cursor:pointer;font-size:16px;line-height:1;}
+  .forgot{text-align:right;margin-top:-10px;margin-bottom:20px;}
+  .forgot a{font-family:'Rajdhani',sans-serif;font-weight:600;font-size:12px;letter-spacing:0.5px;color:var(--gold);text-transform:uppercase;}
   .forgot a:hover{text-decoration:underline;}
-
-  /* Submit btn */
-  .btn-submit{
-    width:100%;padding:15px;
-    background:linear-gradient(180deg, var(--gold) 0%, var(--gold-deep) 100%);
-    color:var(--navy);border:none;border-radius:10px;
-    font-family:'Orbitron',sans-serif;font-weight:700;font-size:14px;
-    letter-spacing:1px;text-transform:uppercase;
-    cursor:pointer;transition:transform .15s,box-shadow .15s;
-    box-shadow:0 8px 24px rgba(255,193,7,0.35);
-  }
+  /* Login type toggle tabs */
+  .login-tabs{display:flex;gap:0;margin-bottom:24px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:4px;}
+  .login-tab{flex:1;padding:9px;text-align:center;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:12px;letter-spacing:1px;text-transform:uppercase;color:#6B7690;cursor:pointer;border-radius:7px;transition:background .2s,color .2s;border:none;background:none;}
+  .login-tab.active{background:var(--blue);color:#fff;box-shadow:0 2px 8px rgba(30,95,255,0.4);}
+  .btn-submit{width:100%;padding:15px;background:linear-gradient(180deg,var(--gold) 0%,var(--gold-deep) 100%);color:var(--navy);border:none;border-radius:10px;font-family:'Orbitron',sans-serif;font-weight:700;font-size:14px;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:transform .15s,box-shadow .15s;box-shadow:0 8px 24px rgba(255,193,7,0.35);}
   .btn-submit:hover{transform:translateY(-2px);box-shadow:0 12px 30px rgba(255,193,7,0.5);}
-
-  .divider{
-    text-align:center;margin:24px 0;
-    color:#3a4a6a;font-size:12px;font-family:'Rajdhani',sans-serif;
-    position:relative;
-  }
-  .divider::before,.divider::after{
-    content:'';position:absolute;top:50%;width:42%;height:1px;
-    background:rgba(255,255,255,0.08);
-  }
+  .divider{text-align:center;margin:24px 0;color:#3a4a6a;font-size:12px;font-family:'Rajdhani',sans-serif;position:relative;}
+  .divider::before,.divider::after{content:'';position:absolute;top:50%;width:42%;height:1px;background:rgba(255,255,255,0.08);}
   .divider::before{left:0;} .divider::after{right:0;}
-
-  .signup-link{
-    text-align:center;font-size:13px;color:#9FB0D8;
-    font-family:'Rajdhani',sans-serif;font-weight:600;
-  }
+  .signup-link{text-align:center;font-size:13px;color:#9FB0D8;font-family:'Rajdhani',sans-serif;font-weight:600;}
   .signup-link a{color:var(--gold);} .signup-link a:hover{text-decoration:underline;}
-
-  /* Decorative glow orbs */
-  .glow-orb{
-    position:fixed;border-radius:50%;filter:blur(80px);pointer-events:none;z-index:-1;
-  }
+  .glow-orb{position:fixed;border-radius:50%;filter:blur(80px);pointer-events:none;z-index:-1;}
   .glow-orb.blue{width:400px;height:400px;background:rgba(30,95,255,0.15);top:-100px;left:-100px;}
   .glow-orb.gold{width:300px;height:300px;background:rgba(255,193,7,0.08);bottom:-80px;right:-60px;}
-
-  /* Footer */
   footer{padding:20px 24px;text-align:center;}
   footer p{font-size:11.5px;color:#3a4a6a;font-family:'Rajdhani',sans-serif;letter-spacing:0.5px;}
-
-  @media(max-width:520px){
-    .auth-card{padding:32px 24px;}
-    .auth-card h1{font-size:20px;}
-  }
+  @media(max-width:520px){.auth-card{padding:32px 24px;}.auth-card h1{font-size:20px;}}
 </style>
 </head>
 <body>
@@ -219,6 +107,12 @@
       <h1>Welcome Back</h1>
       <p class="sub">Don't have an account? <a href="/signup/">Create one free</a></p>
 
+      <!-- Login type tabs -->
+      <div class="login-tabs">
+        <button type="button" class="login-tab active" id="tabEmail" onclick="switchTab('email')">&#128231; Email</button>
+        <button type="button" class="login-tab" id="tabUsername" onclick="switchTab('username')">&#128100; Username</button>
+      </div>
+
       {% if messages %}
       <div class="messages">
         {% for message in messages %}
@@ -229,10 +123,17 @@
 
       <form method="POST" action="/login/">
         {% csrf_token %}
+        <!-- Hidden field to tell backend which login type -->
+        <input type="hidden" id="login_type" name="login_type" value="email">
 
-        <div class="field">
-          <label for="username">Username</label>
-          <input type="text" id="username" name="username" placeholder="Enter your username" required autocomplete="username">
+        <div class="field" id="fieldEmail">
+          <label for="email_input">Email Address</label>
+          <input type="email" id="email_input" name="email" placeholder="your@email.com" autocomplete="email">
+        </div>
+
+        <div class="field" id="fieldUsername" style="display:none;">
+          <label for="username_input">Username</label>
+          <input type="text" id="username_input" name="username" placeholder="Enter your username" autocomplete="username">
         </div>
 
         <div class="field">
@@ -247,7 +148,7 @@
           <a href="#">Forgot Password?</a>
         </div>
 
-        <button type="submit" class="btn-submit">Log In to Play</button>
+        <button type="submit" class="btn-submit">&#9889; Log In to Play</button>
       </form>
 
       <div class="divider">OR</div>
@@ -262,14 +163,26 @@
 <script>
   function togglePwd(fieldId, btn) {
     const inp = document.getElementById(fieldId);
-    if (inp.type === 'password') {
-      inp.type = 'text';
-      btn.innerHTML = '&#128064;';
-    } else {
-      inp.type = 'password';
-      btn.innerHTML = '&#128065;';
-    }
+    inp.type = inp.type === 'password' ? 'text' : 'password';
+    btn.innerHTML = inp.type === 'password' ? '&#128065;' : '&#128064;';
   }
+
+  function switchTab(type) {
+    const isEmail = type === 'email';
+    document.getElementById('login_type').value = type;
+    // Toggle tabs active state
+    document.getElementById('tabEmail').classList.toggle('active', isEmail);
+    document.getElementById('tabUsername').classList.toggle('active', !isEmail);
+    // Show/hide fields
+    document.getElementById('fieldEmail').style.display    = isEmail ? '' : 'none';
+    document.getElementById('fieldUsername').style.display = isEmail ? 'none' : '';
+    // Toggle required
+    document.getElementById('email_input').required    = isEmail;
+    document.getElementById('username_input').required = !isEmail;
+  }
+
+  // Init: email tab active by default
+  switchTab('email');
 </script>
 </body>
 </html>
