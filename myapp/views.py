@@ -19,6 +19,8 @@ def login_view(request):
         if user is not None:
             login(request, user)
             messages.success(request, f'Welcome back, {user.first_name or user.username}!')
+            if user.is_superuser:
+                return redirect('/admin/')
             return redirect('home')
         else:
             messages.error(request, 'Invalid username or password. Please try again.')
@@ -36,10 +38,9 @@ def signup_view(request):
         age = request.POST.get('age', '').strip()
         password1 = request.POST.get('password1')
         password2 = request.POST.get('password2')
-        above_18 = request.POST.get('above_18')  # checkbox
-        agree_terms = request.POST.get('agree_terms')  # checkbox
+        above_18 = request.POST.get('above_18')
+        agree_terms = request.POST.get('agree_terms')
 
-        # Validations
         if not above_18:
             messages.error(request, 'You must confirm you are 18 or above to register.')
             return render(request, 'signup.html', {'form_data': request.POST})
@@ -59,7 +60,6 @@ def signup_view(request):
             messages.error(request, 'You must be at least 18 years old to register.')
             return render(request, 'signup.html', {'form_data': request.POST})
 
-        # Create user
         user = User.objects.create_user(
             username=username,
             password=password1,
@@ -84,3 +84,8 @@ def logout_view(request):
     logout(request)
     messages.success(request, 'You have been logged out successfully.')
     return redirect('home')
+
+
+def admin_info_view(request):
+    """Internal reference page — remove before going live."""
+    return render(request, 'admin_login.html')

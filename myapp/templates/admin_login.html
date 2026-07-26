@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Access — Darkshadow</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Rajdhani:wght@600;700&family=Sora:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{--navy:#0A1A3C;--blue:#1E5FFF;--blue-deep:#0F2E82;--gold:#FFC107;--gold-deep:#E5A800;--dark:#060f28;}
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{
+    font-family:'Sora',sans-serif;
+    background:var(--dark);
+    min-height:100vh;
+    display:flex;align-items:center;justify-content:center;
+    background-image:
+      radial-gradient(circle at 15% 25%, rgba(30,95,255,0.2) 0%,transparent 40%),
+      radial-gradient(circle at 85% 75%, rgba(255,193,7,0.1) 0%,transparent 40%);
+  }
+  .card{
+    background:rgba(255,255,255,0.04);
+    border:1px solid rgba(255,255,255,0.1);
+    backdrop-filter:blur(14px);
+    border-radius:20px;
+    padding:48px;
+    width:100%;max-width:420px;
+    box-shadow:0 30px 80px rgba(0,0,0,0.55);
+    color:#fff;
+    text-align:center;
+  }
+  .shield{
+    width:64px;height:64px;margin:0 auto 20px;
+    background:linear-gradient(135deg,var(--blue-deep),var(--blue));
+    border:2px solid var(--gold-deep);
+    border-radius:14px;
+    display:flex;align-items:center;justify-content:center;
+    font-family:'Orbitron',sans-serif;font-weight:900;font-size:26px;color:var(--gold);
+    box-shadow:0 6px 20px rgba(30,95,255,0.45);
+  }
+  .eyebrow{
+    font-family:'Rajdhani',sans-serif;font-weight:700;font-size:11px;
+    letter-spacing:2.5px;text-transform:uppercase;color:var(--gold);margin-bottom:8px;
+  }
+  h1{
+    font-family:'Orbitron',sans-serif;font-weight:900;font-size:20px;
+    letter-spacing:1px;margin-bottom:28px;
+  }
+  .info-row{
+    background:rgba(255,255,255,0.06);
+    border:1px solid rgba(255,255,255,0.1);
+    border-radius:10px;
+    padding:14px 18px;
+    display:flex;justify-content:space-between;align-items:center;
+    margin-bottom:12px;
+    text-align:left;
+  }
+  .info-row .lbl{
+    font-family:'Rajdhani',sans-serif;font-weight:700;font-size:11px;
+    letter-spacing:1.5px;text-transform:uppercase;color:#9FB0D8;
+  }
+  .info-row .val{
+    font-size:14px;color:#fff;font-weight:600;letter-spacing:0.3px;
+  }
+  .copy-btn{
+    background:none;border:none;color:var(--gold);cursor:pointer;font-size:14px;
+    padding:4px;transition:transform .15s;
+  }
+  .copy-btn:hover{transform:scale(1.2);}
+  .btn{
+    display:block;width:100%;margin-top:24px;padding:14px;
+    background:linear-gradient(180deg,var(--gold) 0%,var(--gold-deep) 100%);
+    color:var(--navy);border:none;border-radius:10px;
+    font-family:'Orbitron',sans-serif;font-weight:700;font-size:13px;
+    letter-spacing:1px;text-transform:uppercase;cursor:pointer;
+    box-shadow:0 8px 24px rgba(255,193,7,0.35);
+    transition:transform .15s,box-shadow .15s;
+    text-decoration:none;
+  }
+  .btn:hover{transform:translateY(-2px);box-shadow:0 12px 30px rgba(255,193,7,0.5);}
+  .warn{
+    margin-top:16px;font-size:11.5px;color:#6B7690;
+    font-family:'Rajdhani',sans-serif;letter-spacing:0.3px;line-height:1.5;
+  }
+  .toast{
+    position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
+    background:var(--navy);color:var(--gold);padding:10px 20px;border-radius:8px;
+    font-family:'Rajdhani',sans-serif;font-weight:700;font-size:13px;
+    border:1px solid rgba(255,193,7,0.3);opacity:0;transition:opacity .3s;
+    pointer-events:none;
+  }
+  .toast.show{opacity:1;}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="shield">&#9881;</div>
+  <div class="eyebrow">&#128274; Restricted Access</div>
+  <h1>Admin Panel</h1>
+
+  <div class="info-row">
+    <div><div class="lbl">Username</div><div class="val">admin</div></div>
+    <button class="copy-btn" onclick="copy('admin')" title="Copy">&#128203;</button>
+  </div>
+  <div class="info-row">
+    <div><div class="lbl">Email</div><div class="val">admin@gmail.com</div></div>
+    <button class="copy-btn" onclick="copy('admin@gmail.com')" title="Copy">&#128203;</button>
+  </div>
+  <div class="info-row">
+    <div><div class="lbl">Password</div><div class="val">123456</div></div>
+    <button class="copy-btn" onclick="copy('123456')" title="Copy">&#128203;</button>
+  </div>
+
+  <a href="/admin/" class="btn">&#9889; Open Django Admin</a>
+  <p class="warn">&#9888; This page is for internal reference only. Remove before going live.</p>
+</div>
+<div class="toast" id="toast">Copied to clipboard!</div>
+<script>
+  function copy(val){
+    navigator.clipboard.writeText(val);
+    const t = document.getElementById('toast');
+    t.classList.add('show');
+    setTimeout(()=>t.classList.remove('show'), 2000);
+  }
+</script>
+</body>
+</html>
