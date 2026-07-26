@@ -145,6 +145,57 @@
   }
   .menu-toggle{display:none;background:none;border:none;font-size:26px;color:var(--navy);cursor:pointer;margin-left:8px;}
 
+  /* ===== User Greeting Dropdown ===== */
+  .user-greeting{
+    position:relative;
+    display:inline-flex;
+    align-items:center;
+  }
+  .user-greeting-btn{
+    font-family:'Rajdhani',sans-serif;font-weight:700;font-size:14px;
+    color:var(--navy);white-space:nowrap;
+    background:none;border:none;cursor:pointer;
+    display:inline-flex;align-items:center;gap:6px;
+    padding:6px 10px;border-radius:8px;
+    transition:background .2s;
+  }
+  .user-greeting-btn:hover{background:var(--blue-tint);}
+  .user-greeting-btn .chevron{
+    font-size:10px;color:var(--grey);
+    transition:transform .2s ease;
+    display:inline-block;
+  }
+  .user-greeting:hover .chevron{transform:rotate(180deg);}
+  .user-dropdown{
+    position:absolute;top:calc(100% + 8px);right:0;
+    background:var(--white);
+    border:1px solid var(--line);
+    border-radius:10px;
+    box-shadow:0 12px 32px rgba(10,26,60,0.14);
+    min-width:180px;
+    padding:6px 0;
+    opacity:0;pointer-events:none;
+    transform:translateY(6px);
+    transition:opacity .2s ease, transform .2s ease;
+    z-index:200;
+  }
+  .user-greeting:hover .user-dropdown{
+    opacity:1;pointer-events:all;transform:translateY(0);
+  }
+  .user-dropdown a{
+    display:flex;align-items:center;gap:10px;
+    padding:10px 16px;
+    font-family:'Rajdhani',sans-serif;font-weight:600;font-size:14px;
+    color:var(--navy);letter-spacing:0.3px;
+    transition:background .15s,color .15s;
+    white-space:nowrap;
+  }
+  .user-dropdown a:hover{background:var(--blue-tint);color:var(--blue);}
+  .user-dropdown a .dd-icon{font-size:15px;width:20px;text-align:center;}
+  .user-dropdown hr{
+    border:none;border-top:1px solid var(--line);margin:5px 0;
+  }
+
   /* ===== Hero ===== */
   .hero{
     position:relative;
@@ -543,7 +594,19 @@
       </ul>
       <div class="nav-cta">
         {% if user.is_authenticated %}
-          <span style="font-family:'Rajdhani',sans-serif;font-weight:700;font-size:14px;color:var(--navy);white-space:nowrap;">Hi, {{ user.first_name|default:user.username }} &#128075;</span>
+          <div class="user-greeting">
+            <button class="user-greeting-btn" type="button">
+              Hi, {{ user.first_name|default:user.username }} &#128075;
+              <span class="chevron">&#9660;</span>
+            </button>
+            <div class="user-dropdown">
+              <a href="#"><span class="dd-icon">&#128176;</span> Add Money</a>
+              <a href="#"><span class="dd-icon">&#128179;</span> My Wallet</a>
+              <hr>
+              <a href="#"><span class="dd-icon">&#9998;</span> Edit Profile</a>
+              <a href="#"><span class="dd-icon">&#128274;</span> Change Password</a>
+            </div>
+          </div>
           <a href="/logout/" class="btn btn-outline btn-small">Log Out</a>
         {% else %}
           <a href="/login/" class="btn btn-outline btn-small">Log In</a>
