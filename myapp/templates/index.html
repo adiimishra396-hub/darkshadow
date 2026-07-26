@@ -88,7 +88,6 @@
     background:var(--white);
     border-bottom:1px solid var(--line);
   }
-  /* Header gets its own wider side padding so nothing touches the edges */
   header .wrap{
     padding:0 40px;
   }
@@ -135,7 +134,7 @@
   }
   .nav-links a:hover::after{width:100%;}
 
-  /* ===== Nav CTA — more space & fixed sizes ===== */
+  /* ===== Nav CTA ===== */
   .nav-cta{display:flex;gap:12px;align-items:center;flex-shrink:0;}
   .btn-small{
     padding:11px 28px;
@@ -154,44 +153,82 @@
   .user-greeting-btn{
     font-family:'Rajdhani',sans-serif;font-weight:700;font-size:14px;
     color:var(--navy);white-space:nowrap;
-    background:none;border:none;cursor:pointer;
-    display:inline-flex;align-items:center;gap:6px;
-    padding:6px 10px;border-radius:8px;
-    transition:background .2s;
+    background:none;border:1px solid var(--line);cursor:pointer;
+    display:inline-flex;align-items:center;gap:8px;
+    padding:7px 12px 7px 8px;border-radius:50px;
+    transition:background .2s, border-color .2s, box-shadow .2s;
+    user-select:none;
   }
-  .user-greeting-btn:hover{background:var(--blue-tint);}
-  .user-greeting-btn .chevron{
-    font-size:10px;color:var(--grey);
-    transition:transform .2s ease;
+  .user-greeting-btn:hover,
+  .user-greeting.open .user-greeting-btn{
+    background:var(--blue-tint);
+    border-color:var(--blue);
+    box-shadow:0 2px 10px rgba(30,95,255,0.12);
+  }
+  /* Avatar circle */
+  .user-avatar{
+    width:28px;height:28px;border-radius:50%;
+    background:linear-gradient(135deg,var(--blue-deep),var(--blue));
+    color:var(--white);font-family:'Rajdhani',sans-serif;font-weight:700;font-size:13px;
+    display:inline-flex;align-items:center;justify-content:center;
+    flex-shrink:0;
+  }
+  /* Chevron arrow */
+  .chevron{
     display:inline-block;
+    width:0;height:0;
+    border-left:4px solid transparent;
+    border-right:4px solid transparent;
+    border-top:5px solid var(--grey);
+    transition:transform .2s ease;
+    flex-shrink:0;
+    margin-left:2px;
   }
-  .user-greeting:hover .chevron{transform:rotate(180deg);}
+  .user-greeting.open .chevron{
+    transform:rotate(180deg);
+  }
+
+  /* Dropdown panel */
   .user-dropdown{
-    position:absolute;top:calc(100% + 8px);right:0;
+    position:absolute;
+    top:calc(100% + 6px);
+    right:0;
     background:var(--white);
     border:1px solid var(--line);
-    border-radius:10px;
-    box-shadow:0 12px 32px rgba(10,26,60,0.14);
-    min-width:180px;
+    border-radius:12px;
+    box-shadow:0 16px 40px rgba(10,26,60,0.16);
+    min-width:190px;
     padding:6px 0;
-    opacity:0;pointer-events:none;
-    transform:translateY(6px);
-    transition:opacity .2s ease, transform .2s ease;
-    z-index:200;
+    /* hidden by default */
+    opacity:0;
+    pointer-events:none;
+    transform:translateY(8px) scale(0.97);
+    transition:opacity .18s ease, transform .18s ease;
+    z-index:500;
+    transform-origin:top right;
   }
-  .user-greeting:hover .user-dropdown{
-    opacity:1;pointer-events:all;transform:translateY(0);
+  /* visible state toggled by JS */
+  .user-greeting.open .user-dropdown{
+    opacity:1;
+    pointer-events:all;
+    transform:translateY(0) scale(1);
   }
   .user-dropdown a{
     display:flex;align-items:center;gap:10px;
-    padding:10px 16px;
+    padding:11px 16px;
     font-family:'Rajdhani',sans-serif;font-weight:600;font-size:14px;
     color:var(--navy);letter-spacing:0.3px;
     transition:background .15s,color .15s;
     white-space:nowrap;
   }
-  .user-dropdown a:hover{background:var(--blue-tint);color:var(--blue);}
-  .user-dropdown a .dd-icon{font-size:15px;width:20px;text-align:center;}
+  .user-dropdown a:hover{
+    background:var(--blue-tint);
+    color:var(--blue);
+  }
+  .user-dropdown a .dd-icon{
+    font-size:15px;width:22px;text-align:center;
+    flex-shrink:0;
+  }
   .user-dropdown hr{
     border:none;border-top:1px solid var(--line);margin:5px 0;
   }
@@ -594,17 +631,18 @@
       </ul>
       <div class="nav-cta">
         {% if user.is_authenticated %}
-          <div class="user-greeting">
-            <button class="user-greeting-btn" type="button">
+          <div class="user-greeting" id="userGreeting">
+            <button class="user-greeting-btn" id="userGreetingBtn" type="button" aria-haspopup="true" aria-expanded="false">
+              <span class="user-avatar" id="userAvatarInitial">{{ user.first_name|default:user.username|slice:":1"|upper }}</span>
               Hi, {{ user.first_name|default:user.username }} &#128075;
-              <span class="chevron">&#9660;</span>
+              <span class="chevron"></span>
             </button>
-            <div class="user-dropdown">
-              <a href="#"><span class="dd-icon">&#128176;</span> Add Money</a>
-              <a href="#"><span class="dd-icon">&#128179;</span> My Wallet</a>
+            <div class="user-dropdown" id="userDropdown" role="menu">
+              <a href="#" role="menuitem"><span class="dd-icon">&#128176;</span> Add Money</a>
+              <a href="#" role="menuitem"><span class="dd-icon">&#128179;</span> My Wallet</a>
               <hr>
-              <a href="#"><span class="dd-icon">&#9998;</span> Edit Profile</a>
-              <a href="#"><span class="dd-icon">&#128274;</span> Change Password</a>
+              <a href="#" role="menuitem"><span class="dd-icon">&#9998;</span> Edit Profile</a>
+              <a href="#" role="menuitem"><span class="dd-icon">&#128274;</span> Change Password</a>
             </div>
           </div>
           <a href="/logout/" class="btn btn-outline btn-small">Log Out</a>
@@ -842,16 +880,21 @@
   </footer>
 
 <script>
+  /* ===== Mobile menu ===== */
   const menuToggle = document.querySelector('.menu-toggle');
   const navLinks = document.querySelector('.nav-links');
   if(menuToggle){
     menuToggle.addEventListener('click', ()=>{ navLinks.classList.toggle('open'); });
   }
+
+  /* ===== Scroll reveal ===== */
   const revealEls = document.querySelectorAll('.reveal');
   const observer = new IntersectionObserver((entries)=>{
     entries.forEach(entry=>{ if(entry.isIntersecting) entry.target.classList.add('in-view'); });
   }, {threshold:0.1});
   revealEls.forEach(el=>observer.observe(el));
+
+  /* ===== Welcome popup ===== */
   function closePopup(){
     document.getElementById('welcomePopup').classList.remove('active');
     sessionStorage.setItem('popupSeen','1');
@@ -866,6 +909,38 @@
   document.getElementById('welcomePopup').addEventListener('click', function(e){
     if(e.target === this) closePopup();
   });
+
+  /* ===== User greeting dropdown (click-toggle) ===== */
+  (function(){
+    var wrap = document.getElementById('userGreeting');
+    var btn  = document.getElementById('userGreetingBtn');
+    if(!wrap || !btn) return;
+
+    function openMenu(){
+      wrap.classList.add('open');
+      btn.setAttribute('aria-expanded','true');
+    }
+    function closeMenu(){
+      wrap.classList.remove('open');
+      btn.setAttribute('aria-expanded','false');
+    }
+    function toggleMenu(e){
+      e.stopPropagation();
+      wrap.classList.contains('open') ? closeMenu() : openMenu();
+    }
+
+    btn.addEventListener('click', toggleMenu);
+
+    /* Close when clicking anywhere outside */
+    document.addEventListener('click', function(e){
+      if(!wrap.contains(e.target)) closeMenu();
+    });
+
+    /* Close on Escape key */
+    document.addEventListener('keydown', function(e){
+      if(e.key === 'Escape') closeMenu();
+    });
+  })();
 </script>
 </body>
 </html>
