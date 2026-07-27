@@ -73,15 +73,18 @@
   .sb-nav a.active{border-left:3px solid var(--gold);padding-left:11px;}
   .sb-nav .icon{font-size:16px;width:20px;text-align:center;}
   .sb-divider{border:none;border-top:1px solid var(--line);margin:12px 20px;}
-  .sb-logout{padding:0 12px;}
-  .sb-logout a{
+  .sb-bottom{padding:0 12px;display:flex;flex-direction:column;gap:4px;}
+  .sb-bottom a{
     display:flex;align-items:center;gap:10px;
     padding:12px 14px;border-radius:10px;
     font-family:'Rajdhani',sans-serif;font-weight:700;
     font-size:14px;letter-spacing:0.5px;text-transform:uppercase;
-    color:#ef4444;transition:background .2s;
+    transition:background .2s;
   }
-  .sb-logout a:hover{background:rgba(239,68,68,0.1);}
+  .sb-home{color:var(--grey);}
+  .sb-home:hover{background:rgba(255,255,255,0.06);color:var(--white);}
+  .sb-logout{color:#ef4444;}
+  .sb-logout:hover{background:rgba(239,68,68,0.1);color:#ef4444;}
 
   /* ===== Main ===== */
   .main{margin-left:240px;flex:1;padding:32px 36px;}
@@ -106,6 +109,16 @@
     font-family:'Rajdhani',sans-serif;font-weight:700;
     font-size:13px;letter-spacing:0.5px;color:var(--grey);
   }
+
+  /* Messages */
+  .msgs{margin-bottom:20px;}
+  .msg{
+    padding:12px 18px;border-radius:10px;margin-bottom:8px;
+    font-family:'Rajdhani',sans-serif;font-weight:600;font-size:14px;
+    display:flex;align-items:center;gap:8px;
+  }
+  .msg.success{background:rgba(34,197,94,0.12);border:1px solid rgba(34,197,94,0.25);color:#86efac;}
+  .msg.error{background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.25);color:#fca5a5;}
 
   /* Stats cards */
   .stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:32px;}
@@ -204,10 +217,10 @@
     border-radius:16px;overflow:hidden;
     margin-bottom:32px;
   }
-  /* Signups table */
+  /* Signups table — added Actions column */
   .tbl-head-signups{
     display:grid;
-    grid-template-columns: 40px 1.4fr 1fr 60px 1fr 90px;
+    grid-template-columns: 40px 1.4fr 1fr 60px 1fr 90px 160px;
     padding:12px 20px;
     background:rgba(255,255,255,0.06);
     font-family:'Rajdhani',sans-serif;font-weight:700;
@@ -216,7 +229,7 @@
   }
   .tbl-row-signups{
     display:grid;
-    grid-template-columns: 40px 1.4fr 1fr 60px 1fr 90px;
+    grid-template-columns: 40px 1.4fr 1fr 60px 1fr 90px 160px;
     padding:14px 20px;
     font-size:13.5px;
     border-bottom:1px solid var(--line);
@@ -280,6 +293,34 @@
     font-size:11px;letter-spacing:0.5px;text-transform:uppercase;
   }
 
+  /* Action buttons */
+  .action-btns{display:flex;gap:6px;flex-wrap:wrap;}
+  .btn-toggle{
+    padding:5px 10px;border-radius:6px;border:none;cursor:pointer;
+    font-family:'Rajdhani',sans-serif;font-weight:700;
+    font-size:11px;letter-spacing:0.5px;text-transform:uppercase;
+    transition:background .2s;
+  }
+  .btn-activate{
+    background:rgba(34,197,94,0.15);color:#86efac;
+    border:1px solid rgba(34,197,94,0.3);
+  }
+  .btn-activate:hover{background:rgba(34,197,94,0.28);}
+  .btn-deactivate{
+    background:rgba(249,115,22,0.15);color:#fdba74;
+    border:1px solid rgba(249,115,22,0.3);
+  }
+  .btn-deactivate:hover{background:rgba(249,115,22,0.28);}
+  .btn-delete{
+    padding:5px 10px;border-radius:6px;border:none;cursor:pointer;
+    font-family:'Rajdhani',sans-serif;font-weight:700;
+    font-size:11px;letter-spacing:0.5px;text-transform:uppercase;
+    background:rgba(239,68,68,0.15);color:#fca5a5;
+    border:1px solid rgba(239,68,68,0.3);
+    transition:background .2s;
+  }
+  .btn-delete:hover{background:rgba(239,68,68,0.28);}
+
   .empty-state{
     text-align:center;padding:60px 20px;
     color:var(--grey);
@@ -288,9 +329,44 @@
   }
   .empty-state .empty-icon{font-size:36px;margin-bottom:12px;opacity:0.5;}
 
-  /* ===== Tab panel ===== */
+  /* Tab panel */
   .tab-content{display:none;}
   .tab-content.active{display:block;}
+
+  /* Modal overlay */
+  .modal-overlay{
+    display:none;position:fixed;inset:0;
+    background:rgba(0,0,0,0.7);z-index:200;
+    align-items:center;justify-content:center;
+  }
+  .modal-overlay.show{display:flex;}
+  .modal-box{
+    background:#0d1e45;border:1px solid rgba(239,68,68,0.4);
+    border-radius:16px;padding:32px;max-width:400px;width:90%;
+    text-align:center;
+  }
+  .modal-box .modal-icon{font-size:36px;margin-bottom:12px;}
+  .modal-box h3{
+    font-family:'Rajdhani',sans-serif;font-weight:700;
+    font-size:18px;letter-spacing:1px;color:var(--white);
+    margin-bottom:8px;
+  }
+  .modal-box p{font-size:13px;color:var(--grey);margin-bottom:24px;line-height:1.6;}
+  .modal-actions{display:flex;gap:12px;justify-content:center;}
+  .modal-cancel{
+    padding:10px 24px;border-radius:8px;
+    background:rgba(255,255,255,0.08);border:1px solid var(--line);
+    color:var(--grey);font-family:'Rajdhani',sans-serif;font-weight:700;
+    font-size:13px;cursor:pointer;transition:background .2s;
+  }
+  .modal-cancel:hover{background:rgba(255,255,255,0.14);}
+  .modal-confirm{
+    padding:10px 24px;border-radius:8px;
+    background:rgba(239,68,68,0.2);border:1px solid rgba(239,68,68,0.4);
+    color:#fca5a5;font-family:'Rajdhani',sans-serif;font-weight:700;
+    font-size:13px;cursor:pointer;transition:background .2s;
+  }
+  .modal-confirm:hover{background:rgba(239,68,68,0.35);}
 
   /* Toast */
   .toast{
@@ -306,15 +382,15 @@
 
   @media(max-width:900px){
     .sidebar{width:60px;}
-    .sb-logo .brand,.sb-nav a span,.sb-logout a span{display:none;}
+    .sb-logo .brand,.sb-nav a span,.sb-bottom a span{display:none;}
     .sb-logo{padding:0 12px 20px;justify-content:center;}
     .main{margin-left:60px;padding:24px 20px;}
     .stats-row{grid-template-columns:1fr 1fr;}
     .cred-grid{grid-template-columns:1fr;}
     .tbl-head-signups,.tbl-row-signups{
-      grid-template-columns:40px 1fr 1fr 90px;
+      grid-template-columns:40px 1fr 1fr 90px 120px;
     }
-    .tbl-row-signups .age-val,.tbl-row-signups .joined{display:none;}
+    .tbl-row-signups .age-val,.tbl-row-signups .joined,.tbl-row-signups .phone{display:none;}
     .tbl-head-payments,.tbl-row-payments{
       grid-template-columns:40px 1fr 1fr 90px;
     }
@@ -346,8 +422,12 @@
       </a>
     </nav>
     <hr class="sb-divider">
-    <div class="sb-logout">
-      <a href="/logout/">
+    <div class="sb-bottom">
+      <a href="/" class="sb-home">
+        <span class="icon">&#127968;</span>
+        <span>Home</span>
+      </a>
+      <a href="/logout/" class="sb-logout">
         <span class="icon">&#128682;</span>
         <span>Log Out</span>
       </a>
@@ -366,6 +446,15 @@
       </div>
     </div>
 
+    <!-- Django messages -->
+    {% if messages %}
+    <div class="msgs">
+      {% for message in messages %}
+      <div class="msg {{ message.tags }}">{{ message }}</div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
     <!-- =================== SIGNUPS TAB =================== -->
     <div id="tab-signups" class="tab-content active">
 
@@ -378,7 +467,7 @@
         </div>
         <div class="stat-card">
           <div class="sc-label">Active Users</div>
-          <div class="sc-val">{% with 0 as cnt %}{% for u in user_data %}{% if u.is_active %}{% with cnt|add:1 as cnt %}{% endwith %}{% endif %}{% endfor %}{{ user_data|length }}{% endwith %}</div>
+          <div class="sc-val">{{ user_data|length }}</div>
           <div class="sc-sub">Currently active</div>
         </div>
         <div class="stat-card">
@@ -441,13 +530,14 @@
             <div>Age</div>
             <div>Joined</div>
             <div>Status</div>
+            <div>Actions</div>
           </div>
           {% for u in user_data %}
           <div class="tbl-row-signups">
             <div class="idx">{{ forloop.counter }}</div>
             <div>
               <div class="uname">{{ u.first_name }} {{ u.last_name }}</div>
-              <div style="font-size:12px;color:var(--grey);">@{{ u.username }}</div>
+              <div style="font-size:12px;color:var(--grey);">{{ u.email }}</div>
             </div>
             <div class="phone">{{ u.phone }}</div>
             <div class="age-val">{{ u.age }}</div>
@@ -458,6 +548,19 @@
               {% else %}
               <span class="status-badge inactive"><span class="dot"></span>Inactive</span>
               {% endif %}
+            </div>
+            <div class="action-btns">
+              <!-- Toggle Active / Inactive -->
+              <form method="post" action="/ds-admin/toggle-user/{{ u.id }}/" style="display:inline;">
+                {% csrf_token %}
+                {% if u.is_active %}
+                <button type="submit" class="btn-toggle btn-deactivate">Ban</button>
+                {% else %}
+                <button type="submit" class="btn-toggle btn-activate">Unban</button>
+                {% endif %}
+              </form>
+              <!-- Delete -->
+              <button class="btn-delete" onclick="confirmDelete({{ u.id }}, '{{ u.username }}')">Delete</button>
             </div>
           </div>
           {% endfor %}
@@ -546,23 +649,34 @@
   </main>
 </div>
 
+<!-- Delete Confirmation Modal -->
+<div class="modal-overlay" id="deleteModal">
+  <div class="modal-box">
+    <div class="modal-icon">&#9888;&#65039;</div>
+    <h3>Delete User?</h3>
+    <p id="deleteModalMsg">This will permanently delete the user and all their data. This action cannot be undone.</p>
+    <div class="modal-actions">
+      <button class="modal-cancel" onclick="closeModal()">Cancel</button>
+      <form id="deleteForm" method="post" style="display:inline;">
+        {% csrf_token %}
+        <button type="submit" class="modal-confirm">Yes, Delete</button>
+      </form>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast">&#10003; Copied!</div>
 
 <script>
   /* ===== Tab switcher ===== */
   function switchTab(name, el) {
-    // Hide all tab content
     document.querySelectorAll('.tab-content').forEach(function(t){ t.classList.remove('active'); });
-    // Remove active from all sidebar links
     document.querySelectorAll('.sb-nav a').forEach(function(a){ a.classList.remove('active'); });
-    // Show selected tab
     document.getElementById('tab-' + name).classList.add('active');
     el.classList.add('active');
-    // Persist in sessionStorage so refresh keeps tab
     sessionStorage.setItem('adminTab', name);
   }
 
-  // Restore last active tab on page load
   (function(){
     var saved = sessionStorage.getItem('adminTab');
     if(saved && saved !== 'signups'){
@@ -578,6 +692,21 @@
     t.classList.add('show');
     setTimeout(function(){ t.classList.remove('show'); }, 2000);
   }
+
+  /* ===== Delete modal ===== */
+  function confirmDelete(userId, username) {
+    document.getElementById('deleteModalMsg').textContent =
+      'This will permanently delete @' + username + ' and all their data. This action cannot be undone.';
+    document.getElementById('deleteForm').action = '/ds-admin/delete-user/' + userId + '/';
+    document.getElementById('deleteModal').classList.add('show');
+  }
+  function closeModal() {
+    document.getElementById('deleteModal').classList.remove('show');
+  }
+  // Close modal on overlay click
+  document.getElementById('deleteModal').addEventListener('click', function(e){
+    if(e.target === this) closeModal();
+  });
 </script>
 </body>
 </html>

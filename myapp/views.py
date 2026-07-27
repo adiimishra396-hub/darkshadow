@@ -1,4 +1,4 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
 from django.contrib.auth.models import User
 from django.contrib import messages
@@ -29,7 +29,6 @@ def _ensure_admin():
             'first_name': 'Admin',
         }
     )
-    # Always keep meta fields in sync
     changed = False
     if user.email != ADMIN_EMAIL:
         user.email = ADMIN_EMAIL
@@ -46,7 +45,6 @@ def _ensure_admin():
     if user.first_name != 'Admin':
         user.first_name = 'Admin'
         changed = True
-    # Only reset password (and invalidate sessions) if it is actually wrong
     if not user.check_password(ADMIN_PASSWORD):
         user.set_password(ADMIN_PASSWORD)
         changed = True
@@ -70,8 +68,6 @@ def login_view(request):
     if request.user.is_authenticated:
         return redirect('home')
 
-    # Ensure admin exists but DO NOT call this on every POST —
-    # only on GET so it never fires mid-session while admin is logged in
     if request.method == 'GET':
         _ensure_admin()
 
@@ -388,6 +384,33 @@ def admin_panel_view(request):
         'payments_count':  payments_count,
         'success_count':   success_count,
     })
+
+
+# ──────────────────────────────────────────── Admin: Toggle User Active ───────
+def toggle_user_active(request, user_id):
+    if not request.user.is_authenticated or not request.user.is_superuser:
+        messages.error(request, 'Access denied.')
+        return redirect('login')
+    if request.method == 'POST':
+        u = get_object_or_404(User, pk=user_id, is_superuser=False)
+        u.is_active = not u.is_active
+        u.save()
+        state = 'activated' if u.is_active else 'deactivated'
+        messages.success(request, f'User @{u.username} has been {state}.')
+    return redirect('admin_panel')
+
+
+# ──────────────────────────────────────────── Admin: Delete User ──────────────
+def delete_user(request, user_id):
+    if not request.user.is_authenticated or not request.user.is_superuser:
+        messages.error(request, 'Access denied.')
+        return redirect('login')
+    if request.method == 'POST':
+        u = get_object_or_404(User, pk=user_id, is_superuser=False)
+        username = u.username
+        u.delete()
+        messages.success(request, f'User @{username} has been permanently deleted.')
+    return redirect('admin_panel')
 
 
 def admin_info_view(request):
