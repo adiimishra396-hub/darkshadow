@@ -14,11 +14,6 @@ ADMIN_PASSWORD = '123456'
 
 
 def _ensure_admin():
-    """
-    Guarantee the permanent admin account exists.
-    Only calls set_password (which invalidates sessions) when the
-    password is actually wrong — NOT on every request.
-    """
     user, created = User.objects.get_or_create(
         username=ADMIN_USERNAME,
         defaults={
@@ -30,24 +25,13 @@ def _ensure_admin():
         }
     )
     changed = False
-    if user.email != ADMIN_EMAIL:
-        user.email = ADMIN_EMAIL
-        changed = True
-    if not user.is_staff:
-        user.is_staff = True
-        changed = True
-    if not user.is_superuser:
-        user.is_superuser = True
-        changed = True
-    if not user.is_active:
-        user.is_active = True
-        changed = True
-    if user.first_name != 'Admin':
-        user.first_name = 'Admin'
-        changed = True
+    if user.email != ADMIN_EMAIL:      user.email = ADMIN_EMAIL;           changed = True
+    if not user.is_staff:              user.is_staff = True;               changed = True
+    if not user.is_superuser:          user.is_superuser = True;           changed = True
+    if not user.is_active:             user.is_active = True;              changed = True
+    if user.first_name != 'Admin':     user.first_name = 'Admin';          changed = True
     if not user.check_password(ADMIN_PASSWORD):
-        user.set_password(ADMIN_PASSWORD)
-        changed = True
+        user.set_password(ADMIN_PASSWORD); changed = True
     if changed:
         user.save()
     return user
@@ -58,28 +42,24 @@ def _get_or_create_wallet(user):
     return wallet
 
 
-# ──────────────────────────────────────────── Home ────────────────────────────
+# ── Home ─────────────────────────────────────────────────────────────────────────────────
 def home(request):
     return render(request, 'index.html')
 
 
-# ──────────────────────────────────────────── Login ───────────────────────────
+# ── Login ──────────────────────────────────────────────────────────────────────────────
 def login_view(request):
     if request.user.is_authenticated:
         return redirect('home')
-
     if request.method == 'GET':
         _ensure_admin()
-
     if request.method == 'POST':
         email    = request.POST.get('email', '').strip().lower()
         password = request.POST.get('password', '').strip()
         user     = None
-
         if not email:
             messages.error(request, 'Please enter your email address.')
             return render(request, 'login.html')
-
         try:
             matched = User.objects.get(email__iexact=email)
             user = authenticate(request, username=matched.username, password=password)
@@ -88,7 +68,6 @@ def login_view(request):
         except User.MultipleObjectsReturned:
             matched = User.objects.filter(email__iexact=email).first()
             user = authenticate(request, username=matched.username, password=password) if matched else None
-
         if user is not None:
             if not user.is_active:
                 messages.error(request, 'Your account has been disabled. Please contact support.')
@@ -100,17 +79,14 @@ def login_view(request):
                 name = user.first_name or user.username
                 messages.success(request, f'Welcome back, {name}! 🎉 You are now logged in.')
             return redirect('home')
-
         messages.error(request, 'Invalid credentials. Please check your email and password.')
-
     return render(request, 'login.html')
 
 
-# ──────────────────────────────────────────── Signup ──────────────────────────
+# ── Signup ────────────────────────────────────────────────────────────────────────────
 def signup_view(request):
     if request.user.is_authenticated:
         return redirect('home')
-
     if request.method == 'POST':
         first_name  = request.POST.get('first_name', '').strip()
         last_name   = request.POST.get('last_name', '').strip()
@@ -121,7 +97,6 @@ def signup_view(request):
         password2   = request.POST.get('password2', '')
         above_18    = request.POST.get('above_18')
         agree_terms = request.POST.get('agree_terms')
-
         if not first_name:
             messages.error(request, 'First name is required.')
             return render(request, 'signup.html', {'form_data': request.POST})
@@ -149,38 +124,27 @@ def signup_view(request):
         if phone and UserProfile.objects.filter(phone_number=phone).exists():
             messages.error(request, 'This phone number is already registered.')
             return render(request, 'signup.html', {'form_data': request.POST})
-
         base_username = email.split('@')[0]
         username = base_username
         counter = 1
         while User.objects.filter(username__iexact=username).exists():
             username = f'{base_username}{counter}'
             counter += 1
-
         user = User.objects.create_user(
-            username=username,
-            password=password1,
-            email=email,
-            first_name=first_name,
-            last_name=last_name,
+            username=username, password=password1, email=email,
+            first_name=first_name, last_name=last_name,
         )
         UserProfile.objects.create(
-            user=user,
-            last_name=last_name,
-            age=int(age),
-            phone_number=phone,
-            is_above_18=True,
-            agreed_to_terms=True,
+            user=user, last_name=last_name, age=int(age),
+            phone_number=phone, is_above_18=True, agreed_to_terms=True,
         )
         Wallet.objects.create(user=user)
-
         messages.success(request, f'Account created successfully! Welcome to Darkshadow, {first_name}! 🎉 Please log in.')
         return redirect('login')
-
     return render(request, 'signup.html')
 
 
-# ──────────────────────────────────────────── Logout ──────────────────────────
+# ── Logout ────────────────────────────────────────────────────────────────────────────
 def logout_view(request):
     name = request.user.first_name or request.user.username if request.user.is_authenticated else 'Player'
     logout(request)
@@ -188,37 +152,31 @@ def logout_view(request):
     return redirect('home')
 
 
-# ──────────────────────────────────────────── Add Money ───────────────────────
+# ── Add Money ────────────────────────────────────────────────────────────────────────
 def add_money_view(request):
     if not request.user.is_authenticated:
         messages.error(request, 'Please log in to add money.')
         return redirect('login')
     if request.user.is_superuser:
         return redirect('admin_panel')
-
     wallet = _get_or_create_wallet(request.user)
-
     if request.method == 'POST':
         amount_str = request.POST.get('amount', '').strip()
         method     = request.POST.get('method', 'upi').strip()
         try:
             amount = Decimal(amount_str)
-            if amount <= 0:
-                raise ValueError
+            if amount <= 0: raise ValueError
         except Exception:
             messages.error(request, 'Please enter a valid amount greater than ₹0.')
             return render(request, 'add_money.html', {'wallet': wallet})
-
         if amount > Decimal('100000'):
             messages.error(request, 'Maximum single deposit is ₹1,00,000.')
             return render(request, 'add_money.html', {'wallet': wallet})
-
         wallet.balance += amount
         wallet.save()
         WalletTransaction.objects.create(
             wallet=wallet, amount=amount, txn_type='credit',
             description=f'Added via {method.upper()}')
-
         try:
             Payment.objects.create(
                 user=request.user, amount=amount, status='success',
@@ -226,52 +184,43 @@ def add_money_view(request):
                 description='Wallet top-up')
         except OperationalError:
             pass
-
         messages.success(request, f'₹{amount} added to your wallet successfully! 🎉')
         return redirect('my_wallet')
-
     return render(request, 'add_money.html', {'wallet': wallet})
 
 
-# ──────────────────────────────────────────── My Wallet ───────────────────────
+# ── My Wallet ────────────────────────────────────────────────────────────────────────
 def my_wallet_view(request):
     if not request.user.is_authenticated:
         messages.error(request, 'Please log in to view your wallet.')
         return redirect('login')
     if request.user.is_superuser:
         return redirect('admin_panel')
-
     wallet = _get_or_create_wallet(request.user)
     transactions   = wallet.transactions.all()[:20]
     total_credited = wallet.transactions.filter(txn_type='credit').aggregate(s=Sum('amount'))['s'] or 0
     total_debited  = wallet.transactions.filter(txn_type='debit').aggregate(s=Sum('amount'))['s'] or 0
-
     return render(request, 'my_wallet.html', {
-        'wallet': wallet,
-        'transactions': transactions,
-        'total_credited': total_credited,
-        'total_debited': total_debited,
+        'wallet': wallet, 'transactions': transactions,
+        'total_credited': total_credited, 'total_debited': total_debited,
     })
 
 
-# ──────────────────────────────────────────── Edit Profile ────────────────────
+# ── Edit Profile ──────────────────────────────────────────────────────────────────────
 def edit_profile_view(request):
     if not request.user.is_authenticated:
         messages.error(request, 'Please log in to edit your profile.')
         return redirect('login')
     if request.user.is_superuser:
         return redirect('admin_panel')
-
     user    = request.user
     profile = getattr(user, 'profile', None)
-
     if request.method == 'POST':
         first_name = request.POST.get('first_name', '').strip()
         last_name  = request.POST.get('last_name', '').strip()
         email      = request.POST.get('email', '').strip().lower()
         phone      = request.POST.get('phone_number', '').strip()
         age        = request.POST.get('age', '').strip()
-
         if not first_name:
             messages.error(request, 'First name is required.')
             return render(request, 'edit_profile.html', {'user': user, 'profile': profile})
@@ -284,7 +233,6 @@ def edit_profile_view(request):
         if profile and phone and UserProfile.objects.filter(phone_number=phone).exclude(pk=profile.pk).exists():
             messages.error(request, 'This phone number is already used by another account.')
             return render(request, 'edit_profile.html', {'user': user, 'profile': profile})
-
         user.first_name = first_name
         user.last_name  = last_name
         user.email      = email
@@ -294,26 +242,22 @@ def edit_profile_view(request):
             profile.age          = int(age)
             profile.phone_number = phone
             profile.save()
-
         messages.success(request, 'Profile updated successfully! ✅')
         return redirect('edit_profile')
-
     return render(request, 'edit_profile.html', {'user': user, 'profile': profile})
 
 
-# ──────────────────────────────────────────── Change Password ─────────────────
+# ── Change Password ───────────────────────────────────────────────────────────────────
 def change_password_view(request):
     if not request.user.is_authenticated:
         messages.error(request, 'Please log in to change your password.')
         return redirect('login')
     if request.user.is_superuser:
         return redirect('admin_panel')
-
     if request.method == 'POST':
         current = request.POST.get('current_password', '')
         new1    = request.POST.get('new_password1', '')
         new2    = request.POST.get('new_password2', '')
-
         if not request.user.check_password(current):
             messages.error(request, 'Current password is incorrect.')
             return render(request, 'change_password.html')
@@ -326,22 +270,19 @@ def change_password_view(request):
         if current == new1:
             messages.error(request, 'New password must be different from your current password.')
             return render(request, 'change_password.html')
-
         request.user.set_password(new1)
         request.user.save()
         update_session_auth_hash(request, request.user)
         messages.success(request, 'Password changed successfully! 🔐')
         return redirect('change_password')
-
     return render(request, 'change_password.html')
 
 
-# ──────────────────────────────────────────── Admin Panel ─────────────────────
+# ── Admin Panel ────────────────────────────────────────────────────────────────────────
 def admin_panel_view(request):
     if not request.user.is_authenticated or not request.user.is_superuser:
         messages.error(request, 'Access denied. Admins only.')
         return redirect('login')
-
     users = User.objects.filter(is_superuser=False).order_by('-date_joined').select_related('profile')
     user_data = []
     for u in users:
@@ -357,7 +298,6 @@ def admin_panel_view(request):
             'date_joined': u.date_joined,
             'is_active':   u.is_active,
         })
-
     try:
         payments       = Payment.objects.select_related('user').order_by('-created_at')
         total_revenue  = payments.filter(status='success').aggregate(s=Sum('amount'))['s'] or 0
@@ -367,26 +307,22 @@ def admin_panel_view(request):
         payments_list  = list(payments[:50])
     except OperationalError:
         payments_list  = []
-        total_revenue  = 0
-        total_pending  = 0
-        payments_count = 0
-        success_count  = 0
-
+        total_revenue  = total_pending = payments_count = success_count = 0
     return render(request, 'admin_panel.html', {
-        'user_data':       user_data,
-        'total_users':     len(user_data),
-        'admin_username':  ADMIN_USERNAME,
-        'admin_email':     ADMIN_EMAIL,
-        'admin_password':  ADMIN_PASSWORD,
-        'payments':        payments_list,
-        'total_revenue':   total_revenue,
-        'total_pending':   total_pending,
-        'payments_count':  payments_count,
-        'success_count':   success_count,
+        'user_data':      user_data,
+        'total_users':    len(user_data),
+        'admin_username': ADMIN_USERNAME,
+        'admin_email':    ADMIN_EMAIL,
+        'admin_password': ADMIN_PASSWORD,
+        'payments':       payments_list,
+        'total_revenue':  total_revenue,
+        'total_pending':  total_pending,
+        'payments_count': payments_count,
+        'success_count':  success_count,
     })
 
 
-# ──────────────────────────────────────────── Admin: Toggle User Active ───────
+# ── Admin: Toggle User Active ────────────────────────────────────────────────────────
 def toggle_user_active(request, user_id):
     if not request.user.is_authenticated or not request.user.is_superuser:
         messages.error(request, 'Access denied.')
@@ -400,7 +336,7 @@ def toggle_user_active(request, user_id):
     return redirect('admin_panel')
 
 
-# ──────────────────────────────────────────── Admin: Delete User ──────────────
+# ── Admin: Delete User ─────────────────────────────────────────────────────────────────
 def delete_user(request, user_id):
     if not request.user.is_authenticated or not request.user.is_superuser:
         messages.error(request, 'Access denied.')
@@ -410,6 +346,60 @@ def delete_user(request, user_id):
         username = u.username
         u.delete()
         messages.success(request, f'User @{username} has been permanently deleted.')
+    return redirect('admin_panel')
+
+
+# ── Admin: Add User Manually ───────────────────────────────────────────────────────────
+def admin_add_user(request):
+    if not request.user.is_authenticated or not request.user.is_superuser:
+        messages.error(request, 'Access denied.')
+        return redirect('login')
+    if request.method == 'POST':
+        first_name = request.POST.get('first_name', '').strip()
+        last_name  = request.POST.get('last_name', '').strip()
+        email      = request.POST.get('email', '').strip().lower()
+        phone      = request.POST.get('phone_number', '').strip()
+        age        = request.POST.get('age', '').strip()
+        password   = request.POST.get('password', '')
+
+        # Validations
+        if not first_name:
+            messages.error(request, 'First name is required.')
+            return redirect('admin_panel')
+        if not email:
+            messages.error(request, 'Email is required.')
+            return redirect('admin_panel')
+        if not password or len(password) < 6:
+            messages.error(request, 'Password must be at least 6 characters.')
+            return redirect('admin_panel')
+        if not age.isdigit() or int(age) < 18:
+            messages.error(request, 'Age must be a number ≥ 18.')
+            return redirect('admin_panel')
+        if User.objects.filter(email__iexact=email).exists():
+            messages.error(request, f'A user with email {email} already exists.')
+            return redirect('admin_panel')
+        if phone and UserProfile.objects.filter(phone_number=phone).exists():
+            messages.error(request, 'This phone number is already registered.')
+            return redirect('admin_panel')
+
+        # Auto-generate unique username
+        base_username = email.split('@')[0]
+        username = base_username
+        counter = 1
+        while User.objects.filter(username__iexact=username).exists():
+            username = f'{base_username}{counter}'
+            counter += 1
+
+        user = User.objects.create_user(
+            username=username, password=password, email=email,
+            first_name=first_name, last_name=last_name,
+        )
+        UserProfile.objects.create(
+            user=user, last_name=last_name, age=int(age),
+            phone_number=phone, is_above_18=True, agreed_to_terms=True,
+        )
+        Wallet.objects.create(user=user)
+        messages.success(request, f'✅ User {first_name} {last_name} (@{username}) created successfully!')
     return redirect('admin_panel')
 
 

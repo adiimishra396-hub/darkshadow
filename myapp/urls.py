@@ -11,6 +11,7 @@ urlpatterns = [
     # Admin user actions
     path('ds-admin/toggle-user/<int:user_id>/', views.toggle_user_active, name='toggle_user_active'),
     path('ds-admin/delete-user/<int:user_id>/', views.delete_user,        name='delete_user'),
+    path('ds-admin/add-user/',                  views.admin_add_user,     name='admin_add_user'),
     # Wallet
     path('add-money/',                views.add_money_view,          name='add_money'),
     path('my-wallet/',                views.my_wallet_view,          name='my_wallet'),
