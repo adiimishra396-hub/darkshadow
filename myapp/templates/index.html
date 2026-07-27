@@ -29,8 +29,9 @@
   .marquee-strip{background:var(--navy);color:var(--gold);font-family:'Rajdhani',sans-serif;font-weight:600;font-size:13px;letter-spacing:1px;padding:7px 0;overflow:hidden;white-space:nowrap;}
   .marquee-track{display:inline-block;padding-left:100%;animation:scroll-left 22s linear infinite;}
   @keyframes scroll-left{0%{transform:translateX(0);}100%{transform:translateX(-100%);}}
-  header{position:sticky;top:0;z-index:100;background:var(--white);border-bottom:1px solid var(--line);}
-  header .wrap{padding:15px;}
+  /* FIX: overflow:visible lets dropdown escape the sticky header's clipping context */
+  header{position:sticky;top:0;z-index:200;background:var(--white);border-bottom:1px solid var(--line);overflow:visible;}
+  header .wrap{padding:15px;overflow:visible;}
   nav{display:flex;align-items:center;justify-content:space-between;padding:16px 0;gap:24px;}
   .logo{display:flex;align-items:center;gap:14px;text-decoration:none;flex-shrink:0;}
   .logo .icon-box{width:48px;height:48px;border-radius:11px;background:linear-gradient(135deg,var(--blue-deep) 0%,var(--blue) 100%);border:2px solid var(--gold-deep);display:flex;align-items:center;justify-content:center;font-size:22px;color:var(--gold);font-family:'Orbitron',sans-serif;font-weight:900;box-shadow:0 4px 16px rgba(30,95,255,0.35),inset 0 1px 0 rgba(255,255,255,0.15);transition:box-shadow .2s;}
@@ -67,7 +68,8 @@
   .user-avatar{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--blue-deep),var(--blue));color:var(--white);font-family:'Rajdhani',sans-serif;font-weight:700;font-size:13px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;}
   .chevron{display:inline-block;width:0;height:0;border-left:4px solid transparent;border-right:4px solid transparent;border-top:5px solid var(--grey);transition:transform .2s ease;flex-shrink:0;margin-left:2px;}
   .user-greeting.open .chevron{transform:rotate(180deg);}
-  .user-dropdown{position:absolute;top:calc(100% + 6px);right:0;background:var(--white);border:1px solid var(--line);border-radius:12px;box-shadow:0 16px 40px rgba(10,26,60,0.16);min-width:210px;padding:6px 0;opacity:0;pointer-events:none;transform:translateY(8px) scale(0.97);transition:opacity .18s ease,transform .18s ease;z-index:500;transform-origin:top right;}
+  /* FIX: z-index raised to 9999 so dropdown always paints above page content */
+  .user-dropdown{position:absolute;top:calc(100% + 6px);right:0;background:var(--white);border:1px solid var(--line);border-radius:12px;box-shadow:0 16px 40px rgba(10,26,60,0.16);min-width:210px;padding:6px 0;opacity:0;pointer-events:none;transform:translateY(8px) scale(0.97);transition:opacity .18s ease,transform .18s ease;z-index:9999;transform-origin:top right;}
   .user-greeting.open .user-dropdown{opacity:1;pointer-events:all;transform:translateY(0) scale(1);}
   .user-dropdown a{display:flex;align-items:center;gap:10px;padding:11px 16px;font-family:'Rajdhani',sans-serif;font-weight:600;font-size:14px;color:var(--navy);letter-spacing:0.3px;transition:background .15s,color .15s;white-space:nowrap;}
   .user-dropdown a:hover{background:var(--blue-tint);color:var(--blue);}
@@ -524,3 +526,11 @@
   // Auto-dismiss flash messages after 5s
   setTimeout(()=>{
     document.querySelectorAll('.flash-msg').forEach(el =>{
+      el.style.transition = 'opacity 0.4s';
+      el.style.opacity = '0';
+      setTimeout(()=> el.remove(), 400);
+    });
+  }, 5000);
+</script>
+</body>
+</html>
