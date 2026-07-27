@@ -6,6 +6,7 @@ from django.db import OperationalError
 from django.db.models import Sum
 from decimal import Decimal
 from .models import UserProfile, Payment, Wallet, WalletTransaction
+import uuid as _uuid
 
 ADMIN_USERNAME = 'admin'
 ADMIN_EMAIL    = 'admin@gmail.com'
@@ -18,11 +19,11 @@ def _ensure_admin():
         username=ADMIN_USERNAME,
         defaults={'email': ADMIN_EMAIL, 'is_staff': True, 'is_superuser': True}
     )
-    user.email       = ADMIN_EMAIL
-    user.is_staff    = True
+    user.email        = ADMIN_EMAIL
+    user.is_staff     = True
     user.is_superuser = True
-    user.is_active   = True
-    user.first_name  = 'Admin'
+    user.is_active    = True
+    user.first_name   = 'Admin'
     user.set_password(ADMIN_PASSWORD)
     user.save()
     return user
@@ -41,54 +42,43 @@ def home(request):
 # ──────────────────────────────────────────── Login ───────────────────────────
 def login_view(request):
     if request.user.is_authenticated:
-        # Already logged in — redirect appropriately
         if request.user.is_superuser:
             return redirect('admin_panel')
         return redirect('home')
 
-    _ensure_admin()  # Always guarantee admin account exists
+    _ensure_admin()
 
     if request.method == 'POST':
-        login_type = request.POST.get('login_type', 'email').strip()
-        password   = request.POST.get('password', '').strip()
-        user       = None
+        email    = request.POST.get('email', '').strip().lower()
+        password = request.POST.get('password', '').strip()
+        user     = None
 
-        if login_type == 'email':
-            email = request.POST.get('email', '').strip().lower()
-            if not email:
-                messages.error(request, 'Please enter your email address.')
-                return render(request, 'login.html')
-            try:
-                matched = User.objects.get(email__iexact=email)
-                user = authenticate(request, username=matched.username, password=password)
-            except User.DoesNotExist:
-                user = None
-            except User.MultipleObjectsReturned:
-                matched = User.objects.filter(email__iexact=email).first()
-                user = authenticate(request, username=matched.username, password=password) if matched else None
+        if not email:
+            messages.error(request, 'Please enter your email address.')
+            return render(request, 'login.html')
 
-        else:  # username login
-            username = request.POST.get('username', '').strip()
-            if not username:
-                messages.error(request, 'Please enter your username.')
-                return render(request, 'login.html')
-            user = authenticate(request, username=username, password=password)
+        try:
+            matched = User.objects.get(email__iexact=email)
+            user = authenticate(request, username=matched.username, password=password)
+        except User.DoesNotExist:
+            user = None
+        except User.MultipleObjectsReturned:
+            matched = User.objects.filter(email__iexact=email).first()
+            user = authenticate(request, username=matched.username, password=password) if matched else None
 
         if user is not None:
             if not user.is_active:
                 messages.error(request, 'Your account has been disabled. Please contact support.')
                 return render(request, 'login.html')
             login(request, user)
-            # ── Superusers go straight to admin panel ──
             if user.is_superuser:
-                messages.success(request, f'Welcome back, Admin! 🛡️')
+                messages.success(request, 'Welcome back, Admin! 🛡️')
                 return redirect('admin_panel')
-            # ── All other users go to home with welcome message ──
             name = user.first_name or user.username
             messages.success(request, f'Welcome back, {name}! 🎉 You are now logged in.')
             return redirect('home')
 
-        messages.error(request, 'Invalid credentials. Please check your email/username and password.')
+        messages.error(request, 'Invalid credentials. Please check your email and password.')
 
     return render(request, 'login.html')
 
@@ -104,7 +94,6 @@ def signup_view(request):
         first_name  = request.POST.get('first_name', '').strip()
         last_name   = request.POST.get('last_name', '').strip()
         email       = request.POST.get('email', '').strip().lower()
-        username    = request.POST.get('username', '').strip()
         phone       = request.POST.get('phone_number', '').strip()
         age         = request.POST.get('age', '').strip()
         password1   = request.POST.get('password1', '')
@@ -118,9 +107,6 @@ def signup_view(request):
             return render(request, 'signup.html', {'form_data': request.POST})
         if not email:
             messages.error(request, 'Email address is required.')
-            return render(request, 'signup.html', {'form_data': request.POST})
-        if not username:
-            messages.error(request, 'Username is required.')
             return render(request, 'signup.html', {'form_data': request.POST})
         if not above_18:
             messages.error(request, 'You must confirm you are 18 or above to register.')
@@ -137,15 +123,20 @@ def signup_view(request):
         if not age.isdigit() or int(age) < 18:
             messages.error(request, 'You must be at least 18 years old to register.')
             return render(request, 'signup.html', {'form_data': request.POST})
-        if User.objects.filter(username__iexact=username).exists():
-            messages.error(request, 'Username already taken. Please choose another.')
-            return render(request, 'signup.html', {'form_data': request.POST})
         if User.objects.filter(email__iexact=email).exists():
             messages.error(request, 'An account with this email already exists. Please log in.')
             return render(request, 'signup.html', {'form_data': request.POST})
         if phone and UserProfile.objects.filter(phone_number=phone).exists():
             messages.error(request, 'This phone number is already registered.')
             return render(request, 'signup.html', {'form_data': request.POST})
+
+        # ── Auto-generate a unique username from email ──
+        base_username = email.split('@')[0]
+        username = base_username
+        counter = 1
+        while User.objects.filter(username__iexact=username).exists():
+            username = f'{base_username}{counter}'
+            counter += 1
 
         # ── Create user ──
         user = User.objects.create_user(
@@ -210,14 +201,13 @@ def add_money_view(request):
             wallet=wallet, amount=amount, txn_type='credit',
             description=f'Added via {method.upper()}')
 
-        import uuid
         try:
             Payment.objects.create(
                 user=request.user, amount=amount, status='success',
-                method=method, transaction_id=str(uuid.uuid4())[:20],
+                method=method, transaction_id=str(_uuid.uuid4())[:20],
                 description='Wallet top-up')
         except OperationalError:
-            pass  # Payment table not yet migrated — skip gracefully
+            pass
 
         messages.success(request, f'₹{amount} added to your wallet successfully! 🎉')
         return redirect('my_wallet')
@@ -270,7 +260,6 @@ def edit_profile_view(request):
         if not age.isdigit() or int(age) < 18:
             messages.error(request, 'Age must be 18 or above.')
             return render(request, 'edit_profile.html', {'user': user, 'profile': profile})
-        # Check email uniqueness (exclude current user)
         if email and User.objects.filter(email__iexact=email).exclude(pk=user.pk).exists():
             messages.error(request, 'This email is already in use by another account.')
             return render(request, 'edit_profile.html', {'user': user, 'profile': profile})
@@ -335,7 +324,7 @@ def admin_panel_view(request):
         messages.error(request, 'Access denied. Admins only.')
         return redirect('login')
 
-    _ensure_admin()  # Re-enforce credentials on every load
+    _ensure_admin()
 
     users = User.objects.filter(is_superuser=False).order_by('-date_joined').select_related('profile')
     user_data = []
