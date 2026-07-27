@@ -4,13 +4,27 @@ from django.contrib.auth.models import User
 from django.contrib import messages
 from django.db import OperationalError
 from django.db.models import Sum
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST
 from decimal import Decimal
-from .models import UserProfile, Payment, Wallet, WalletTransaction
+from .models import UserProfile, Payment, Wallet, WalletTransaction, SpinWallet, SpinPurchase
 import uuid as _uuid
+import razorpay
+import os
+import json
+import hmac
+import hashlib
 
 ADMIN_USERNAME = 'admin'
 ADMIN_EMAIL    = 'admin@gmail.com'
 ADMIN_PASSWORD = '123456'
+
+RAZORPAY_KEY_ID     = os.environ.get('RAZORPAY_KEY_ID', 'YOUR_RAZORPAY_KEY_ID')
+RAZORPAY_KEY_SECRET = os.environ.get('RAZORPAY_KEY_SECRET', 'YOUR_RAZORPAY_KEY_SECRET')
+
+SPIN_PACK_SPINS  = 3
+SPIN_PACK_AMOUNT = 10  # ₹10
 
 
 def _ensure_admin():
@@ -42,9 +56,22 @@ def _get_or_create_wallet(user):
     return wallet
 
 
-# ── Home ─────────────────────────────────────────────────────────────────────────────────
+def _get_or_create_spin_wallet(user):
+    sw, _ = SpinWallet.objects.get_or_create(user=user)
+    return sw
+
+
+# ── Home ──────────────────────────────────────────────────────────────────────────────
 def home(request):
-    return render(request, 'index.html')
+    spin_wallet = None
+    if request.user.is_authenticated and not request.user.is_superuser:
+        spin_wallet = _get_or_create_spin_wallet(request.user)
+    return render(request, 'index.html', {
+        'spin_wallet': spin_wallet,
+        'razorpay_key_id': RAZORPAY_KEY_ID,
+        'spin_pack_amount': SPIN_PACK_AMOUNT,
+        'spin_pack_spins': SPIN_PACK_SPINS,
+    })
 
 
 # ── Login ──────────────────────────────────────────────────────────────────────────────
@@ -139,6 +166,7 @@ def signup_view(request):
             phone_number=phone, is_above_18=True, agreed_to_terms=True,
         )
         Wallet.objects.create(user=user)
+        SpinWallet.objects.create(user=user)
         messages.success(request, f'Account created successfully! Welcome to Darkshadow, {first_name}! 🎉 Please log in.')
         return redirect('login')
     return render(request, 'signup.html')
@@ -361,8 +389,6 @@ def admin_add_user(request):
         phone      = request.POST.get('phone_number', '').strip()
         age        = request.POST.get('age', '').strip()
         password   = request.POST.get('password', '')
-
-        # Validations
         if not first_name:
             messages.error(request, 'First name is required.')
             return redirect('admin_panel')
@@ -381,15 +407,12 @@ def admin_add_user(request):
         if phone and UserProfile.objects.filter(phone_number=phone).exists():
             messages.error(request, 'This phone number is already registered.')
             return redirect('admin_panel')
-
-        # Auto-generate unique username
         base_username = email.split('@')[0]
         username = base_username
         counter = 1
         while User.objects.filter(username__iexact=username).exists():
             username = f'{base_username}{counter}'
             counter += 1
-
         user = User.objects.create_user(
             username=username, password=password, email=email,
             first_name=first_name, last_name=last_name,
@@ -399,9 +422,117 @@ def admin_add_user(request):
             phone_number=phone, is_above_18=True, agreed_to_terms=True,
         )
         Wallet.objects.create(user=user)
+        SpinWallet.objects.create(user=user)
         messages.success(request, f'✅ User {first_name} {last_name} (@{username}) created successfully!')
     return redirect('admin_panel')
 
 
 def admin_info_view(request):
     return render(request, 'admin_login.html')
+
+
+# ── Jackpot: Create Razorpay Order ────────────────────────────────────────────────────
+@require_POST
+def jackpot_create_order(request):
+    """Creates a Razorpay order for 3 spins = ₹10 and returns order details as JSON."""
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'Login required'}, status=401)
+    if request.user.is_superuser:
+        return JsonResponse({'error': 'Admins cannot purchase spins'}, status=403)
+    try:
+        client = razorpay.Client(auth=(RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET))
+        amount_paise = SPIN_PACK_AMOUNT * 100  # Razorpay uses paise
+        order = client.order.create({
+            'amount': amount_paise,
+            'currency': 'INR',
+            'payment_capture': 1,
+            'notes': {
+                'user_id': str(request.user.id),
+                'spins': str(SPIN_PACK_SPINS),
+                'description': f'{SPIN_PACK_SPINS} Jackpot Spins'
+            }
+        })
+        # Record a pending purchase
+        SpinPurchase.objects.create(
+            user=request.user,
+            spins_purchased=SPIN_PACK_SPINS,
+            amount=SPIN_PACK_AMOUNT,
+            razorpay_order_id=order['id'],
+            status='pending'
+        )
+        return JsonResponse({
+            'order_id': order['id'],
+            'amount':   amount_paise,
+            'currency': 'INR',
+            'key_id':   RAZORPAY_KEY_ID,
+            'name':     request.user.first_name or request.user.username,
+            'email':    request.user.email,
+        })
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+# ── Jackpot: Verify Payment & Credit Spins ────────────────────────────────────────────
+@require_POST
+def jackpot_verify_payment(request):
+    """Verifies Razorpay payment signature and credits spins to the user's SpinWallet."""
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'Login required'}, status=401)
+    try:
+        data = json.loads(request.body)
+        razorpay_order_id   = data.get('razorpay_order_id', '')
+        razorpay_payment_id = data.get('razorpay_payment_id', '')
+        razorpay_signature  = data.get('razorpay_signature', '')
+
+        # Verify HMAC signature
+        msg = f"{razorpay_order_id}|{razorpay_payment_id}"
+        expected = hmac.new(
+            RAZORPAY_KEY_SECRET.encode(),
+            msg.encode(),
+            hashlib.sha256
+        ).hexdigest()
+
+        if not hmac.compare_digest(expected, razorpay_signature):
+            return JsonResponse({'success': False, 'error': 'Invalid payment signature'}, status=400)
+
+        # Mark purchase as successful
+        purchase = SpinPurchase.objects.filter(
+            user=request.user,
+            razorpay_order_id=razorpay_order_id,
+            status='pending'
+        ).first()
+
+        if not purchase:
+            return JsonResponse({'success': False, 'error': 'Purchase record not found'}, status=404)
+
+        purchase.razorpay_payment_id = razorpay_payment_id
+        purchase.status = 'success'
+        purchase.save()
+
+        # Credit spins to user's spin wallet
+        spin_wallet = _get_or_create_spin_wallet(request.user)
+        spin_wallet.spins += purchase.spins_purchased
+        spin_wallet.save()
+
+        return JsonResponse({
+            'success': True,
+            'spins_credited': purchase.spins_purchased,
+            'total_spins': spin_wallet.spins,
+            'message': f'🎉 {purchase.spins_purchased} spins credited to your account!'
+        })
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+# ── Jackpot: Use a Spin ────────────────────────────────────────────────────────────────
+@require_POST
+def jackpot_use_spin(request):
+    """Deducts one spin and returns updated spin count. Called when user actually spins."""
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'Login required'}, status=401)
+    spin_wallet = _get_or_create_spin_wallet(request.user)
+    if spin_wallet.spins < 1:
+        return JsonResponse({'success': False, 'error': 'No spins available'}, status=400)
+    spin_wallet.spins -= 1
+    spin_wallet.save()
+    return JsonResponse({'success': True, 'remaining_spins': spin_wallet.spins})

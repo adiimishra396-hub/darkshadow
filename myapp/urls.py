@@ -18,4 +18,8 @@ urlpatterns = [
     # Profile
     path('edit-profile/',             views.edit_profile_view,       name='edit_profile'),
     path('change-password/',          views.change_password_view,    name='change_password'),
+    # Jackpot Spin Machine
+    path('jackpot/create-order/',     views.jackpot_create_order,    name='jackpot_create_order'),
+    path('jackpot/verify-payment/',   views.jackpot_verify_payment,  name='jackpot_verify_payment'),
+    path('jackpot/use-spin/',         views.jackpot_use_spin,        name='jackpot_use_spin'),
 ]

@@ -70,3 +70,36 @@ class Payment(models.Model):
 
     def __str__(self):
         return f"{self.user.username} | ₹{self.amount} | {self.status}"
+
+
+# ── Jackpot Spin Machine ────────────────────────────────────────────────────────────────
+class SpinWallet(models.Model):
+    """Tracks how many spins a user has available to play."""
+    user   = models.OneToOneField(User, on_delete=models.CASCADE, related_name='spin_wallet')
+    spins  = models.PositiveIntegerField(default=0)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.user.username} — {self.spins} spins"
+
+
+class SpinPurchase(models.Model):
+    """Records every spin purchase & Razorpay payment reference."""
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('success', 'Success'),
+        ('failed',  'Failed'),
+    ]
+    user            = models.ForeignKey(User, on_delete=models.CASCADE, related_name='spin_purchases')
+    spins_purchased = models.PositiveIntegerField(default=3)
+    amount          = models.DecimalField(max_digits=8, decimal_places=2, default=10.00)
+    razorpay_order_id   = models.CharField(max_length=100, blank=True, null=True)
+    razorpay_payment_id = models.CharField(max_length=100, blank=True, null=True)
+    status          = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pending')
+    created_at      = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.user.username} | {self.spins_purchased} spins | {self.status}"
