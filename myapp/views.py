@@ -61,7 +61,7 @@ def _get_or_create_spin_wallet(user):
     return sw
 
 
-# ── Home ──────────────────────────────────────────────────────────────────────────────
+# ── Home ────────────────────────────────────────────────────────────────────────────────────
 def home(request):
     spin_wallet = None
     if request.user.is_authenticated and not request.user.is_superuser:
@@ -180,7 +180,7 @@ def logout_view(request):
     return redirect('home')
 
 
-# ── Add Money ────────────────────────────────────────────────────────────────────────
+# ── Add Money (page render only) ──────────────────────────────────────────────────
 def add_money_view(request):
     if not request.user.is_authenticated:
         messages.error(request, 'Please log in to add money.')
@@ -188,36 +188,128 @@ def add_money_view(request):
     if request.user.is_superuser:
         return redirect('admin_panel')
     wallet = _get_or_create_wallet(request.user)
-    if request.method == 'POST':
-        amount_str = request.POST.get('amount', '').strip()
-        method     = request.POST.get('method', 'upi').strip()
-        try:
-            amount = Decimal(amount_str)
-            if amount <= 0: raise ValueError
-        except Exception:
-            messages.error(request, 'Please enter a valid amount greater than ₹0.')
-            return render(request, 'add_money.html', {'wallet': wallet})
-        if amount > Decimal('100000'):
-            messages.error(request, 'Maximum single deposit is ₹1,00,000.')
-            return render(request, 'add_money.html', {'wallet': wallet})
-        wallet.balance += amount
+    return render(request, 'add_money.html', {
+        'wallet': wallet,
+        'razorpay_key_id': RAZORPAY_KEY_ID,
+        'user': request.user,
+    })
+
+
+# ── Wallet: Create Razorpay Order ─────────────────────────────────────────────────
+@require_POST
+def wallet_create_order(request):
+    """Creates a Razorpay order for wallet top-up and returns order details as JSON."""
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'Login required'}, status=401)
+    if request.user.is_superuser:
+        return JsonResponse({'error': 'Admins cannot add money to wallet'}, status=403)
+    try:
+        data   = json.loads(request.body)
+        amount = float(data.get('amount', 0))
+        method = data.get('method', 'upi')
+        if amount <= 0:
+            return JsonResponse({'error': 'Amount must be greater than ₹0'}, status=400)
+        if amount > 100000:
+            return JsonResponse({'error': 'Maximum single deposit is ₹1,00,000'}, status=400)
+        # Valid payment methods
+        valid_methods = ['upi', 'card', 'netbanking', 'wallet', 'other']
+        if method not in valid_methods:
+            method = 'upi'
+        client = razorpay.Client(auth=(RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET))
+        amount_paise = int(amount * 100)  # Razorpay uses paise
+        order = client.order.create({
+            'amount': amount_paise,
+            'currency': 'INR',
+            'payment_capture': 1,
+            'notes': {
+                'user_id':    str(request.user.id),
+                'method':     method,
+                'description': 'Wallet top-up',
+            }
+        })
+        # Record a pending payment
+        Payment.objects.create(
+            user=request.user,
+            amount=Decimal(str(amount)),
+            status='pending',
+            method=method,
+            transaction_id=order['id'],
+            description='Wallet top-up via Razorpay',
+        )
+        return JsonResponse({
+            'order_id': order['id'],
+            'amount':   amount_paise,
+            'currency': 'INR',
+            'key_id':   RAZORPAY_KEY_ID,
+            'name':     request.user.first_name or request.user.username,
+            'email':    request.user.email,
+            'method':   method,
+        })
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+# ── Wallet: Verify Payment & Credit Wallet ────────────────────────────────────────
+@require_POST
+def wallet_verify_payment(request):
+    """Verifies Razorpay payment signature and credits the user's wallet balance."""
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'Login required'}, status=401)
+    try:
+        data = json.loads(request.body)
+        razorpay_order_id   = data.get('razorpay_order_id', '')
+        razorpay_payment_id = data.get('razorpay_payment_id', '')
+        razorpay_signature  = data.get('razorpay_signature', '')
+
+        # Verify HMAC-SHA256 signature
+        msg = f"{razorpay_order_id}|{razorpay_payment_id}"
+        expected = hmac.new(
+            RAZORPAY_KEY_SECRET.encode(),
+            msg.encode(),
+            hashlib.sha256
+        ).hexdigest()
+
+        if not hmac.compare_digest(expected, razorpay_signature):
+            return JsonResponse({'success': False, 'error': 'Invalid payment signature'}, status=400)
+
+        # Find the pending payment record (transaction_id holds the razorpay order_id)
+        payment = Payment.objects.filter(
+            user=request.user,
+            transaction_id=razorpay_order_id,
+            status='pending',
+        ).first()
+
+        if not payment:
+            return JsonResponse({'success': False, 'error': 'Payment record not found'}, status=404)
+
+        # Mark payment as successful
+        payment.status = 'success'
+        payment.save()
+
+        # Credit wallet balance
+        wallet = _get_or_create_wallet(request.user)
+        wallet.balance += payment.amount
         wallet.save()
+
+        # Create wallet transaction record
         WalletTransaction.objects.create(
-            wallet=wallet, amount=amount, txn_type='credit',
-            description=f'Added via {method.upper()}')
-        try:
-            Payment.objects.create(
-                user=request.user, amount=amount, status='success',
-                method=method, transaction_id=str(_uuid.uuid4())[:20],
-                description='Wallet top-up')
-        except OperationalError:
-            pass
-        messages.success(request, f'₹{amount} added to your wallet successfully! 🎉')
-        return redirect('my_wallet')
-    return render(request, 'add_money.html', {'wallet': wallet})
+            wallet=wallet,
+            amount=payment.amount,
+            txn_type='credit',
+            description=f'Added via {payment.method.upper()} (Razorpay)',
+        )
+
+        return JsonResponse({
+            'success':         True,
+            'amount_credited': float(payment.amount),
+            'new_balance':     float(wallet.balance),
+            'message':         f'🎉 ₹{payment.amount} added to your wallet successfully!',
+        })
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
 
 
-# ── My Wallet ────────────────────────────────────────────────────────────────────────
+# ── My Wallet ──────────────────────────────────────────────────────────────────────────
 def my_wallet_view(request):
     if not request.user.is_authenticated:
         messages.error(request, 'Please log in to view your wallet.')
@@ -234,7 +326,7 @@ def my_wallet_view(request):
     })
 
 
-# ── Edit Profile ──────────────────────────────────────────────────────────────────────
+# ── Edit Profile ────────────────────────────────────────────────────────────────────────
 def edit_profile_view(request):
     if not request.user.is_authenticated:
         messages.error(request, 'Please log in to edit your profile.')
@@ -275,7 +367,7 @@ def edit_profile_view(request):
     return render(request, 'edit_profile.html', {'user': user, 'profile': profile})
 
 
-# ── Change Password ───────────────────────────────────────────────────────────────────
+# ── Change Password ─────────────────────────────────────────────────────────────────────────
 def change_password_view(request):
     if not request.user.is_authenticated:
         messages.error(request, 'Please log in to change your password.')
@@ -306,7 +398,7 @@ def change_password_view(request):
     return render(request, 'change_password.html')
 
 
-# ── Admin Panel ────────────────────────────────────────────────────────────────────────
+# ── Admin Panel ──────────────────────────────────────────────────────────────────────────────
 def admin_panel_view(request):
     if not request.user.is_authenticated or not request.user.is_superuser:
         messages.error(request, 'Access denied. Admins only.')
@@ -350,7 +442,7 @@ def admin_panel_view(request):
     })
 
 
-# ── Admin: Toggle User Active ────────────────────────────────────────────────────────
+# ── Admin: Toggle User Active ──────────────────────────────────────────────────────────
 def toggle_user_active(request, user_id):
     if not request.user.is_authenticated or not request.user.is_superuser:
         messages.error(request, 'Access denied.')
@@ -364,7 +456,7 @@ def toggle_user_active(request, user_id):
     return redirect('admin_panel')
 
 
-# ── Admin: Delete User ─────────────────────────────────────────────────────────────────
+# ── Admin: Delete User ─────────────────────────────────────────────────────────────────────────
 def delete_user(request, user_id):
     if not request.user.is_authenticated or not request.user.is_superuser:
         messages.error(request, 'Access denied.')
@@ -377,7 +469,7 @@ def delete_user(request, user_id):
     return redirect('admin_panel')
 
 
-# ── Admin: Add User Manually ───────────────────────────────────────────────────────────
+# ── Admin: Add User Manually ─────────────────────────────────────────────────────────────────────────
 def admin_add_user(request):
     if not request.user.is_authenticated or not request.user.is_superuser:
         messages.error(request, 'Access denied.')
@@ -431,7 +523,7 @@ def admin_info_view(request):
     return render(request, 'admin_login.html')
 
 
-# ── Jackpot: Create Razorpay Order ────────────────────────────────────────────────────
+# ── Jackpot: Create Razorpay Order ────────────────────────────────────────────────────────────────
 @require_POST
 def jackpot_create_order(request):
     """Creates a Razorpay order for 3 spins = ₹10 and returns order details as JSON."""
@@ -472,7 +564,7 @@ def jackpot_create_order(request):
         return JsonResponse({'error': str(e)}, status=500)
 
 
-# ── Jackpot: Verify Payment & Credit Spins ────────────────────────────────────────────
+# ── Jackpot: Verify Payment & Credit Spins ──────────────────────────────────────────────
 @require_POST
 def jackpot_verify_payment(request):
     """Verifies Razorpay payment signature and credits spins to the user's SpinWallet."""
@@ -524,7 +616,7 @@ def jackpot_verify_payment(request):
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
 
 
-# ── Jackpot: Use a Spin ────────────────────────────────────────────────────────────────
+# ── Jackpot: Use a Spin ────────────────────────────────────────────────────────────────────────────
 @require_POST
 def jackpot_use_spin(request):
     """Deducts one spin and returns updated spin count. Called when user actually spins."""

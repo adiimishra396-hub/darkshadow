@@ -10,7 +10,7 @@
     --navy:#0A1A3C;--blue:#1E5FFF;--blue-deep:#0F2E82;
     --gold:#FFC107;--gold-deep:#E5A800;
     --white:#fff;--grey:#9FB0D8;--dark:#060f28;
-    --green:#22c55e;--line:rgba(255,255,255,0.08);
+    --green:#22c55e;--red:#ef4444;--line:rgba(255,255,255,0.08);
   }
   *{margin:0;padding:0;box-sizing:border-box;}
   body{
@@ -37,7 +37,6 @@
   .eyebrow{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:12px;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-bottom:10px;display:block;}
   .card h1{font-family:'Orbitron',sans-serif;font-weight:900;font-size:24px;letter-spacing:1px;margin-bottom:6px;}
   .card .sub{font-size:13px;color:var(--grey);margin-bottom:28px;}
-  /* Balance pill */
   .balance-pill{
     display:flex;align-items:center;justify-content:space-between;
     background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.25);
@@ -45,12 +44,16 @@
   }
   .balance-pill .bp-label{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--grey);}
   .balance-pill .bp-val{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:26px;color:var(--green);}
-  /* Messages */
-  .messages{margin-bottom:20px;}
-  .msg{padding:12px 16px;border-radius:8px;font-size:13px;margin-bottom:8px;font-family:'Rajdhani',sans-serif;font-weight:600;}
+  .msg-area{margin-bottom:20px;}
+  .msg{padding:12px 16px;border-radius:8px;font-size:13px;margin-bottom:8px;font-family:'Rajdhani',sans-serif;font-weight:600;display:none;}
+  .msg.show{display:block;}
   .msg.error{background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.4);color:#fca5a5;}
   .msg.success{background:rgba(34,197,94,0.15);border:1px solid rgba(34,197,94,0.4);color:#86efac;}
-  /* Fields */
+  /* Django messages (server-side) */
+  .django-messages{margin-bottom:20px;}
+  .django-msg{padding:12px 16px;border-radius:8px;font-size:13px;margin-bottom:8px;font-family:'Rajdhani',sans-serif;font-weight:600;}
+  .django-msg.error{background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.4);color:#fca5a5;}
+  .django-msg.success{background:rgba(34,197,94,0.15);border:1px solid rgba(34,197,94,0.4);color:#86efac;}
   .field{margin-bottom:20px;}
   .field label{display:block;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:12px;letter-spacing:1px;text-transform:uppercase;color:var(--grey);margin-bottom:7px;}
   .field input,.field select{
@@ -62,31 +65,46 @@
   .field select option{background:#0d1e45;color:var(--white);}
   .field input:focus,.field select:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(30,95,255,0.2);}
   .field input::placeholder{color:#4a5774;}
-  /* Quick amounts */
   .quick-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px;}
   .quick-btn{
     flex:1;min-width:70px;padding:10px 6px;
     background:rgba(255,193,7,0.08);border:1px solid rgba(255,193,7,0.2);
     border-radius:8px;color:var(--gold);font-family:'Rajdhani',sans-serif;
-    font-weight:700;font-size:13px;cursor:pointer;transition:background .2s;
+    font-weight:700;font-size:13px;cursor:pointer;transition:background .2s,border-color .2s;
     text-align:center;
   }
-  .quick-btn:hover{background:rgba(255,193,7,0.2);}
+  .quick-btn:hover,.quick-btn.active{background:rgba(255,193,7,0.25);border-color:var(--gold);}
   .btn-submit{
     width:100%;padding:15px;
     background:linear-gradient(180deg,var(--gold) 0%,var(--gold-deep) 100%);
     color:var(--navy);border:none;border-radius:10px;
     font-family:'Orbitron',sans-serif;font-weight:700;font-size:14px;
     letter-spacing:1px;text-transform:uppercase;
-    cursor:pointer;transition:transform .15s,box-shadow .15s;
+    cursor:pointer;transition:transform .15s,box-shadow .15s,opacity .2s;
     box-shadow:0 8px 24px rgba(255,193,7,0.35);margin-top:8px;
   }
-  .btn-submit:hover{transform:translateY(-2px);box-shadow:0 12px 30px rgba(255,193,7,0.5);}
+  .btn-submit:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 12px 30px rgba(255,193,7,0.5);}
+  .btn-submit:disabled{opacity:0.6;cursor:not-allowed;}
   .secure-note{text-align:center;font-size:11.5px;color:#3a4a6a;font-family:'Rajdhani',sans-serif;letter-spacing:0.5px;margin-top:18px;}
+  .method-icons{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px;}
+  .method-icon-btn{
+    padding:10px 6px;border-radius:8px;text-align:center;
+    background:rgba(255,255,255,0.04);border:1.5px solid rgba(255,255,255,0.1);
+    cursor:pointer;transition:background .2s,border-color .2s;
+    font-family:'Rajdhani',sans-serif;font-weight:700;font-size:11px;
+    color:var(--grey);letter-spacing:0.5px;text-transform:uppercase;
+  }
+  .method-icon-btn .ico{font-size:20px;display:block;margin-bottom:4px;}
+  .method-icon-btn:hover,.method-icon-btn.selected{
+    background:rgba(30,95,255,0.15);border-color:var(--blue);color:var(--white);
+  }
   .glow-orb{position:fixed;border-radius:50%;filter:blur(80px);pointer-events:none;z-index:-1;}
   .glow-orb.blue{width:400px;height:400px;background:rgba(30,95,255,0.12);top:-120px;right:-100px;}
   .glow-orb.gold{width:300px;height:300px;background:rgba(255,193,7,0.07);bottom:-80px;left:-60px;}
-  @media(max-width:560px){.card{padding:32px 20px;}.quick-btn{font-size:12px;}}
+  /* Loading spinner on button */
+  .spinner{display:inline-block;width:16px;height:16px;border:2px solid rgba(10,26,60,0.3);border-top-color:var(--navy);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  @media(max-width:560px){.card{padding:32px 20px;}.quick-btn{font-size:12px;}.method-icons{grid-template-columns:repeat(2,1fr);}}
 </style>
 </head>
 <body>
@@ -99,7 +117,7 @@
       <span class="brand-name">DARKSHADOW</span>
     </a>
     <div class="nav-links">
-      <a href="/my-wallet/">&#128179; My Wallet</a>
+      <a href="/my-wallet/">💳 My Wallet</a>
       <a href="/">Home</a>
       <a href="/logout/">Logout</a>
     </div>
@@ -107,54 +125,238 @@
 </header>
 <div class="page-body">
   <div class="card">
-    <span class="eyebrow">&#128179; Wallet</span>
+    <span class="eyebrow">💳 Wallet</span>
     <h1>Add Money</h1>
-    <p class="sub">Top up your Darkshadow wallet instantly.</p>
-    <div class="balance-pill">
-      <div>
-        <div class="bp-label">Current Balance</div>
-      </div>
-      <div class="bp-val">&#8377;{{ wallet.balance }}</div>
+    <p class="sub">Choose an amount and pay securely via Razorpay.</p>
+
+    <!-- Current balance -->
+    <div class="balance-pill" id="balancePill">
+      <div><div class="bp-label">Current Balance</div></div>
+      <div class="bp-val" id="balanceVal">&#8377;{{ wallet.balance }}</div>
     </div>
+
+    <!-- Django server-side messages (e.g. redirect errors) -->
     {% if messages %}
-    <div class="messages">
+    <div class="django-messages">
       {% for message in messages %}
-      <div class="msg {{ message.tags }}">{{ message }}</div>
+      <div class="django-msg {{ message.tags }}">{{ message }}</div>
       {% endfor %}
     </div>
     {% endif %}
-    <form method="POST" action="/add-money/">
-      {% csrf_token %}
-      <div class="field">
-        <label>Quick Select Amount</label>
-        <div class="quick-row">
-          <button type="button" class="quick-btn" onclick="setAmt(100)">&#8377;100</button>
-          <button type="button" class="quick-btn" onclick="setAmt(500)">&#8377;500</button>
-          <button type="button" class="quick-btn" onclick="setAmt(1000)">&#8377;1K</button>
-          <button type="button" class="quick-btn" onclick="setAmt(2000)">&#8377;2K</button>
-          <button type="button" class="quick-btn" onclick="setAmt(5000)">&#8377;5K</button>
-        </div>
+
+    <!-- JS feedback messages -->
+    <div class="msg-area">
+      <div class="msg error" id="msgError"></div>
+      <div class="msg success" id="msgSuccess"></div>
+    </div>
+
+    <!-- Step 1: Quick amounts -->
+    <div class="field">
+      <label>Quick Select Amount</label>
+      <div class="quick-row">
+        <button type="button" class="quick-btn" onclick="setAmt(100,this)">&#8377;100</button>
+        <button type="button" class="quick-btn" onclick="setAmt(500,this)">&#8377;500</button>
+        <button type="button" class="quick-btn" onclick="setAmt(1000,this)">&#8377;1K</button>
+        <button type="button" class="quick-btn" onclick="setAmt(2000,this)">&#8377;2K</button>
+        <button type="button" class="quick-btn" onclick="setAmt(5000,this)">&#8377;5K</button>
       </div>
-      <div class="field">
-        <label for="amount">Enter Amount (&#8377;)</label>
-        <input type="number" id="amount" name="amount" min="1" max="100000" placeholder="e.g. 500" required>
+    </div>
+
+    <!-- Step 2: Custom amount input -->
+    <div class="field">
+      <label for="amount">Or Enter Custom Amount (&#8377;)</label>
+      <input type="number" id="amount" name="amount" min="1" max="100000"
+             placeholder="e.g. 500" oninput="clearQuickBtns()">
+    </div>
+
+    <!-- Step 3: Payment method selector -->
+    <div class="field">
+      <label>Payment Method</label>
+      <div class="method-icons">
+        <button type="button" class="method-icon-btn selected" data-method="upi" onclick="selectMethod('upi',this)">
+          <span class="ico">📱</span>UPI
+        </button>
+        <button type="button" class="method-icon-btn" data-method="card" onclick="selectMethod('card',this)">
+          <span class="ico">💳</span>Card
+        </button>
+        <button type="button" class="method-icon-btn" data-method="netbanking" onclick="selectMethod('netbanking',this)">
+          <span class="ico">🏦</span>Net Banking
+        </button>
+        <button type="button" class="method-icon-btn" data-method="wallet" onclick="selectMethod('wallet',this)">
+          <span class="ico">💰</span>Wallet
+        </button>
       </div>
-      <div class="field">
-        <label for="method">Payment Method</label>
-        <select id="method" name="method">
-          <option value="upi">&#128241; UPI</option>
-          <option value="card">&#128179; Credit / Debit Card</option>
-          <option value="netbanking">&#127968; Net Banking</option>
-          <option value="wallet">&#128200; Wallet Transfer</option>
-        </select>
-      </div>
-      <button type="submit" class="btn-submit">&#9889; Add Money Now</button>
-    </form>
-    <p class="secure-note">&#128274; 256-bit SSL Secured &nbsp;|&nbsp; Instant Credit &nbsp;|&nbsp; 18+ Only</p>
+      <input type="hidden" id="selectedMethod" value="upi">
+    </div>
+
+    <!-- Pay button -->
+    <button type="button" class="btn-submit" id="payBtn" onclick="initiatePayment()">
+      &#9889; Pay &amp; Add Money
+    </button>
+
+    <p class="secure-note">&#128274; 256-bit SSL Secured &nbsp;|&nbsp; Powered by Razorpay &nbsp;|&nbsp; 18+ Only</p>
   </div>
 </div>
+
+<!-- Razorpay Checkout JS -->
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 <script>
-  function setAmt(v){ document.getElementById('amount').value = v; }
+  const RAZORPAY_KEY = '{{ razorpay_key_id }}';
+  const CSRF_TOKEN   = '{{ csrf_token }}';
+  const USER_NAME    = '{{ user.first_name|default:user.username }}';
+  const USER_EMAIL   = '{{ user.email }}';
+
+  function setAmt(v, btn) {
+    document.getElementById('amount').value = v;
+    // Highlight active quick btn
+    document.querySelectorAll('.quick-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  }
+
+  function clearQuickBtns() {
+    document.querySelectorAll('.quick-btn').forEach(b => b.classList.remove('active'));
+  }
+
+  function selectMethod(method, btn) {
+    document.getElementById('selectedMethod').value = method;
+    document.querySelectorAll('.method-icon-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+  }
+
+  function showMsg(type, text) {
+    const el = document.getElementById(type === 'error' ? 'msgError' : 'msgSuccess');
+    const other = document.getElementById(type === 'error' ? 'msgSuccess' : 'msgError');
+    other.classList.remove('show');
+    el.textContent = text;
+    el.classList.add('show');
+    el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  function hideMessages() {
+    document.getElementById('msgError').classList.remove('show');
+    document.getElementById('msgSuccess').classList.remove('show');
+  }
+
+  function setLoading(loading) {
+    const btn = document.getElementById('payBtn');
+    if (loading) {
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span> Processing...';
+    } else {
+      btn.disabled = false;
+      btn.innerHTML = '&#9889; Pay &amp; Add Money';
+    }
+  }
+
+  async function initiatePayment() {
+    hideMessages();
+    const amountRaw = document.getElementById('amount').value.trim();
+    const amount    = parseFloat(amountRaw);
+    const method    = document.getElementById('selectedMethod').value;
+
+    // Client-side validation
+    if (!amountRaw || isNaN(amount) || amount <= 0) {
+      showMsg('error', '\u26A0\uFE0F Please enter a valid amount greater than \u20B90.');
+      return;
+    }
+    if (amount > 100000) {
+      showMsg('error', '\u26A0\uFE0F Maximum single deposit is \u20B91,00,000.');
+      return;
+    }
+    if (amount < 1) {
+      showMsg('error', '\u26A0\uFE0F Minimum deposit is \u20B91.');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      // Step 1: Create order on server
+      const orderRes = await fetch('/wallet/create-order/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': CSRF_TOKEN,
+        },
+        body: JSON.stringify({ amount, method }),
+      });
+      const orderData = await orderRes.json();
+
+      if (!orderRes.ok || orderData.error) {
+        showMsg('error', '\u274C ' + (orderData.error || 'Could not create payment order. Please try again.'));
+        setLoading(false);
+        return;
+      }
+
+      // Step 2: Open Razorpay Checkout
+      const options = {
+        key:         orderData.key_id,
+        amount:      orderData.amount,
+        currency:    orderData.currency,
+        name:        'Darkshadow',
+        description: 'Wallet Top-Up',
+        order_id:    orderData.order_id,
+        prefill: {
+          name:  USER_NAME,
+          email: USER_EMAIL,
+        },
+        theme: { color: '#1E5FFF' },
+        modal: {
+          ondismiss: function() {
+            setLoading(false);
+            showMsg('error', '\u26A0\uFE0F Payment cancelled. Your wallet was not charged.');
+          }
+        },
+        handler: async function(response) {
+          // Step 3: Verify payment on server
+          try {
+            const verifyRes = await fetch('/wallet/verify-payment/', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': CSRF_TOKEN,
+              },
+              body: JSON.stringify({
+                razorpay_order_id:   response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature:  response.razorpay_signature,
+              }),
+            });
+            const verifyData = await verifyRes.json();
+
+            if (verifyData.success) {
+              // Update balance pill live
+              document.getElementById('balanceVal').textContent =
+                '\u20B9' + verifyData.new_balance.toFixed(2);
+              showMsg('success', verifyData.message +
+                ' New balance: \u20B9' + verifyData.new_balance.toFixed(2));
+              // Reset form
+              document.getElementById('amount').value = '';
+              clearQuickBtns();
+              // Redirect to wallet after short delay
+              setTimeout(() => { window.location.href = '/my-wallet/'; }, 2000);
+            } else {
+              showMsg('error', '\u274C ' + (verifyData.error || 'Payment verification failed. Contact support.'));
+            }
+          } catch (e) {
+            showMsg('error', '\u274C Verification error: ' + e.message);
+          }
+          setLoading(false);
+        },
+      };
+
+      const rzp = new Razorpay(options);
+      rzp.on('payment.failed', function(response) {
+        setLoading(false);
+        showMsg('error', '\u274C Payment failed: ' + (response.error.description || 'Unknown error'));
+      });
+      rzp.open();
+
+    } catch (err) {
+      showMsg('error', '\u274C Network error: ' + err.message);
+      setLoading(false);
+    }
+  }
 </script>
 </body>
 </html>

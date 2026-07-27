@@ -14,6 +14,8 @@ urlpatterns = [
     path('ds-admin/add-user/',                  views.admin_add_user,     name='admin_add_user'),
     # Wallet
     path('add-money/',                views.add_money_view,          name='add_money'),
+    path('wallet/create-order/',      views.wallet_create_order,     name='wallet_create_order'),
+    path('wallet/verify-payment/',    views.wallet_verify_payment,   name='wallet_verify_payment'),
     path('my-wallet/',                views.my_wallet_view,          name='my_wallet'),
     # Profile
     path('edit-profile/',             views.edit_profile_view,       name='edit_profile'),
