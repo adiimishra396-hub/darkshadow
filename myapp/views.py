@@ -42,8 +42,6 @@ def home(request):
 # ──────────────────────────────────────────── Login ───────────────────────────
 def login_view(request):
     if request.user.is_authenticated:
-        if request.user.is_superuser:
-            return redirect('admin_panel')
         return redirect('home')
 
     _ensure_admin()
@@ -73,9 +71,9 @@ def login_view(request):
             login(request, user)
             if user.is_superuser:
                 messages.success(request, 'Welcome back, Admin! 🛡️')
-                return redirect('admin_panel')
-            name = user.first_name or user.username
-            messages.success(request, f'Welcome back, {name}! 🎉 You are now logged in.')
+            else:
+                name = user.first_name or user.username
+                messages.success(request, f'Welcome back, {name}! 🎉 You are now logged in.')
             return redirect('home')
 
         messages.error(request, 'Invalid credentials. Please check your email and password.')
@@ -86,8 +84,6 @@ def login_view(request):
 # ──────────────────────────────────────────── Signup ──────────────────────────
 def signup_view(request):
     if request.user.is_authenticated:
-        if request.user.is_superuser:
-            return redirect('admin_panel')
         return redirect('home')
 
     if request.method == 'POST':
