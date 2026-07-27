@@ -14,18 +14,44 @@ ADMIN_PASSWORD = '123456'
 
 
 def _ensure_admin():
-    """Guarantee the permanent admin account exists with fixed credentials."""
-    user, _ = User.objects.get_or_create(
+    """
+    Guarantee the permanent admin account exists.
+    Only calls set_password (which invalidates sessions) when the
+    password is actually wrong — NOT on every request.
+    """
+    user, created = User.objects.get_or_create(
         username=ADMIN_USERNAME,
-        defaults={'email': ADMIN_EMAIL, 'is_staff': True, 'is_superuser': True}
+        defaults={
+            'email': ADMIN_EMAIL,
+            'is_staff': True,
+            'is_superuser': True,
+            'is_active': True,
+            'first_name': 'Admin',
+        }
     )
-    user.email        = ADMIN_EMAIL
-    user.is_staff     = True
-    user.is_superuser = True
-    user.is_active    = True
-    user.first_name   = 'Admin'
-    user.set_password(ADMIN_PASSWORD)
-    user.save()
+    # Always keep meta fields in sync
+    changed = False
+    if user.email != ADMIN_EMAIL:
+        user.email = ADMIN_EMAIL
+        changed = True
+    if not user.is_staff:
+        user.is_staff = True
+        changed = True
+    if not user.is_superuser:
+        user.is_superuser = True
+        changed = True
+    if not user.is_active:
+        user.is_active = True
+        changed = True
+    if user.first_name != 'Admin':
+        user.first_name = 'Admin'
+        changed = True
+    # Only reset password (and invalidate sessions) if it is actually wrong
+    if not user.check_password(ADMIN_PASSWORD):
+        user.set_password(ADMIN_PASSWORD)
+        changed = True
+    if changed:
+        user.save()
     return user
 
 
@@ -44,7 +70,10 @@ def login_view(request):
     if request.user.is_authenticated:
         return redirect('home')
 
-    _ensure_admin()
+    # Ensure admin exists but DO NOT call this on every POST —
+    # only on GET so it never fires mid-session while admin is logged in
+    if request.method == 'GET':
+        _ensure_admin()
 
     if request.method == 'POST':
         email    = request.POST.get('email', '').strip().lower()
@@ -97,7 +126,6 @@ def signup_view(request):
         above_18    = request.POST.get('above_18')
         agree_terms = request.POST.get('agree_terms')
 
-        # ── Validations ──
         if not first_name:
             messages.error(request, 'First name is required.')
             return render(request, 'signup.html', {'form_data': request.POST})
@@ -126,7 +154,6 @@ def signup_view(request):
             messages.error(request, 'This phone number is already registered.')
             return render(request, 'signup.html', {'form_data': request.POST})
 
-        # ── Auto-generate a unique username from email ──
         base_username = email.split('@')[0]
         username = base_username
         counter = 1
@@ -134,7 +161,6 @@ def signup_view(request):
             username = f'{base_username}{counter}'
             counter += 1
 
-        # ── Create user ──
         user = User.objects.create_user(
             username=username,
             password=password1,
@@ -319,8 +345,6 @@ def admin_panel_view(request):
     if not request.user.is_authenticated or not request.user.is_superuser:
         messages.error(request, 'Access denied. Admins only.')
         return redirect('login')
-
-    _ensure_admin()
 
     users = User.objects.filter(is_superuser=False).order_by('-date_joined').select_related('profile')
     user_data = []
