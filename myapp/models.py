@@ -126,3 +126,37 @@ class RazorpaySettings(models.Model):
     def get_singleton(cls):
         obj, _ = cls.objects.get_or_create(pk=1)
         return obj
+
+
+class SpinMachineSettings(models.Model):
+    """
+    Singleton model (id=1). Admin sets pricing and prize amounts here.
+    All values are picked up dynamically by the home view and jackpot views.
+    """
+    spin_pack_spins   = models.PositiveIntegerField(default=3,
+        help_text='Number of spins per purchase pack')
+    spin_pack_amount  = models.DecimalField(max_digits=8, decimal_places=2, default='10.00',
+        help_text='Price per spin pack (INR)')
+    # Win prize amounts (credited to wallet)
+    prize_diamonds    = models.DecimalField(max_digits=10, decimal_places=2, default='500.00',
+        help_text='Prize for 3x Diamonds (wallet credit)')
+    prize_sevens      = models.DecimalField(max_digits=10, decimal_places=2, default='300.00',
+        help_text='Prize for 3x Lucky Sevens (wallet credit)')
+    prize_cherries    = models.DecimalField(max_digits=10, decimal_places=2, default='100.00',
+        help_text='Prize for 3x Cherries (wallet credit)')
+    prize_two_of_kind = models.DecimalField(max_digits=10, decimal_places=2, default='20.00',
+        help_text='Prize for any two-of-a-kind match (wallet credit)')
+    is_active         = models.BooleanField(default=True,
+        help_text='Show/hide the spin machine on the homepage')
+    updated_at        = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Spin Machine Settings'
+
+    def __str__(self):
+        return f'Spin Machine Settings (updated {self.updated_at})'
+
+    @classmethod
+    def get_singleton(cls):
+        obj, _ = cls.objects.get_or_create(pk=1)
+        return obj

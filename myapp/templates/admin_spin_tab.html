@@ -1,0 +1,166 @@
+{% comment %}
+  Spin Machine Admin Tab — include inside admin_panel.html tab-spin div
+  Required context: spin_cfg, spin_total_revenue, spin_total_spins_sold,
+                    spin_unique_buyers, spin_purchases_count, spin_recent
+{% endcomment %}
+
+<!-- Spin Machine Stats Row -->
+<div class="stats-row" style="margin-bottom:24px;">
+  <div class="stat-card gold">
+    <div class="sc-label">Total Revenue</div>
+    <div class="sc-val">₹{{ spin_total_revenue|floatformat:0 }}</div>
+    <div class="sc-sub">from spin purchases</div>
+  </div>
+  <div class="stat-card green-card">
+    <div class="sc-label">Unique Buyers</div>
+    <div class="sc-val">{{ spin_unique_buyers }}</div>
+    <div class="sc-sub">users who purchased</div>
+  </div>
+  <div class="stat-card">
+    <div class="sc-label">Spins Sold</div>
+    <div class="sc-val" style="color:var(--blue);">{{ spin_total_spins_sold }}</div>
+    <div class="sc-sub">total spins credited</div>
+  </div>
+  <div class="stat-card">
+    <div class="sc-label">Total Orders</div>
+    <div class="sc-val">{{ spin_purchases_count }}</div>
+    <div class="sc-sub">successful purchases</div>
+  </div>
+</div>
+
+<!-- Spin Machine Settings Form -->
+<div style="background:rgba(255,193,7,.05);border:1px solid rgba(255,193,7,.2);border-radius:16px;padding:28px 32px;margin-bottom:28px;">
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px;">
+    <div style="width:36px;height:36px;border-radius:8px;background:rgba(255,193,7,.15);border:1px solid rgba(255,193,7,.3);display:flex;align-items:center;justify-content:center;font-size:18px;">🎰</div>
+    <h2 style="font-family:'Rajdhani',sans-serif;font-weight:700;font-size:15px;letter-spacing:1.5px;text-transform:uppercase;color:var(--white);">Spin Machine Settings</h2>
+    <span style="margin-left:auto;display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:20px;
+      {% if spin_cfg.is_active %}background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.3);color:#86efac;
+      {% else %}background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.3);color:#fca5a5;{% endif %}
+      font-family:'Rajdhani',sans-serif;font-weight:700;font-size:11px;letter-spacing:1px;text-transform:uppercase;">
+      <span style="width:6px;height:6px;border-radius:50%;display:inline-block;
+        {% if spin_cfg.is_active %}background:#22c55e;{% else %}background:#ef4444;{% endif %}"></span>
+      {% if spin_cfg.is_active %}Live{% else %}Hidden{% endif %}
+    </span>
+  </div>
+  <p style="font-size:13px;color:var(--grey);margin-bottom:24px;line-height:1.6;">
+    Changes take effect immediately on the homepage. Prize amounts are credited to the user's wallet on win.
+  </p>
+
+  <form method="post" action="{% url 'save_spin_settings' %}">
+    {% csrf_token %}
+
+    <!-- Pack Pricing -->
+    <div style="margin-bottom:20px;">
+      <div style="font-family:'Rajdhani',sans-serif;font-weight:700;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--grey);margin-bottom:12px;">📦 Spin Pack</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+        <div class="rzp-field">
+          <label for="spin_pack_spins">Spins per Pack</label>
+          <div class="input-wrap">
+            <input type="number" id="spin_pack_spins" name="spin_pack_spins" min="1" max="100"
+              value="{{ spin_cfg.spin_pack_spins }}" required>
+          </div>
+          <span class="field-hint">How many spins the user gets per purchase</span>
+        </div>
+        <div class="rzp-field">
+          <label for="spin_pack_amount">Pack Price (₹)</label>
+          <div class="input-wrap">
+            <input type="number" id="spin_pack_amount" name="spin_pack_amount" min="1" step="0.01"
+              value="{{ spin_cfg.spin_pack_amount }}" required>
+          </div>
+          <span class="field-hint">Amount charged per pack via Razorpay</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Prize Amounts -->
+    <div style="margin-bottom:20px;">
+      <div style="font-family:'Rajdhani',sans-serif;font-weight:700;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--grey);margin-bottom:12px;">🏆 Winning Prize Amounts (₹ credited to wallet)</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+        <div class="rzp-field">
+          <label for="prize_diamonds">💎💎💎 Triple Diamonds</label>
+          <div class="input-wrap">
+            <input type="number" id="prize_diamonds" name="prize_diamonds" min="0" step="0.01"
+              value="{{ spin_cfg.prize_diamonds }}" required>
+          </div>
+        </div>
+        <div class="rzp-field">
+          <label for="prize_sevens">7️⃣7️⃣7️⃣ Lucky Sevens</label>
+          <div class="input-wrap">
+            <input type="number" id="prize_sevens" name="prize_sevens" min="0" step="0.01"
+              value="{{ spin_cfg.prize_sevens }}" required>
+          </div>
+        </div>
+        <div class="rzp-field">
+          <label for="prize_cherries">🍒🍒🍒 Triple Cherries</label>
+          <div class="input-wrap">
+            <input type="number" id="prize_cherries" name="prize_cherries" min="0" step="0.01"
+              value="{{ spin_cfg.prize_cherries }}" required>
+          </div>
+        </div>
+        <div class="rzp-field">
+          <label for="prize_two_of_kind">✨ Two of a Kind</label>
+          <div class="input-wrap">
+            <input type="number" id="prize_two_of_kind" name="prize_two_of_kind" min="0" step="0.01"
+              value="{{ spin_cfg.prize_two_of_kind }}" required>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Active toggle -->
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;
+      background:rgba(255,255,255,.04);border:1px solid var(--line);
+      border-radius:10px;padding:14px 18px;">
+      <input type="checkbox" id="is_active" name="is_active" {% if spin_cfg.is_active %}checked{% endif %}
+        style="width:18px;height:18px;accent-color:#ffd200;cursor:pointer;">
+      <div>
+        <label for="is_active" style="font-family:'Rajdhani',sans-serif;font-weight:700;font-size:13px;color:var(--white);cursor:pointer;">Show Spin Machine on Homepage</label>
+        <div style="font-size:11px;color:var(--grey);margin-top:2px;">Uncheck to hide the 🎰 button from all users</div>
+      </div>
+    </div>
+
+    <div class="rzp-actions">
+      <button type="submit" class="btn-save-rzp">💾 Save Spin Settings</button>
+      <span style="font-size:12px;color:var(--grey);font-family:'Rajdhani',sans-serif;">Last updated: {{ spin_cfg.updated_at|date:"d M Y, H:i" }}</span>
+    </div>
+  </form>
+</div>
+
+<!-- Recent Spin Purchases -->
+{% if spin_recent %}
+<div class="section-head">
+  <h2>Recent Spin Purchases</h2>
+  <span class="badge">Last 10</span>
+</div>
+<div class="table-wrap">
+  <div style="display:grid;grid-template-columns:40px 1.4fr 80px 80px 80px 1fr;padding:12px 20px;
+    background:rgba(255,255,255,.06);font-family:'Rajdhani',sans-serif;font-weight:700;
+    font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--grey);
+    border-bottom:1px solid var(--line);">
+    <div>#</div><div>User</div><div>Spins</div><div>Amount</div><div>Status</div><div>Date</div>
+  </div>
+  {% for p in spin_recent %}
+  <div style="display:grid;grid-template-columns:40px 1.4fr 80px 80px 80px 1fr;
+    padding:14px 20px;font-size:13.5px;border-bottom:1px solid var(--line);
+    align-items:center;transition:background .15s;"
+    onmouseover="this.style.background='rgba(255,255,255,.03)'" onmouseout="this.style.background=''"
+  >
+    <div style="color:var(--grey);font-size:12px;">{{ forloop.counter }}</div>
+    <div style="font-weight:600;color:var(--white);">{{ p.user.first_name }} {{ p.user.last_name }}<br><span style="color:var(--grey);font-size:12px;">@{{ p.user.username }}</span></div>
+    <div style="color:var(--blue);">{{ p.spins_purchased }}</div>
+    <div style="color:var(--gold);font-family:'Rajdhani',sans-serif;font-weight:700;font-size:15px;">₹{{ p.amount }}</div>
+    <div>
+      <span class="status-badge {{ p.status }}">
+        <span class="dot"></span>{{ p.status|capfirst }}
+      </span>
+    </div>
+    <div style="color:var(--grey);font-size:12px;">{{ p.created_at|date:"d M Y, H:i" }}</div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">
+  <div class="empty-icon">🎰</div>
+  No spin purchases yet.
+</div>
+{% endif %}

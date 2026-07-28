@@ -1,11 +1,13 @@
 {% comment %}
   Today's Jackpot Spin Machine — Modal + JS
-  Include this inside your base template or index.html just before </body>.
-  Requires: {{ razorpay_key_id }}, {{ spin_pack_amount }}, {{ spin_pack_spins }}, {{ spin_wallet }}
+  Requires context: razorpay_key_id, spin_pack_amount, spin_pack_spins, spin_wallet,
+                    prize_diamonds, prize_sevens, prize_cherries, prize_two_of_kind,
+                    spin_machine_active
 {% endcomment %}
 
+{% if spin_machine_active %}
 <!-- ═══════════════════════════════════════════════════════════
-     JACKPOT TRIGGER BUTTON  (place this wherever you want on the page)
+     JACKPOT TRIGGER BUTTON
      ═══════════════════════════════════════════════════════════ -->
 <div id="jackpot-trigger-wrapper" style="position:fixed;bottom:28px;right:28px;z-index:9999;">
   <button id="jackpotTriggerBtn"
@@ -45,7 +47,7 @@
   <div style="
     background:linear-gradient(160deg,#1a1a2e 0%,#16213e 60%,#0f3460 100%);
     border:1px solid rgba(255,210,0,.3);border-radius:20px;
-    padding:36px 32px;max-width:420px;width:92%;text-align:center;
+    padding:36px 32px;max-width:440px;width:92%;text-align:center;
     box-shadow:0 0 60px rgba(255,210,0,.15);
     position:relative;
   ">
@@ -63,7 +65,7 @@
     <!-- Spin pack info -->
     <div style="
       background:rgba(255,210,0,.08);border:1px solid rgba(255,210,0,.25);
-      border-radius:14px;padding:18px;margin-bottom:24px;
+      border-radius:14px;padding:18px;margin-bottom:16px;
     ">
       <div style="display:flex;justify-content:space-between;align-items:center;">
         <div style="text-align:left;">
@@ -73,6 +75,30 @@
         <div style="text-align:right;">
           <div style="color:#4ade80;font-size:1.5rem;font-weight:800;">₹{{ spin_pack_amount }}</div>
         </div>
+      </div>
+    </div>
+
+    <!-- Prize table -->
+    <div style="
+      background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);
+      border-radius:12px;padding:14px 16px;margin-bottom:20px;text-align:left;
+    ">
+      <div style="color:#aaa;font-size:.75rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:10px;">🏆 Prize Table</div>
+      <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.06);">
+        <span style="color:#ccc;font-size:.88rem;">💎💎💎 Triple Diamonds</span>
+        <span style="color:#4ade80;font-weight:700;font-size:.88rem;">₹{{ prize_diamonds }}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.06);">
+        <span style="color:#ccc;font-size:.88rem;">7️⃣7️⃣7️⃣ Lucky Sevens</span>
+        <span style="color:#4ade80;font-weight:700;font-size:.88rem;">₹{{ prize_sevens }}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.06);">
+        <span style="color:#ccc;font-size:.88rem;">🍒🍒🍒 Triple Cherries</span>
+        <span style="color:#4ade80;font-weight:700;font-size:.88rem;">₹{{ prize_cherries }}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;padding:5px 0;">
+        <span style="color:#ccc;font-size:.88rem;">✨ Any Two of a Kind</span>
+        <span style="color:#ffd200;font-weight:700;font-size:.88rem;">₹{{ prize_two_of_kind }}</span>
       </div>
     </div>
 
@@ -139,9 +165,7 @@
     </p>
 
     <!-- Slot reels -->
-    <div style="
-      display:flex;gap:12px;justify-content:center;margin-bottom:24px;
-    ">
+    <div style="display:flex;gap:12px;justify-content:center;margin-bottom:24px;">
       <div class="reel-box" id="reel1" style="
         width:90px;height:90px;background:#0d1b2a;
         border:2px solid #ffd200;border-radius:14px;
@@ -198,7 +222,8 @@
   ">
     <div id="resultEmoji" style="font-size:4rem;margin-bottom:12px;">🎉</div>
     <h2 id="resultTitle" style="color:#ffd200;font-size:1.5rem;margin-bottom:8px;"></h2>
-    <p id="resultMsg" style="color:#ccc;font-size:.95rem;margin-bottom:24px;"></p>
+    <p id="resultMsg" style="color:#ccc;font-size:.95rem;margin-bottom:8px;"></p>
+    <p id="resultPrize" style="color:#4ade80;font-size:1.15rem;font-weight:800;margin-bottom:24px;"></p>
     <button onclick="closeResultModal()" style="
       padding:12px 32px;background:linear-gradient(135deg,#f7971e,#ffd200);
       border:none;border-radius:12px;color:#1a1a2e;font-weight:800;
@@ -226,15 +251,22 @@
 </style>
 
 <!-- ═══════════════════════════════════════════════════════════
-     JAVASCRIPT
+     JAVASCRIPT  — all prize values loaded from Django context
      ═══════════════════════════════════════════════════════════ -->
 <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 <script>
 const JACKPOT_SYMBOLS = ['🍒','🍋','🍊','🍇','💎','7️⃣','🔔','⭐','🃏'];
+
+// Prize values injected from Django context (set by SpinMachineSettings)
+const PRIZE_DIAMONDS    = {{ prize_diamonds|default:500 }};
+const PRIZE_SEVENS      = {{ prize_sevens|default:300 }};
+const PRIZE_CHERRIES    = {{ prize_cherries|default:100 }};
+const PRIZE_TWO_OF_KIND = {{ prize_two_of_kind|default:20 }};
+
 const WIN_COMBOS = {
-  '💎💎💎': { title:'JACKPOT! 💎', msg:'Triple Diamonds! You hit the mega jackpot!' },
-  '7️⃣7️⃣7️⃣': { title:'LUCKY SEVENS! 🎉', msg:'Triple 7s! You are on fire!' },
-  '🍒🍒🍒': { title:'CHERRY WIN! 🍒', msg:'Triple Cherries! Sweet victory!' },
+  '💎💎💎': { title:'JACKPOT! 💎', msg:'Triple Diamonds! You hit the mega jackpot!', combo:'diamonds',    prize: PRIZE_DIAMONDS },
+  '7️⃣7️⃣7️⃣': { title:'LUCKY SEVENS! 🎉', msg:'Triple 7s! You are on fire!',             combo:'sevens',      prize: PRIZE_SEVENS },
+  '🍒🍒🍒': { title:'CHERRY WIN! 🍒', msg:'Triple Cherries! Sweet victory!',           combo:'cherries',    prize: PRIZE_CHERRIES },
 };
 
 let currentSpins = parseInt(document.getElementById('currentSpinCount')?.textContent || '0');
@@ -288,7 +320,6 @@ function launchRazorpay(order) {
     currency: order.currency,
     name:     'Darkshadow Casino',
     description: '{{ spin_pack_spins }} Jackpot Spins',
-    image:    '/static/logo.png',
     order_id: order.order_id,
     prefill: { name: order.name, email: order.email },
     theme:   { color: '#ffd200' },
@@ -328,12 +359,10 @@ async function verifyAndCreditSpins(rzpResponse) {
     const data = await res.json();
     if (data.success) {
       currentSpins = data.total_spins;
-      // Update badges
       const badge = document.getElementById('spinBadge');
       const count = document.getElementById('currentSpinCount');
       if (badge) { badge.textContent = currentSpins + ' spins'; badge.style.display = 'inline'; }
       if (count) { count.textContent = currentSpins; }
-      // Show spin machine immediately
       openSpinMachine();
     } else {
       alert('Payment verification failed: ' + (data.error || 'Unknown error'));
@@ -353,7 +382,6 @@ async function doSpin() {
   spinBtn.disabled = true;
   document.getElementById('spinResult').textContent = '';
 
-  // Deduct spin on server
   const csrfToken = document.cookie.match(/csrftoken=([^;]+)/);
   const csrf = csrfToken ? csrfToken[1] : '';
   const res  = await fetch('{% url "jackpot_use_spin" %}', {
@@ -373,8 +401,7 @@ async function doSpin() {
     badge.style.display = currentSpins > 0 ? 'inline' : 'none';
   }
 
-  // Animate reels
-  const reels = [document.getElementById('reel1'), document.getElementById('reel2'), document.getElementById('reel3')];
+  const reels  = [document.getElementById('reel1'), document.getElementById('reel2'), document.getElementById('reel3')];
   reels.forEach(r => r.classList.add('reel-spinning'));
 
   const results = [];
@@ -391,25 +418,47 @@ async function doSpin() {
   setTimeout(() => { spinBtn.disabled = false; }, 1500);
 }
 
+async function claimWinPrize(combo) {
+  try {
+    const csrfToken = document.cookie.match(/csrftoken=([^;]+)/);
+    const csrf = csrfToken ? csrfToken[1] : '';
+    const res  = await fetch('{% url "jackpot_claim_win" %}', {
+      method: 'POST',
+      headers: { 'X-CSRFToken': csrf, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ combo })
+    });
+    const data = await res.json();
+    if (data.success) {
+      document.getElementById('resultPrize').textContent = data.message;
+    }
+  } catch(e) { /* silent — prize shown from JS prize map */ }
+}
+
 function showSpinResult(results) {
-  const combo = results.join('');
+  const combo       = results.join('');
   const spinResultEl = document.getElementById('spinResult');
-  const winData = WIN_COMBOS[combo];
+  const winData     = WIN_COMBOS[combo];
+
   if (winData) {
     spinResultEl.textContent = '🎉 ' + winData.title;
     spinResultEl.style.color = '#4ade80';
+    // Credit prize server-side
+    claimWinPrize(winData.combo);
     setTimeout(() => {
       document.getElementById('resultEmoji').textContent = results[0];
       document.getElementById('resultTitle').textContent = winData.title;
       document.getElementById('resultMsg').textContent   = winData.msg;
+      document.getElementById('resultPrize').textContent = '💰 ₹' + winData.prize + ' credited to your wallet!';
       document.getElementById('jackpotResultModal').style.display = 'flex';
     }, 400);
   } else if (results[0]===results[1] || results[1]===results[2] || results[0]===results[2]) {
-    spinResultEl.textContent = '✨ Two of a kind!';
+    spinResultEl.textContent = '✨ Two of a kind! ₹' + PRIZE_TWO_OF_KIND + ' won!';
     spinResultEl.style.color = '#ffd200';
+    claimWinPrize('two_of_kind');
   } else {
     spinResultEl.textContent = 'No match — try again!';
     spinResultEl.style.color = '#ef4444';
   }
 }
 </script>
+{% endif %}
