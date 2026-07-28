@@ -149,9 +149,20 @@
     padding:14px 20px;font-size:13.5px;
     border-bottom:1px solid var(--line);align-items:center;transition:background .15s;
   }
-  .tbl-row-signups:last-child,.tbl-row-payments:last-child{border-bottom:none;}
-  .tbl-row-signups:hover,.tbl-row-payments:hover{background:rgba(255,255,255,0.03);}
-  .tbl-row-signups .idx,.tbl-row-payments .idx{color:var(--grey);font-size:12px;}
+  .tbl-head-spin{
+    display:grid;grid-template-columns:40px 1.4fr 80px 100px 90px 1.2fr 90px;
+    padding:12px 20px;background:rgba(255,255,255,0.06);
+    font-family:'Rajdhani',sans-serif;font-weight:700;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;
+    color:var(--grey);border-bottom:1px solid var(--line);
+  }
+  .tbl-row-spin{
+    display:grid;grid-template-columns:40px 1.4fr 80px 100px 90px 1.2fr 90px;
+    padding:14px 20px;font-size:13.5px;
+    border-bottom:1px solid var(--line);align-items:center;transition:background .15s;
+  }
+  .tbl-row-signups:last-child,.tbl-row-payments:last-child,.tbl-row-spin:last-child{border-bottom:none;}
+  .tbl-row-signups:hover,.tbl-row-payments:hover,.tbl-row-spin:hover{background:rgba(255,255,255,0.03);}
+  .tbl-row-signups .idx,.tbl-row-payments .idx,.tbl-row-spin .idx{color:var(--grey);font-size:12px;}
   .tbl-row-signups .uname{font-weight:600;color:var(--white);}
   .tbl-row-signups .phone,.tbl-row-signups .age-val,.tbl-row-signups .joined{color:var(--grey);font-size:13px;}
   .tbl-row-payments .puser{font-weight:600;color:var(--white);}
@@ -216,85 +227,134 @@
     cursor:pointer;transition:opacity .2s;
   }
   .btn-submit-user:hover{opacity:0.85;}
-  /* ── Razorpay Settings ── */
-  .rzp-settings-card{
-    background:rgba(30,95,255,0.05);border:1px solid rgba(30,95,255,0.2);
+  /* ── Settings Cards ── */
+  .settings-card{
     border-radius:16px;padding:28px 32px;margin-bottom:28px;
   }
-  .rzp-header{display:flex;align-items:center;gap:12px;margin-bottom:8px;}
-  .rzp-header .rzp-icon{
+  .rzp-settings-card{
+    background:rgba(30,95,255,0.05);border:1px solid rgba(30,95,255,0.2);
+  }
+  .spin-settings-card{
+    background:rgba(255,193,7,0.05);border:1px solid rgba(255,193,7,0.2);
+  }
+  .settings-header{display:flex;align-items:center;gap:12px;margin-bottom:8px;}
+  .settings-header .s-icon{
     width:36px;height:36px;border-radius:8px;
-    background:rgba(30,95,255,0.15);border:1px solid rgba(30,95,255,0.3);
     display:flex;align-items:center;justify-content:center;font-size:18px;
   }
-  .rzp-header h2{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:15px;letter-spacing:1.5px;text-transform:uppercase;color:var(--white);}
-  .rzp-status-badge{
+  .rzp-settings-card .s-icon{background:rgba(30,95,255,0.15);border:1px solid rgba(30,95,255,0.3);}
+  .spin-settings-card .s-icon{background:rgba(255,193,7,0.15);border:1px solid rgba(255,193,7,0.3);}
+  .settings-header h2{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:15px;letter-spacing:1.5px;text-transform:uppercase;color:var(--white);}
+  .s-status-badge{
     display:inline-flex;align-items:center;gap:6px;margin-left:auto;
     padding:5px 12px;border-radius:20px;
     font-family:'Rajdhani',sans-serif;font-weight:700;font-size:11px;letter-spacing:1px;text-transform:uppercase;
   }
-  .rzp-status-badge.live{background:rgba(34,197,94,0.15);border:1px solid rgba(34,197,94,0.3);color:#86efac;}
-  .rzp-status-badge.live .dot{width:6px;height:6px;border-radius:50%;background:#22c55e;display:inline-block;}
-  .rzp-status-badge.not-set{background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.3);color:#fca5a5;}
-  .rzp-status-badge.not-set .dot{width:6px;height:6px;border-radius:50%;background:#ef4444;display:inline-block;}
-  .rzp-desc{font-size:13px;color:var(--grey);margin-bottom:24px;line-height:1.6;}
-  .rzp-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;}
-  .rzp-field{display:flex;flex-direction:column;gap:8px;}
-  .rzp-field label{
+  .s-status-badge.live{background:rgba(34,197,94,0.15);border:1px solid rgba(34,197,94,0.3);color:#86efac;}
+  .s-status-badge.live .sdot{width:6px;height:6px;border-radius:50%;background:#22c55e;display:inline-block;}
+  .s-status-badge.not-set{background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.3);color:#fca5a5;}
+  .s-status-badge.not-set .sdot{width:6px;height:6px;border-radius:50%;background:#ef4444;display:inline-block;}
+  .s-status-badge.off{background:rgba(249,115,22,0.12);border:1px solid rgba(249,115,22,0.3);color:#fdba74;}
+  .s-status-badge.off .sdot{width:6px;height:6px;border-radius:50%;background:#f97316;display:inline-block;}
+  .s-desc{font-size:13px;color:var(--grey);margin-bottom:24px;line-height:1.6;}
+  .s-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;}
+  .s-form-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:20px;}
+  .s-field{display:flex;flex-direction:column;gap:8px;}
+  .s-field label{
     font-family:'Rajdhani',sans-serif;font-weight:700;font-size:11px;
     letter-spacing:1.2px;text-transform:uppercase;color:var(--grey);
   }
-  .rzp-field input{
+  .s-field input,
+  .s-field select{
     background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);
     border-radius:10px;padding:12px 16px;color:var(--white);
     font-family:'Sora',sans-serif;font-size:13px;outline:none;
     transition:border-color .2s,box-shadow .2s;
-    letter-spacing:0.5px;
+    letter-spacing:0.5px;width:100%;
   }
-  .rzp-field input:focus{border-color:rgba(30,95,255,0.6);box-shadow:0 0 0 3px rgba(30,95,255,0.15);}
-  .rzp-field input::placeholder{color:#3a4a6a;}
-  .rzp-field .field-hint{font-size:11px;color:#4a5878;font-family:'Rajdhani',sans-serif;letter-spacing:0.3px;}
-  .rzp-actions{display:flex;align-items:center;gap:12px;}
-  .btn-save-rzp{
+  .s-field input:focus,.s-field select:focus{border-color:rgba(255,193,7,0.5);box-shadow:0 0 0 3px rgba(255,193,7,0.1);}
+  .rzp-settings-card .s-field input:focus{border-color:rgba(30,95,255,0.6);box-shadow:0 0 0 3px rgba(30,95,255,0.15);}
+  .s-field input::placeholder{color:#3a4a6a;}
+  .s-field .field-hint{font-size:11px;color:#4a5878;font-family:'Rajdhani',sans-serif;letter-spacing:0.3px;}
+  .s-actions{display:flex;align-items:center;gap:12px;}
+  .btn-save{
     display:inline-flex;align-items:center;gap:8px;
     padding:11px 24px;border-radius:10px;
-    background:linear-gradient(135deg,var(--blue-deep),var(--blue));
-    border:1px solid rgba(30,95,255,0.5);
     color:var(--white);font-family:'Rajdhani',sans-serif;font-weight:700;
     font-size:13px;letter-spacing:1px;text-transform:uppercase;
     cursor:pointer;transition:opacity .2s,box-shadow .2s;
+  }
+  .btn-save-rzp{
+    background:linear-gradient(135deg,var(--blue-deep),var(--blue));
+    border:1px solid rgba(30,95,255,0.5);
     box-shadow:0 4px 16px rgba(30,95,255,0.25);
   }
   .btn-save-rzp:hover{opacity:0.88;box-shadow:0 6px 20px rgba(30,95,255,0.4);}
-  .rzp-current-keys{
+  .btn-save-spin{
+    background:linear-gradient(135deg,#b07a00,var(--gold));
+    border:1px solid rgba(255,193,7,0.5);
+    box-shadow:0 4px 16px rgba(255,193,7,0.2);
+    color:var(--dark);
+  }
+  .btn-save-spin:hover{opacity:0.88;box-shadow:0 6px 20px rgba(255,193,7,0.4);}
+  .current-keys{
     background:rgba(255,255,255,0.03);border:1px solid var(--line);
     border-radius:10px;padding:14px 18px;margin-top:20px;
   }
-  .rzp-current-keys .ck-title{
+  .current-keys .ck-title{
     font-family:'Rajdhani',sans-serif;font-weight:700;font-size:11px;
     letter-spacing:1.5px;text-transform:uppercase;color:var(--grey);
     margin-bottom:10px;
   }
-  .rzp-key-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line);}
-  .rzp-key-row:last-child{border-bottom:none;}
-  .rzp-key-row .kl{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--grey);}
-  .rzp-key-row .kv{font-family:'Sora',sans-serif;font-size:12px;color:var(--white);letter-spacing:0.3px;}
-  .rzp-key-row .kv.masked{color:var(--grey);letter-spacing:2px;}
-  .rzp-warning{display:flex;align-items:flex-start;gap:8px;margin-top:16px;padding:12px 16px;background:rgba(249,115,22,0.08);border:1px solid rgba(249,115,22,0.2);border-radius:8px;}
-  .rzp-warning .warn-icon{font-size:14px;margin-top:1px;flex-shrink:0;}
-  .rzp-warning p{font-size:12px;color:#fdba74;font-family:'Rajdhani',sans-serif;letter-spacing:0.3px;line-height:1.6;}
+  .key-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line);}
+  .key-row:last-child{border-bottom:none;}
+  .key-row .kl{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--grey);}
+  .key-row .kv{font-family:'Sora',sans-serif;font-size:12px;color:var(--white);letter-spacing:0.3px;}
+  .key-row .kv.masked{color:var(--grey);letter-spacing:2px;}
+  .s-warning{display:flex;align-items:flex-start;gap:8px;margin-top:16px;padding:12px 16px;background:rgba(249,115,22,0.08);border:1px solid rgba(249,115,22,0.2);border-radius:8px;}
+  .s-warning .warn-icon{font-size:14px;margin-top:1px;flex-shrink:0;}
+  .s-warning p{font-size:12px;color:#fdba74;font-family:'Rajdhani',sans-serif;letter-spacing:0.3px;line-height:1.6;}
+  /* Toggle switch */
+  .toggle-row{display:flex;align-items:center;gap:16px;padding:14px 0;border-top:1px solid var(--line);margin-top:4px;}
+  .toggle-row label{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:13px;letter-spacing:0.5px;text-transform:uppercase;color:var(--grey);}
+  .toggle-switch{position:relative;width:48px;height:26px;}
+  .toggle-switch input{opacity:0;width:0;height:0;position:absolute;}
+  .toggle-slider{
+    position:absolute;inset:0;background:rgba(255,255,255,0.1);
+    border-radius:13px;cursor:pointer;transition:background .25s;
+    border:1px solid rgba(255,255,255,0.15);
+  }
+  .toggle-slider::before{
+    content:'';position:absolute;width:18px;height:18px;left:3px;top:50%;
+    transform:translateY(-50%);background:#fff;border-radius:50%;
+    transition:transform .25s;box-shadow:0 1px 4px rgba(0,0,0,0.3);
+  }
+  .toggle-switch input:checked + .toggle-slider{background:rgba(34,197,94,0.6);border-color:rgba(34,197,94,0.5);}
+  .toggle-switch input:checked + .toggle-slider::before{transform:translate(22px,-50%);}
+  .toggle-desc{font-size:12px;color:var(--grey);font-family:'Rajdhani',sans-serif;}
+  /* Spin stats in cards */
+  .spin-prize-grid{
+    display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px;
+  }
+  .prize-card{
+    background:rgba(255,193,7,0.06);border:1px solid rgba(255,193,7,0.18);
+    border-radius:12px;padding:16px;text-align:center;
+  }
+  .prize-card .p-icon{font-size:24px;margin-bottom:6px;}
+  .prize-card .p-name{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--grey);margin-bottom:4px;}
+  .prize-card .p-val{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:22px;color:var(--gold);}
   /* Toast */
   .toast{position:fixed;bottom:24px;right:24px;background:var(--navy);color:var(--gold);padding:12px 20px;border-radius:10px;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:13px;border:1px solid rgba(255,193,7,0.3);opacity:0;transition:opacity .3s;pointer-events:none;box-shadow:0 8px 24px rgba(0,0,0,0.4);z-index:999;}
   .toast.show{opacity:1;}
   /* toggle-secret */
-  .rzp-field .input-wrap{position:relative;}
-  .rzp-field .input-wrap input{padding-right:46px;width:100%;}
-  .rzp-field .toggle-secret{
+  .s-field .input-wrap{position:relative;}
+  .s-field .input-wrap input{padding-right:46px;width:100%;}
+  .s-field .toggle-secret{
     position:absolute;right:12px;top:50%;transform:translateY(-50%);
     background:none;border:none;cursor:pointer;color:var(--grey);
     font-size:14px;padding:4px;transition:color .2s;
   }
-  .rzp-field .toggle-secret:hover{color:var(--white);}
+  .s-field .toggle-secret:hover{color:var(--white);}
   @media(max-width:900px){
     .sidebar{width:60px;}
     .sb-logo .brand,.sb-nav a span,.sb-bottom a span{display:none;}
@@ -302,13 +362,16 @@
     .main{margin-left:60px;padding:24px 20px;}
     .stats-row{grid-template-columns:1fr 1fr;}
     .cred-grid{grid-template-columns:1fr;}
+    .spin-prize-grid{grid-template-columns:1fr 1fr;}
     .tbl-head-signups,.tbl-row-signups{grid-template-columns:40px 1fr 1fr 90px 120px;}
     .tbl-row-signups .age-val,.tbl-row-signups .joined,.tbl-row-signups .phone{display:none;}
     .tbl-head-payments,.tbl-row-payments{grid-template-columns:40px 1fr 1fr 90px;}
     .tbl-row-payments .ptxn,.tbl-row-payments .pdate,.tbl-row-payments .pmethod{display:none;}
+    .tbl-head-spin,.tbl-row-spin{grid-template-columns:40px 1fr 80px 90px;}
+    .tbl-row-spin .sp-date,.tbl-row-spin .sp-orderid{display:none;}
     .form-grid{grid-template-columns:1fr;}
     .form-field.full{grid-column:span 1;}
-    .rzp-form-grid{grid-template-columns:1fr;}
+    .s-form-grid,.s-form-grid-3{grid-template-columns:1fr;}
   }
 </style>
 </head>
@@ -329,6 +392,9 @@
       </a>
       <a href="#" id="tab-payments-link" onclick="switchTab('payments',this);return false;">
         <span class="icon">&#128179;</span><span>Payments</span>
+      </a>
+      <a href="#" id="tab-spin-link" onclick="switchTab('spin',this);return false;">
+        <span class="icon">&#127920;</span><span>Spin Machine</span>
       </a>
       <a href="#" id="tab-settings-link" onclick="switchTab('settings',this);return false;">
         <span class="icon">&#9881;</span><span>Settings</span>
@@ -493,28 +559,203 @@
       </div>
     </div><!-- /payments -->
 
+    <!-- ══ SPIN MACHINE TAB ══════════════════════════════════════════════════ -->
+    <div id="tab-spin" class="tab-content">
+
+      <!-- Stats Row -->
+      <div class="stats-row">
+        <div class="stat-card green-card">
+          <div class="sc-label">Spin Revenue</div>
+          <div class="sc-val">&#8377;{{ spin_total_revenue }}</div>
+          <div class="sc-sub">From spin purchases</div>
+        </div>
+        <div class="stat-card gold">
+          <div class="sc-label">Spins Sold</div>
+          <div class="sc-val">{{ spin_total_spins_sold|default:"0" }}</div>
+          <div class="sc-sub">Total spins purchased</div>
+        </div>
+        <div class="stat-card">
+          <div class="sc-label">Unique Buyers</div>
+          <div class="sc-val">{{ spin_unique_buyers }}</div>
+          <div class="sc-sub">Users who purchased</div>
+        </div>
+        <div class="stat-card">
+          <div class="sc-label">Total Orders</div>
+          <div class="sc-val">{{ spin_purchases_count }}</div>
+          <div class="sc-sub">Successful orders</div>
+        </div>
+      </div>
+
+      <!-- Current Prize Overview -->
+      <div class="section-head" style="margin-bottom:12px;">
+        <h2>&#127920; Current Prize Table</h2>
+        {% if spin_cfg.is_active %}
+        <span class="s-status-badge live"><span class="sdot"></span> Machine Live</span>
+        {% else %}
+        <span class="s-status-badge off"><span class="sdot"></span> Machine Off</span>
+        {% endif %}
+      </div>
+      <div class="spin-prize-grid" style="margin-bottom:32px;">
+        <div class="prize-card">
+          <div class="p-icon">&#128142;</div>
+          <div class="p-name">3x Diamonds</div>
+          <div class="p-val">&#8377;{{ spin_cfg.prize_diamonds }}</div>
+        </div>
+        <div class="prize-card">
+          <div class="p-icon">7️⃣</div>
+          <div class="p-name">3x Lucky 7s</div>
+          <div class="p-val">&#8377;{{ spin_cfg.prize_sevens }}</div>
+        </div>
+        <div class="prize-card">
+          <div class="p-icon">&#127826;</div>
+          <div class="p-name">3x Cherries</div>
+          <div class="p-val">&#8377;{{ spin_cfg.prize_cherries }}</div>
+        </div>
+        <div class="prize-card">
+          <div class="p-icon">&#127922;</div>
+          <div class="p-name">Any 2-of-a-Kind</div>
+          <div class="p-val">&#8377;{{ spin_cfg.prize_two_of_kind }}</div>
+        </div>
+      </div>
+
+      <!-- Pricing Settings Form -->
+      <div class="settings-card spin-settings-card">
+        <div class="settings-header">
+          <div class="s-icon">&#127920;</div>
+          <h2>Spin Machine Settings</h2>
+          {% if spin_cfg.is_active %}
+          <span class="s-status-badge live" style="margin-left:auto;"><span class="sdot"></span> Active</span>
+          {% else %}
+          <span class="s-status-badge off" style="margin-left:auto;"><span class="sdot"></span> Hidden</span>
+          {% endif %}
+        </div>
+        <p class="s-desc">
+          Set the spin pack pricing (how many spins users get and at what price) and configure the winning prize amounts that get credited to the user's wallet. Changes take effect immediately on the homepage.
+        </p>
+
+        <form method="post" action="/ds-admin/spin-settings/">
+          {% csrf_token %}
+
+          <!-- Pack Pricing -->
+          <div style="font-family:'Rajdhani',sans-serif;font-weight:700;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);margin-bottom:12px;">&#127981; Spin Pack Pricing</div>
+          <div class="s-form-grid" style="margin-bottom:24px;">
+            <div class="s-field">
+              <label>Spins Per Pack</label>
+              <input type="number" name="spin_pack_spins" min="1" max="100"
+                     value="{{ spin_cfg.spin_pack_spins }}" placeholder="3">
+              <span class="field-hint">Number of spins user receives per purchase</span>
+            </div>
+            <div class="s-field">
+              <label>Pack Price (&#8377; INR)</label>
+              <input type="number" name="spin_pack_amount" min="1" step="0.01"
+                     value="{{ spin_cfg.spin_pack_amount }}" placeholder="10">
+              <span class="field-hint">Amount user pays per spin pack (Razorpay)</span>
+            </div>
+          </div>
+
+          <!-- Prize Amounts -->
+          <div style="font-family:'Rajdhani',sans-serif;font-weight:700;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);margin-bottom:12px;">&#127942; Winning Prize Amounts (Wallet Credit)</div>
+          <div class="s-form-grid-3" style="margin-bottom:24px;">
+            <div class="s-field">
+              <label>&#128142; 3x Diamonds (&#8377;)</label>
+              <input type="number" name="prize_diamonds" min="0" step="0.01"
+                     value="{{ spin_cfg.prize_diamonds }}" placeholder="500">
+              <span class="field-hint">Top jackpot — credited to wallet</span>
+            </div>
+            <div class="s-field">
+              <label>7️⃣ 3x Lucky 7s (&#8377;)</label>
+              <input type="number" name="prize_sevens" min="0" step="0.01"
+                     value="{{ spin_cfg.prize_sevens }}" placeholder="300">
+              <span class="field-hint">Second prize — credited to wallet</span>
+            </div>
+            <div class="s-field">
+              <label>&#127826; 3x Cherries (&#8377;)</label>
+              <input type="number" name="prize_cherries" min="0" step="0.01"
+                     value="{{ spin_cfg.prize_cherries }}" placeholder="100">
+              <span class="field-hint">Third prize — credited to wallet</span>
+            </div>
+          </div>
+          <div class="s-form-grid" style="margin-bottom:20px;">
+            <div class="s-field">
+              <label>&#127922; Any 2-of-a-Kind (&#8377;)</label>
+              <input type="number" name="prize_two_of_kind" min="0" step="0.01"
+                     value="{{ spin_cfg.prize_two_of_kind }}" placeholder="20">
+              <span class="field-hint">Consolation prize for partial matches</span>
+            </div>
+          </div>
+
+          <!-- Active Toggle -->
+          <div class="toggle-row">
+            <label>Show Spin Machine on Homepage</label>
+            <label class="toggle-switch">
+              <input type="checkbox" name="is_active" {% if spin_cfg.is_active %}checked{% endif %}>
+              <span class="toggle-slider"></span>
+            </label>
+            <span class="toggle-desc">
+              {% if spin_cfg.is_active %}Spin machine is <strong style="color:#86efac;">visible</strong> on the homepage{% else %}Spin machine is <strong style="color:#fdba74;">hidden</strong> from homepage{% endif %}
+            </span>
+          </div>
+
+          <div class="s-actions" style="margin-top:20px;">
+            <button type="submit" class="btn-save btn-save-spin">&#10003; Save Spin Settings</button>
+            <span style="font-family:'Rajdhani',sans-serif;font-size:12px;color:var(--grey);">Last updated: {{ spin_cfg.updated_at|date:"d M Y, H:i" }}</span>
+          </div>
+        </form>
+      </div>
+
+      <!-- Recent Purchases Table -->
+      <div class="section-head">
+        <h2>&#128179; Recent Spin Purchases</h2>
+        <span class="badge">{{ spin_purchases_count }} Total</span>
+      </div>
+      <div class="table-wrap">
+        {% if spin_recent %}
+          <div class="tbl-head-spin">
+            <div>#</div><div>User</div><div>Spins</div><div>Amount</div><div>Status</div><div>Order ID</div><div>Date</div>
+          </div>
+          {% for sp in spin_recent %}
+          <div class="tbl-row-spin">
+            <div class="idx">{{ forloop.counter }}</div>
+            <div>
+              <div style="font-weight:600;color:var(--white);">{{ sp.user.first_name|default:sp.user.username }}</div>
+              <div style="font-size:12px;color:var(--grey);">@{{ sp.user.username }}</div>
+            </div>
+            <div style="font-family:'Rajdhani',sans-serif;font-weight:700;font-size:15px;color:#a78bfa;">{{ sp.spins_purchased }}</div>
+            <div style="font-family:'Rajdhani',sans-serif;font-weight:700;font-size:15px;color:var(--gold);">&#8377;{{ sp.amount }}</div>
+            <div><span class="status-badge {{ sp.status }}"><span class="dot"></span>{{ sp.get_status_display }}</span></div>
+            <div class="sp-orderid" style="font-size:11px;color:var(--grey);">{{ sp.razorpay_order_id|default:"—" }}</div>
+            <div class="sp-date" style="font-size:12px;color:var(--grey);">{{ sp.created_at|date:"d M Y" }}</div>
+          </div>
+          {% endfor %}
+        {% else %}
+          <div class="empty-state"><div class="empty-icon">&#127920;</div>No spin purchases yet.</div>
+        {% endif %}
+      </div>
+
+    </div><!-- /spin -->
+
     <!-- ══ SETTINGS TAB ══════════════════════════════════════════════════════ -->
     <div id="tab-settings" class="tab-content">
 
       <!-- Razorpay Settings Card -->
-      <div class="rzp-settings-card">
-        <div class="rzp-header">
-          <div class="rzp-icon">&#128179;</div>
+      <div class="settings-card rzp-settings-card">
+        <div class="settings-header">
+          <div class="s-icon">&#128179;</div>
           <h2>Razorpay Payment Settings</h2>
           {% if razorpay_configured %}
-          <span class="rzp-status-badge live"><span class="dot"></span> Live &amp; Active</span>
+          <span class="s-status-badge live" style="margin-left:auto;"><span class="sdot"></span> Live &amp; Active</span>
           {% else %}
-          <span class="rzp-status-badge not-set"><span class="dot"></span> Not Configured</span>
+          <span class="s-status-badge not-set" style="margin-left:auto;"><span class="sdot"></span> Not Configured</span>
           {% endif %}
         </div>
-        <p class="rzp-desc">
+        <p class="s-desc">
           Enter your Razorpay API credentials below. Once saved, users can immediately start adding money to their wallets and purchasing game spins. Keys are stored securely in the database and take priority over environment variables.
         </p>
 
         <form method="post" action="/ds-admin/razorpay-settings/">
           {% csrf_token %}
-          <div class="rzp-form-grid">
-            <div class="rzp-field">
+          <div class="s-form-grid">
+            <div class="s-field">
               <label for="rzp_key_id">Key ID &nbsp;<span style="color:#3a4a6a;font-weight:400;text-transform:none;letter-spacing:0;">(starts with rzp_live_ or rzp_test_)</span></label>
               <div class="input-wrap">
                 <input type="text" id="rzp_key_id" name="rzp_key_id"
@@ -524,7 +765,7 @@
               </div>
               <span class="field-hint">Get this from Razorpay Dashboard &rarr; Settings &rarr; API Keys</span>
             </div>
-            <div class="rzp-field">
+            <div class="s-field">
               <label for="rzp_key_secret">Key Secret</label>
               <div class="input-wrap">
                 <input type="password" id="rzp_key_secret" name="rzp_key_secret"
@@ -536,8 +777,8 @@
               <span class="field-hint">Keep this private. Never share or expose in client-side code.</span>
             </div>
           </div>
-          <div class="rzp-actions">
-            <button type="submit" class="btn-save-rzp">&#10003; Save &amp; Activate</button>
+          <div class="s-actions">
+            <button type="submit" class="btn-save btn-save-rzp">&#10003; Save &amp; Activate</button>
             {% if razorpay_configured %}
             <span style="font-family:'Rajdhani',sans-serif;font-size:12px;color:#86efac;">&#10003; Payments are currently live</span>
             {% else %}
@@ -547,26 +788,26 @@
         </form>
 
         {% if rzp_settings and rzp_settings.key_id %}
-        <div class="rzp-current-keys">
+        <div class="current-keys">
           <div class="ck-title">Currently Active Keys</div>
-          <div class="rzp-key-row">
+          <div class="key-row">
             <span class="kl">Key ID</span>
             <span class="kv">{{ rzp_settings.key_id }}</span>
             <button class="copy-btn" onclick="copy('{{ rzp_settings.key_id }}')">Copy</button>
           </div>
-          <div class="rzp-key-row">
+          <div class="key-row">
             <span class="kl">Key Secret</span>
             <span class="kv masked">&#9679;&#9679;&#9679;&#9679;&#9679;&#9679;&#9679;&#9679;&#9679;&#9679;&#9679;&#9679;</span>
             <span style="font-size:11px;color:#4a5878;font-family:'Rajdhani',sans-serif;">Hidden for security</span>
           </div>
-          <div class="rzp-key-row">
+          <div class="key-row">
             <span class="kl">Last Updated</span>
             <span class="kv" style="color:var(--grey);">{{ rzp_settings.updated_at|date:"d M Y, H:i" }}</span>
           </div>
         </div>
         {% endif %}
 
-        <div class="rzp-warning">
+        <div class="s-warning">
           <span class="warn-icon">&#9888;</span>
           <p>Use <strong>rzp_live_</strong> keys for real money. Use <strong>rzp_test_</strong> keys for testing. Never use live keys in test mode — transactions will fail. The secret key is stored encrypted in the DB and never exposed to the frontend.</p>
         </div>
@@ -652,19 +893,22 @@
   function closeDeleteModal(){document.getElementById('deleteModal').classList.remove('show');}
   document.getElementById('deleteModal').addEventListener('click',function(e){if(e.target===this)closeDeleteModal();});
 
-  // Show/hide Razorpay secret
   function toggleSecret(){
     var inp=document.getElementById('rzp_key_secret');
     inp.type=inp.type==='password'?'text':'password';
   }
 
-  // Auto-open Settings tab if a message came from saving Razorpay settings
+  // Auto-open correct tab based on which message was returned
   (function(){
     {% if messages %}
     {% for message in messages %}
     {% if 'Razorpay' in message.message %}
     var link=document.getElementById('tab-settings-link');
     if(link)switchTab('settings',link);
+    {% endif %}
+    {% if 'Spin' in message.message or 'spin' in message.message %}
+    var link=document.getElementById('tab-spin-link');
+    if(link)switchTab('spin',link);
     {% endif %}
     {% endfor %}
     {% endif %}
