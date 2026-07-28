@@ -72,7 +72,6 @@ class Payment(models.Model):
         return f"{self.user.username} | ₹{self.amount} | {self.status}"
 
 
-# ── Jackpot Spin Machine ────────────────────────────────────────────────────────────────
 class SpinWallet(models.Model):
     """Tracks how many spins a user has available to play."""
     user   = models.OneToOneField(User, on_delete=models.CASCADE, related_name='spin_wallet')
@@ -103,3 +102,27 @@ class SpinPurchase(models.Model):
 
     def __str__(self):
         return f"{self.user.username} | {self.spins_purchased} spins | {self.status}"
+
+
+class RazorpaySettings(models.Model):
+    """
+    Singleton model — always only one row (id=1).
+    Admin can update Key ID and Key Secret from the admin panel.
+    Falls back to environment variables if the row is empty.
+    """
+    key_id     = models.CharField(max_length=200, blank=True, default='',
+                                  verbose_name='Razorpay Key ID')
+    key_secret = models.CharField(max_length=200, blank=True, default='',
+                                  verbose_name='Razorpay Key Secret')
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Razorpay Settings'
+
+    def __str__(self):
+        return f'Razorpay Settings (updated {self.updated_at})'
+
+    @classmethod
+    def get_singleton(cls):
+        obj, _ = cls.objects.get_or_create(pk=1)
+        return obj

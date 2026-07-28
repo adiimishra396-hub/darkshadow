@@ -23,8 +23,6 @@
       radial-gradient(circle at 95% 90%,rgba(255,193,7,0.08) 0%,transparent 40%);
   }
   a{text-decoration:none;color:inherit;}
-
-  /* Sidebar */
   .layout{display:flex;min-height:100vh;}
   .sidebar{
     width:240px;min-height:100vh;
@@ -73,8 +71,6 @@
   .sb-home:hover{background:rgba(255,255,255,0.06);color:var(--white);}
   .sb-logout{color:#ef4444;}
   .sb-logout:hover{background:rgba(239,68,68,0.1);color:#ef4444;}
-
-  /* Main */
   .main{margin-left:240px;flex:1;padding:32px 36px;}
   .topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:32px;}
   .topbar h1{font-family:'Orbitron',sans-serif;font-weight:900;font-size:20px;letter-spacing:1px;}
@@ -85,8 +81,6 @@
   }
   .admin-tag .dot{width:8px;height:8px;border-radius:50%;background:var(--green);}
   .admin-tag span{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:13px;letter-spacing:0.5px;color:var(--grey);}
-
-  /* Messages */
   .msgs{margin-bottom:20px;}
   .msg{
     padding:12px 18px;border-radius:10px;margin-bottom:8px;
@@ -95,8 +89,6 @@
   }
   .msg.success{background:rgba(34,197,94,0.12);border:1px solid rgba(34,197,94,0.25);color:#86efac;}
   .msg.error{background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.25);color:#fca5a5;}
-
-  /* Stats */
   .stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:32px;}
   .stat-card{
     background:rgba(255,255,255,0.04);border:1px solid var(--line);
@@ -110,8 +102,6 @@
   .stat-card.gold .sc-val{color:var(--gold);}
   .stat-card.green-card{border-color:rgba(34,197,94,0.25);}
   .stat-card.green-card .sc-val{color:var(--green);}
-
-  /* Cred card */
   .cred-card{background:rgba(255,193,7,0.06);border:1px solid rgba(255,193,7,0.25);border-radius:16px;padding:24px 28px;margin-bottom:32px;}
   .cred-card .cred-head{display:flex;align-items:center;gap:10px;margin-bottom:18px;}
   .cred-card .cred-head h3{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:14px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);}
@@ -123,8 +113,6 @@
   .cred-item .copy-btn{background:rgba(255,193,7,0.1);border:1px solid rgba(255,193,7,0.2);border-radius:6px;padding:6px 10px;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--gold);cursor:pointer;transition:background .2s;}
   .cred-item .copy-btn:hover{background:rgba(255,193,7,0.2);}
   .cred-warning{margin-top:14px;font-size:12px;color:#6B7690;font-family:'Rajdhani',sans-serif;letter-spacing:0.3px;display:flex;align-items:center;gap:6px;}
-
-  /* Section head */
   .section-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;}
   .section-head h2{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:16px;letter-spacing:1px;text-transform:uppercase;color:var(--white);}
   .section-head .badge{background:rgba(30,95,255,0.15);border:1px solid rgba(30,95,255,0.3);color:#6fa3ff;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:12px;padding:4px 12px;border-radius:20px;}
@@ -138,8 +126,6 @@
     cursor:pointer;transition:opacity .2s;
   }
   .btn-add-user:hover{opacity:0.85;}
-
-  /* Tables */
   .table-wrap{background:rgba(255,255,255,0.03);border:1px solid var(--line);border-radius:16px;overflow:hidden;margin-bottom:32px;}
   .tbl-head-signups{
     display:grid;grid-template-columns:40px 1.4fr 1fr 60px 1fr 90px 160px;
@@ -171,8 +157,6 @@
   .tbl-row-payments .puser{font-weight:600;color:var(--white);}
   .tbl-row-payments .pamount{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:15px;color:var(--gold);}
   .tbl-row-payments .pdate,.tbl-row-payments .ptxn{color:var(--grey);font-size:12px;}
-
-  /* Status badges */
   .status-badge{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:11px;letter-spacing:0.5px;text-transform:uppercase;}
   .status-badge .dot{width:5px;height:5px;border-radius:50%;}
   .status-badge.active,.status-badge.success{background:rgba(34,197,94,0.15);color:#86efac;}
@@ -184,8 +168,6 @@
   .status-badge.refunded{background:rgba(99,102,241,0.15);color:#a5b4fc;}
   .status-badge.refunded .dot{background:#818cf8;}
   .method-badge{display:inline-block;padding:3px 9px;border-radius:6px;background:rgba(30,95,255,0.12);color:#6fa3ff;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:11px;letter-spacing:0.5px;text-transform:uppercase;}
-
-  /* Action buttons */
   .action-btns{display:flex;gap:6px;flex-wrap:wrap;}
   .btn-toggle{padding:5px 10px;border-radius:6px;border:none;cursor:pointer;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:11px;letter-spacing:0.5px;text-transform:uppercase;transition:background .2s;}
   .btn-activate{background:rgba(34,197,94,0.15);color:#86efac;border:1px solid rgba(34,197,94,0.3);}
@@ -194,14 +176,11 @@
   .btn-deactivate:hover{background:rgba(249,115,22,0.28);}
   .btn-delete{padding:5px 10px;border-radius:6px;cursor:pointer;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:11px;letter-spacing:0.5px;text-transform:uppercase;background:rgba(239,68,68,0.15);color:#fca5a5;border:1px solid rgba(239,68,68,0.3);transition:background .2s;}
   .btn-delete:hover{background:rgba(239,68,68,0.28);}
-
   .empty-state{text-align:center;padding:60px 20px;color:var(--grey);font-family:'Rajdhani',sans-serif;font-weight:600;font-size:14px;letter-spacing:0.5px;}
   .empty-state .empty-icon{font-size:36px;margin-bottom:12px;opacity:0.5;}
-
   .tab-content{display:none;}
   .tab-content.active{display:block;}
-
-  /* Modal shared */
+  /* Modals */
   .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:200;align-items:center;justify-content:center;}
   .modal-overlay.show{display:flex;}
   .modal-box{background:#0d1e45;border:1px solid rgba(30,95,255,0.3);border-radius:16px;padding:32px;width:90%;text-align:center;}
@@ -214,8 +193,6 @@
   .modal-cancel:hover{background:rgba(255,255,255,0.14);}
   .modal-confirm-danger{padding:10px 24px;border-radius:8px;background:rgba(239,68,68,0.2);border:1px solid rgba(239,68,68,0.4);color:#fca5a5;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:13px;cursor:pointer;transition:background .2s;}
   .modal-confirm-danger:hover{background:rgba(239,68,68,0.35);}
-
-  /* Add User modal specific */
   .add-user-box{max-width:520px;text-align:left;}
   .add-user-box h3{text-align:left;}
   .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;}
@@ -239,11 +216,85 @@
     cursor:pointer;transition:opacity .2s;
   }
   .btn-submit-user:hover{opacity:0.85;}
-
+  /* ── Razorpay Settings ── */
+  .rzp-settings-card{
+    background:rgba(30,95,255,0.05);border:1px solid rgba(30,95,255,0.2);
+    border-radius:16px;padding:28px 32px;margin-bottom:28px;
+  }
+  .rzp-header{display:flex;align-items:center;gap:12px;margin-bottom:8px;}
+  .rzp-header .rzp-icon{
+    width:36px;height:36px;border-radius:8px;
+    background:rgba(30,95,255,0.15);border:1px solid rgba(30,95,255,0.3);
+    display:flex;align-items:center;justify-content:center;font-size:18px;
+  }
+  .rzp-header h2{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:15px;letter-spacing:1.5px;text-transform:uppercase;color:var(--white);}
+  .rzp-status-badge{
+    display:inline-flex;align-items:center;gap:6px;margin-left:auto;
+    padding:5px 12px;border-radius:20px;
+    font-family:'Rajdhani',sans-serif;font-weight:700;font-size:11px;letter-spacing:1px;text-transform:uppercase;
+  }
+  .rzp-status-badge.live{background:rgba(34,197,94,0.15);border:1px solid rgba(34,197,94,0.3);color:#86efac;}
+  .rzp-status-badge.live .dot{width:6px;height:6px;border-radius:50%;background:#22c55e;display:inline-block;}
+  .rzp-status-badge.not-set{background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.3);color:#fca5a5;}
+  .rzp-status-badge.not-set .dot{width:6px;height:6px;border-radius:50%;background:#ef4444;display:inline-block;}
+  .rzp-desc{font-size:13px;color:var(--grey);margin-bottom:24px;line-height:1.6;}
+  .rzp-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;}
+  .rzp-field{display:flex;flex-direction:column;gap:8px;}
+  .rzp-field label{
+    font-family:'Rajdhani',sans-serif;font-weight:700;font-size:11px;
+    letter-spacing:1.2px;text-transform:uppercase;color:var(--grey);
+  }
+  .rzp-field input{
+    background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);
+    border-radius:10px;padding:12px 16px;color:var(--white);
+    font-family:'Sora',sans-serif;font-size:13px;outline:none;
+    transition:border-color .2s,box-shadow .2s;
+    letter-spacing:0.5px;
+  }
+  .rzp-field input:focus{border-color:rgba(30,95,255,0.6);box-shadow:0 0 0 3px rgba(30,95,255,0.15);}
+  .rzp-field input::placeholder{color:#3a4a6a;}
+  .rzp-field .field-hint{font-size:11px;color:#4a5878;font-family:'Rajdhani',sans-serif;letter-spacing:0.3px;}
+  .rzp-actions{display:flex;align-items:center;gap:12px;}
+  .btn-save-rzp{
+    display:inline-flex;align-items:center;gap:8px;
+    padding:11px 24px;border-radius:10px;
+    background:linear-gradient(135deg,var(--blue-deep),var(--blue));
+    border:1px solid rgba(30,95,255,0.5);
+    color:var(--white);font-family:'Rajdhani',sans-serif;font-weight:700;
+    font-size:13px;letter-spacing:1px;text-transform:uppercase;
+    cursor:pointer;transition:opacity .2s,box-shadow .2s;
+    box-shadow:0 4px 16px rgba(30,95,255,0.25);
+  }
+  .btn-save-rzp:hover{opacity:0.88;box-shadow:0 6px 20px rgba(30,95,255,0.4);}
+  .rzp-current-keys{
+    background:rgba(255,255,255,0.03);border:1px solid var(--line);
+    border-radius:10px;padding:14px 18px;margin-top:20px;
+  }
+  .rzp-current-keys .ck-title{
+    font-family:'Rajdhani',sans-serif;font-weight:700;font-size:11px;
+    letter-spacing:1.5px;text-transform:uppercase;color:var(--grey);
+    margin-bottom:10px;
+  }
+  .rzp-key-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line);}
+  .rzp-key-row:last-child{border-bottom:none;}
+  .rzp-key-row .kl{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--grey);}
+  .rzp-key-row .kv{font-family:'Sora',sans-serif;font-size:12px;color:var(--white);letter-spacing:0.3px;}
+  .rzp-key-row .kv.masked{color:var(--grey);letter-spacing:2px;}
+  .rzp-warning{display:flex;align-items:flex-start;gap:8px;margin-top:16px;padding:12px 16px;background:rgba(249,115,22,0.08);border:1px solid rgba(249,115,22,0.2);border-radius:8px;}
+  .rzp-warning .warn-icon{font-size:14px;margin-top:1px;flex-shrink:0;}
+  .rzp-warning p{font-size:12px;color:#fdba74;font-family:'Rajdhani',sans-serif;letter-spacing:0.3px;line-height:1.6;}
   /* Toast */
-  .toast{position:fixed;bottom:24px;right:24px;background:var(--navy);color:var(--gold);padding:12px 20px;border-radius:10px;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:13px;border:1px solid rgba(255,193,7,0.3);opacity:0;transition:opacity .3s;pointer-events:none;box-shadow:0 8px 24px rgba(0,0,0,0.4);}
+  .toast{position:fixed;bottom:24px;right:24px;background:var(--navy);color:var(--gold);padding:12px 20px;border-radius:10px;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:13px;border:1px solid rgba(255,193,7,0.3);opacity:0;transition:opacity .3s;pointer-events:none;box-shadow:0 8px 24px rgba(0,0,0,0.4);z-index:999;}
   .toast.show{opacity:1;}
-
+  /* toggle-secret */
+  .rzp-field .input-wrap{position:relative;}
+  .rzp-field .input-wrap input{padding-right:46px;width:100%;}
+  .rzp-field .toggle-secret{
+    position:absolute;right:12px;top:50%;transform:translateY(-50%);
+    background:none;border:none;cursor:pointer;color:var(--grey);
+    font-size:14px;padding:4px;transition:color .2s;
+  }
+  .rzp-field .toggle-secret:hover{color:var(--white);}
   @media(max-width:900px){
     .sidebar{width:60px;}
     .sb-logo .brand,.sb-nav a span,.sb-bottom a span{display:none;}
@@ -257,12 +308,12 @@
     .tbl-row-payments .ptxn,.tbl-row-payments .pdate,.tbl-row-payments .pmethod{display:none;}
     .form-grid{grid-template-columns:1fr;}
     .form-field.full{grid-column:span 1;}
+    .rzp-form-grid{grid-template-columns:1fr;}
   }
 </style>
 </head>
 <body>
 <div class="layout">
-
   <!-- Sidebar -->
   <aside class="sidebar">
     <div class="sb-logo">
@@ -278,6 +329,9 @@
       </a>
       <a href="#" id="tab-payments-link" onclick="switchTab('payments',this);return false;">
         <span class="icon">&#128179;</span><span>Payments</span>
+      </a>
+      <a href="#" id="tab-settings-link" onclick="switchTab('settings',this);return false;">
+        <span class="icon">&#9881;</span><span>Settings</span>
       </a>
     </nav>
     <hr class="sb-divider">
@@ -305,7 +359,7 @@
     </div>
     {% endif %}
 
-    <!-- SIGNUPS TAB -->
+    <!-- ══ SIGNUPS TAB ══════════════════════════════════════════════════════ -->
     <div id="tab-signups" class="tab-content active">
       <div class="stats-row">
         <div class="stat-card gold">
@@ -329,7 +383,6 @@
           <div class="sc-sub">Panel operational</div>
         </div>
       </div>
-
       <div class="cred-card">
         <div class="cred-head">
           <div class="lock-icon">&#128274;</div>
@@ -349,9 +402,8 @@
             <button class="copy-btn" onclick="copy('{{ admin_password }}')">Copy</button>
           </div>
         </div>
-        <div class="cred-warning">&#9888; These credentials are hardcoded. Any changes are automatically reverted on next login.</div>
+        <div class="cred-warning">&#9888; These credentials are hardcoded and auto-restored on next login.</div>
       </div>
-
       <div class="section-head">
         <h2>&#128100; All Signups</h2>
         <div style="display:flex;align-items:center;gap:12px;">
@@ -367,43 +419,31 @@
           {% for u in user_data %}
           <div class="tbl-row-signups">
             <div class="idx">{{ forloop.counter }}</div>
-            <div>
-              <div class="uname">{{ u.first_name }} {{ u.last_name }}</div>
-              <div style="font-size:12px;color:var(--grey);">{{ u.email }}</div>
-            </div>
+            <div><div class="uname">{{ u.first_name }} {{ u.last_name }}</div><div style="font-size:12px;color:var(--grey);">{{ u.email }}</div></div>
             <div class="phone">{{ u.phone }}</div>
             <div class="age-val">{{ u.age }}</div>
             <div class="joined" style="font-size:12px;">{{ u.date_joined|date:"d M Y" }}</div>
             <div>
-              {% if u.is_active %}
-              <span class="status-badge active"><span class="dot"></span>Active</span>
-              {% else %}
-              <span class="status-badge inactive"><span class="dot"></span>Inactive</span>
-              {% endif %}
+              {% if u.is_active %}<span class="status-badge active"><span class="dot"></span>Active</span>
+              {% else %}<span class="status-badge inactive"><span class="dot"></span>Inactive</span>{% endif %}
             </div>
             <div class="action-btns">
               <form method="post" action="/ds-admin/toggle-user/{{ u.id }}/" style="display:inline;">
                 {% csrf_token %}
-                {% if u.is_active %}
-                <button type="submit" class="btn-toggle btn-deactivate">Ban</button>
-                {% else %}
-                <button type="submit" class="btn-toggle btn-activate">Unban</button>
-                {% endif %}
+                {% if u.is_active %}<button type="submit" class="btn-toggle btn-deactivate">Ban</button>
+                {% else %}<button type="submit" class="btn-toggle btn-activate">Unban</button>{% endif %}
               </form>
               <button class="btn-delete" onclick="confirmDelete({{ u.id }},'{{ u.username }}')">Delete</button>
             </div>
           </div>
           {% endfor %}
         {% else %}
-          <div class="empty-state">
-            <div class="empty-icon">&#128100;</div>
-            No signups yet. Use &ldquo;Add User&rdquo; above to create one manually.
-          </div>
+          <div class="empty-state"><div class="empty-icon">&#128100;</div>No signups yet.</div>
         {% endif %}
       </div>
-    </div><!-- /tab-signups -->
+    </div><!-- /signups -->
 
-    <!-- PAYMENTS TAB -->
+    <!-- ══ PAYMENTS TAB ═════════════════════════════════════════════════════ -->
     <div id="tab-payments" class="tab-content">
       <div class="stats-row">
         <div class="stat-card green-card">
@@ -439,10 +479,7 @@
           {% for p in payments %}
           <div class="tbl-row-payments">
             <div class="idx">{{ forloop.counter }}</div>
-            <div>
-              <div class="puser">{{ p.user.first_name|default:p.user.username }}</div>
-              <div style="font-size:12px;color:var(--grey);">@{{ p.user.username }}</div>
-            </div>
+            <div><div class="puser">{{ p.user.first_name|default:p.user.username }}</div><div style="font-size:12px;color:var(--grey);">@{{ p.user.username }}</div></div>
             <div class="pamount">&#8377;{{ p.amount }}</div>
             <div class="pmethod"><span class="method-badge">{{ p.get_method_display }}</span></div>
             <div><span class="status-badge {{ p.status }}"><span class="dot"></span>{{ p.get_status_display }}</span></div>
@@ -451,13 +488,92 @@
           </div>
           {% endfor %}
         {% else %}
-          <div class="empty-state">
-            <div class="empty-icon">&#128179;</div>
-            No payments recorded yet.
-          </div>
+          <div class="empty-state"><div class="empty-icon">&#128179;</div>No payments recorded yet.</div>
         {% endif %}
       </div>
-    </div><!-- /tab-payments -->
+    </div><!-- /payments -->
+
+    <!-- ══ SETTINGS TAB ══════════════════════════════════════════════════════ -->
+    <div id="tab-settings" class="tab-content">
+
+      <!-- Razorpay Settings Card -->
+      <div class="rzp-settings-card">
+        <div class="rzp-header">
+          <div class="rzp-icon">&#128179;</div>
+          <h2>Razorpay Payment Settings</h2>
+          {% if razorpay_configured %}
+          <span class="rzp-status-badge live"><span class="dot"></span> Live &amp; Active</span>
+          {% else %}
+          <span class="rzp-status-badge not-set"><span class="dot"></span> Not Configured</span>
+          {% endif %}
+        </div>
+        <p class="rzp-desc">
+          Enter your Razorpay API credentials below. Once saved, users can immediately start adding money to their wallets and purchasing game spins. Keys are stored securely in the database and take priority over environment variables.
+        </p>
+
+        <form method="post" action="/ds-admin/razorpay-settings/">
+          {% csrf_token %}
+          <div class="rzp-form-grid">
+            <div class="rzp-field">
+              <label for="rzp_key_id">Key ID &nbsp;<span style="color:#3a4a6a;font-weight:400;text-transform:none;letter-spacing:0;">(starts with rzp_live_ or rzp_test_)</span></label>
+              <div class="input-wrap">
+                <input type="text" id="rzp_key_id" name="rzp_key_id"
+                       placeholder="rzp_live_xxxxxxxxxxxxxxxx"
+                       value="{% if rzp_settings and rzp_settings.key_id %}{{ rzp_settings.key_id }}{% endif %}"
+                       autocomplete="off" spellcheck="false">
+              </div>
+              <span class="field-hint">Get this from Razorpay Dashboard &rarr; Settings &rarr; API Keys</span>
+            </div>
+            <div class="rzp-field">
+              <label for="rzp_key_secret">Key Secret</label>
+              <div class="input-wrap">
+                <input type="password" id="rzp_key_secret" name="rzp_key_secret"
+                       placeholder="Enter your Razorpay Key Secret"
+                       value="{% if rzp_settings and rzp_settings.key_secret %}{{ rzp_settings.key_secret }}{% endif %}"
+                       autocomplete="new-password" spellcheck="false">
+                <button type="button" class="toggle-secret" onclick="toggleSecret()" title="Show/Hide secret">&#128065;</button>
+              </div>
+              <span class="field-hint">Keep this private. Never share or expose in client-side code.</span>
+            </div>
+          </div>
+          <div class="rzp-actions">
+            <button type="submit" class="btn-save-rzp">&#10003; Save &amp; Activate</button>
+            {% if razorpay_configured %}
+            <span style="font-family:'Rajdhani',sans-serif;font-size:12px;color:#86efac;">&#10003; Payments are currently live</span>
+            {% else %}
+            <span style="font-family:'Rajdhani',sans-serif;font-size:12px;color:#fdba74;">&#9888; Payments are disabled until keys are saved</span>
+            {% endif %}
+          </div>
+        </form>
+
+        {% if rzp_settings and rzp_settings.key_id %}
+        <div class="rzp-current-keys">
+          <div class="ck-title">Currently Active Keys</div>
+          <div class="rzp-key-row">
+            <span class="kl">Key ID</span>
+            <span class="kv">{{ rzp_settings.key_id }}</span>
+            <button class="copy-btn" onclick="copy('{{ rzp_settings.key_id }}')">Copy</button>
+          </div>
+          <div class="rzp-key-row">
+            <span class="kl">Key Secret</span>
+            <span class="kv masked">&#9679;&#9679;&#9679;&#9679;&#9679;&#9679;&#9679;&#9679;&#9679;&#9679;&#9679;&#9679;</span>
+            <span style="font-size:11px;color:#4a5878;font-family:'Rajdhani',sans-serif;">Hidden for security</span>
+          </div>
+          <div class="rzp-key-row">
+            <span class="kl">Last Updated</span>
+            <span class="kv" style="color:var(--grey);">{{ rzp_settings.updated_at|date:"d M Y, H:i" }}</span>
+          </div>
+        </div>
+        {% endif %}
+
+        <div class="rzp-warning">
+          <span class="warn-icon">&#9888;</span>
+          <p>Use <strong>rzp_live_</strong> keys for real money. Use <strong>rzp_test_</strong> keys for testing. Never use live keys in test mode — transactions will fail. The secret key is stored encrypted in the DB and never exposed to the frontend.</p>
+        </div>
+      </div>
+
+    </div><!-- /settings -->
+
   </main>
 </div>
 
@@ -470,30 +586,12 @@
     <form method="post" action="/ds-admin/add-user/">
       {% csrf_token %}
       <div class="form-grid">
-        <div class="form-field">
-          <label>First Name *</label>
-          <input type="text" name="first_name" placeholder="e.g. Rahul" required>
-        </div>
-        <div class="form-field">
-          <label>Last Name</label>
-          <input type="text" name="last_name" placeholder="e.g. Sharma">
-        </div>
-        <div class="form-field full">
-          <label>Email Address *</label>
-          <input type="email" name="email" placeholder="user@example.com" required>
-        </div>
-        <div class="form-field">
-          <label>Phone Number</label>
-          <input type="text" name="phone_number" placeholder="+91 98765 43210">
-        </div>
-        <div class="form-field">
-          <label>Age *</label>
-          <input type="number" name="age" placeholder="18" min="18" required>
-        </div>
-        <div class="form-field full">
-          <label>Password *</label>
-          <input type="password" name="password" placeholder="Min 6 characters" required minlength="6">
-        </div>
+        <div class="form-field"><label>First Name *</label><input type="text" name="first_name" placeholder="e.g. Rahul" required></div>
+        <div class="form-field"><label>Last Name</label><input type="text" name="last_name" placeholder="e.g. Sharma"></div>
+        <div class="form-field full"><label>Email Address *</label><input type="email" name="email" placeholder="user@example.com" required></div>
+        <div class="form-field"><label>Phone Number</label><input type="text" name="phone_number" placeholder="+91 98765 43210"></div>
+        <div class="form-field"><label>Age *</label><input type="number" name="age" placeholder="18" min="18" required></div>
+        <div class="form-field full"><label>Password *</label><input type="password" name="password" placeholder="Min 6 characters" required minlength="6"></div>
       </div>
       <div class="modal-actions" style="margin-top:4px;flex-direction:column;">
         <button type="submit" class="btn-submit-user">&#43; Create User</button>
@@ -543,29 +641,34 @@
     t.classList.add('show');
     setTimeout(()=>t.classList.remove('show'),2000);
   }
-
-  function openAddUser(){
-    document.getElementById('addUserModal').classList.add('show');
-  }
-  function closeAddUser(){
-    document.getElementById('addUserModal').classList.remove('show');
-  }
-  document.getElementById('addUserModal').addEventListener('click',function(e){
-    if(e.target===this)closeAddUser();
-  });
-
+  function openAddUser(){document.getElementById('addUserModal').classList.add('show');}
+  function closeAddUser(){document.getElementById('addUserModal').classList.remove('show');}
+  document.getElementById('addUserModal').addEventListener('click',function(e){if(e.target===this)closeAddUser();});
   function confirmDelete(userId,username){
-    document.getElementById('deleteModalMsg').textContent=
-      'This will permanently delete @'+username+' and all their data. This action cannot be undone.';
+    document.getElementById('deleteModalMsg').textContent='This will permanently delete @'+username+' and all their data. This action cannot be undone.';
     document.getElementById('deleteForm').action='/ds-admin/delete-user/'+userId+'/';
     document.getElementById('deleteModal').classList.add('show');
   }
-  function closeDeleteModal(){
-    document.getElementById('deleteModal').classList.remove('show');
+  function closeDeleteModal(){document.getElementById('deleteModal').classList.remove('show');}
+  document.getElementById('deleteModal').addEventListener('click',function(e){if(e.target===this)closeDeleteModal();});
+
+  // Show/hide Razorpay secret
+  function toggleSecret(){
+    var inp=document.getElementById('rzp_key_secret');
+    inp.type=inp.type==='password'?'text':'password';
   }
-  document.getElementById('deleteModal').addEventListener('click',function(e){
-    if(e.target===this)closeDeleteModal();
-  });
+
+  // Auto-open Settings tab if a message came from saving Razorpay settings
+  (function(){
+    {% if messages %}
+    {% for message in messages %}
+    {% if 'Razorpay' in message.message %}
+    var link=document.getElementById('tab-settings-link');
+    if(link)switchTab('settings',link);
+    {% endif %}
+    {% endfor %}
+    {% endif %}
+  })();
 </script>
 </body>
 </html>
