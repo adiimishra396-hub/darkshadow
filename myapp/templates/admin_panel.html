@@ -494,7 +494,7 @@
               {% else %}<span class="status-badge inactive"><span class="dot"></span>Inactive</span>{% endif %}
             </div>
             <div class="action-btns">
-              <form method="post" action="/ds-admin/toggle-user/{{ u.id }}/" style="display:inline;">
+              <form method="post" action="/admin-panel/toggle-user/{{ u.id }}/" style="display:inline;">
                 {% csrf_token %}
                 {% if u.is_active %}<button type="submit" class="btn-toggle btn-deactivate">Ban</button>
                 {% else %}<button type="submit" class="btn-toggle btn-activate">Unban</button>{% endif %}
@@ -549,7 +549,7 @@
             <div class="pamount">&#8377;{{ p.amount }}</div>
             <div class="pmethod"><span class="method-badge">{{ p.get_method_display }}</span></div>
             <div><span class="status-badge {{ p.status }}"><span class="dot"></span>{{ p.get_status_display }}</span></div>
-            <div class="ptxn">{{ p.transaction_id|default:"—" }}</div>
+            <div class="ptxn">{{ p.transaction_id|default:"&mdash;" }}</div>
             <div class="pdate">{{ p.created_at|date:"d M Y" }}</div>
           </div>
           {% endfor %}
@@ -602,7 +602,7 @@
           <div class="p-val">&#8377;{{ spin_cfg.prize_diamonds }}</div>
         </div>
         <div class="prize-card">
-          <div class="p-icon">7️⃣</div>
+          <div class="p-icon">7&#65039;&#8419;</div>
           <div class="p-name">3x Lucky 7s</div>
           <div class="p-val">&#8377;{{ spin_cfg.prize_sevens }}</div>
         </div>
@@ -633,7 +633,7 @@
           Set the spin pack pricing (how many spins users get and at what price) and configure the winning prize amounts that get credited to the user's wallet. Changes take effect immediately on the homepage.
         </p>
 
-        <form method="post" action="/ds-admin/spin-settings/">
+        <form method="post" action="/admin-panel/save-spin-settings/">
           {% csrf_token %}
 
           <!-- Pack Pricing -->
@@ -660,19 +660,19 @@
               <label>&#128142; 3x Diamonds (&#8377;)</label>
               <input type="number" name="prize_diamonds" min="0" step="0.01"
                      value="{{ spin_cfg.prize_diamonds }}" placeholder="500">
-              <span class="field-hint">Top jackpot — credited to wallet</span>
+              <span class="field-hint">Top jackpot &mdash; credited to wallet</span>
             </div>
             <div class="s-field">
-              <label>7️⃣ 3x Lucky 7s (&#8377;)</label>
+              <label>7&#65039;&#8419; 3x Lucky 7s (&#8377;)</label>
               <input type="number" name="prize_sevens" min="0" step="0.01"
                      value="{{ spin_cfg.prize_sevens }}" placeholder="300">
-              <span class="field-hint">Second prize — credited to wallet</span>
+              <span class="field-hint">Second prize &mdash; credited to wallet</span>
             </div>
             <div class="s-field">
               <label>&#127826; 3x Cherries (&#8377;)</label>
               <input type="number" name="prize_cherries" min="0" step="0.01"
                      value="{{ spin_cfg.prize_cherries }}" placeholder="100">
-              <span class="field-hint">Third prize — credited to wallet</span>
+              <span class="field-hint">Third prize &mdash; credited to wallet</span>
             </div>
           </div>
           <div class="s-form-grid" style="margin-bottom:20px;">
@@ -723,7 +723,7 @@
             <div style="font-family:'Rajdhani',sans-serif;font-weight:700;font-size:15px;color:#a78bfa;">{{ sp.spins_purchased }}</div>
             <div style="font-family:'Rajdhani',sans-serif;font-weight:700;font-size:15px;color:var(--gold);">&#8377;{{ sp.amount }}</div>
             <div><span class="status-badge {{ sp.status }}"><span class="dot"></span>{{ sp.get_status_display }}</span></div>
-            <div class="sp-orderid" style="font-size:11px;color:var(--grey);">{{ sp.razorpay_order_id|default:"—" }}</div>
+            <div class="sp-orderid" style="font-size:11px;color:var(--grey);">{{ sp.razorpay_order_id|default:"&mdash;" }}</div>
             <div class="sp-date" style="font-size:12px;color:var(--grey);">{{ sp.created_at|date:"d M Y" }}</div>
           </div>
           {% endfor %}
@@ -752,7 +752,7 @@
           Enter your Razorpay API credentials below. Once saved, users can immediately start adding money to their wallets and purchasing game spins. Keys are stored securely in the database and take priority over environment variables.
         </p>
 
-        <form method="post" action="/ds-admin/razorpay-settings/">
+        <form method="post" action="/admin-panel/save-razorpay/">
           {% csrf_token %}
           <div class="s-form-grid">
             <div class="s-field">
@@ -809,7 +809,7 @@
 
         <div class="s-warning">
           <span class="warn-icon">&#9888;</span>
-          <p>Use <strong>rzp_live_</strong> keys for real money. Use <strong>rzp_test_</strong> keys for testing. Never use live keys in test mode — transactions will fail. The secret key is stored encrypted in the DB and never exposed to the frontend.</p>
+          <p>Use <strong>rzp_live_</strong> keys for real money. Use <strong>rzp_test_</strong> keys for testing. Never use live keys in test mode &mdash; transactions will fail. The secret key is stored encrypted in the DB and never exposed to the frontend.</p>
         </div>
       </div>
 
@@ -824,7 +824,7 @@
     <div class="modal-icon">&#128100;</div>
     <h3>Add User Manually</h3>
     <p>Create a new user account directly from the admin panel.</p>
-    <form method="post" action="/ds-admin/add-user/">
+    <form method="post" action="/admin-panel/add-user/">
       {% csrf_token %}
       <div class="form-grid">
         <div class="form-field"><label>First Name *</label><input type="text" name="first_name" placeholder="e.g. Rahul" required></div>
@@ -887,7 +887,7 @@
   document.getElementById('addUserModal').addEventListener('click',function(e){if(e.target===this)closeAddUser();});
   function confirmDelete(userId,username){
     document.getElementById('deleteModalMsg').textContent='This will permanently delete @'+username+' and all their data. This action cannot be undone.';
-    document.getElementById('deleteForm').action='/ds-admin/delete-user/'+userId+'/';
+    document.getElementById('deleteForm').action='/admin-panel/delete-user/'+userId+'/';
     document.getElementById('deleteModal').classList.add('show');
   }
   function closeDeleteModal(){document.getElementById('deleteModal').classList.remove('show');}
