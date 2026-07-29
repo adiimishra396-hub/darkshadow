@@ -130,22 +130,17 @@ class RazorpaySettings(models.Model):
 
 class SpinMachineSettings(models.Model):
     """
-    Singleton model (id=1). Admin sets pricing and prize amounts here.
-    All values are picked up dynamically by the home view and jackpot views.
+    Singleton model (id=1). Admin sets spin pack pricing and the jackpot
+    display amount shown on the homepage here.
+    No winning is possible — the spin is purely pay-to-play entertainment.
     """
     spin_pack_spins   = models.PositiveIntegerField(default=3,
         help_text='Number of spins per purchase pack')
     spin_pack_amount  = models.DecimalField(max_digits=8, decimal_places=2, default='10.00',
         help_text='Price per spin pack (INR)')
-    # Win prize amounts (credited to wallet)
-    prize_diamonds    = models.DecimalField(max_digits=10, decimal_places=2, default='500.00',
-        help_text='Prize for 3x Diamonds (wallet credit)')
-    prize_sevens      = models.DecimalField(max_digits=10, decimal_places=2, default='300.00',
-        help_text='Prize for 3x Lucky Sevens (wallet credit)')
-    prize_cherries    = models.DecimalField(max_digits=10, decimal_places=2, default='100.00',
-        help_text='Prize for 3x Cherries (wallet credit)')
-    prize_two_of_kind = models.DecimalField(max_digits=10, decimal_places=2, default='20.00',
-        help_text='Prize for any two-of-a-kind match (wallet credit)')
+    homepage_jackpot_display = models.CharField(
+        max_length=50, default='84,52,910',
+        help_text='Jackpot prize amount shown on homepage (e.g. 84,52,910 — no ₹ symbol needed)')
     is_active         = models.BooleanField(default=True,
         help_text='Show/hide the spin machine on the homepage')
     updated_at        = models.DateTimeField(auto_now=True)

@@ -43,13 +43,10 @@ def get_spin_settings():
         return SpinMachineSettings.get_singleton()
     except Exception:
         class _Defaults:
-            spin_pack_spins   = 3
-            spin_pack_amount  = Decimal('10.00')
-            prize_diamonds    = Decimal('500.00')
-            prize_sevens      = Decimal('300.00')
-            prize_cherries    = Decimal('100.00')
-            prize_two_of_kind = Decimal('20.00')
-            is_active         = True
+            spin_pack_spins          = 3
+            spin_pack_amount         = Decimal('10.00')
+            homepage_jackpot_display = '84,52,910'
+            is_active                = True
         return _Defaults()
 
 
@@ -91,20 +88,20 @@ def _get_or_create_spin_wallet(user):
 # ── Home ───────────────────────────────────────────────────────────────────────
 def home(request):
     spin_wallet = None
+    wallet      = None
     if request.user.is_authenticated and not request.user.is_superuser:
         spin_wallet = _get_or_create_spin_wallet(request.user)
+        wallet      = _get_or_create_wallet(request.user)
     key_id, _ = get_razorpay_keys()
     spin_cfg   = get_spin_settings()
     return render(request, 'index.html', {
-        'spin_wallet':        spin_wallet,
-        'razorpay_key_id':    key_id,
-        'spin_pack_amount':   spin_cfg.spin_pack_amount,
-        'spin_pack_spins':    spin_cfg.spin_pack_spins,
-        'spin_machine_active': spin_cfg.is_active,
-        'prize_diamonds':     spin_cfg.prize_diamonds,
-        'prize_sevens':       spin_cfg.prize_sevens,
-        'prize_cherries':     spin_cfg.prize_cherries,
-        'prize_two_of_kind':  spin_cfg.prize_two_of_kind,
+        'spin_wallet':              spin_wallet,
+        'wallet':                   wallet,
+        'razorpay_key_id':          key_id,
+        'spin_pack_amount':         spin_cfg.spin_pack_amount,
+        'spin_pack_spins':          spin_cfg.spin_pack_spins,
+        'spin_machine_active':      spin_cfg.is_active,
+        'homepage_jackpot_display': spin_cfg.homepage_jackpot_display,
     })
 
 
@@ -518,13 +515,10 @@ def save_spin_settings(request):
         return redirect('login')
     try:
         cfg = SpinMachineSettings.get_singleton()
-        cfg.spin_pack_spins   = int(request.POST.get('spin_pack_spins', 3))
-        cfg.spin_pack_amount  = Decimal(request.POST.get('spin_pack_amount', '10.00'))
-        cfg.prize_diamonds    = Decimal(request.POST.get('prize_diamonds', '500.00'))
-        cfg.prize_sevens      = Decimal(request.POST.get('prize_sevens', '300.00'))
-        cfg.prize_cherries    = Decimal(request.POST.get('prize_cherries', '100.00'))
-        cfg.prize_two_of_kind = Decimal(request.POST.get('prize_two_of_kind', '20.00'))
-        cfg.is_active         = request.POST.get('is_active') == 'on'
+        cfg.spin_pack_spins  = int(request.POST.get('spin_pack_spins', 3))
+        cfg.spin_pack_amount = Decimal(request.POST.get('spin_pack_amount', '10.00'))
+        cfg.homepage_jackpot_display = request.POST.get('homepage_jackpot_display', '84,52,910').strip()
+        cfg.is_active        = request.POST.get('is_active') == 'on'
         if cfg.spin_pack_spins < 1:
             raise ValueError('Spins per pack must be at least 1')
         if cfg.spin_pack_amount <= 0:
@@ -627,9 +621,16 @@ def jackpot_create_order(request):
     key_id, key_secret = get_razorpay_keys()
     if not key_id or not key_secret:
         return JsonResponse({'error': 'Payment gateway not configured. Please contact admin.'}, status=503)
+    # Check user wallet balance
     spin_cfg = get_spin_settings()
-    spin_pack_spins  = spin_cfg.spin_pack_spins
-    spin_pack_amount = int(spin_cfg.spin_pack_amount)
+    spin_pack_amount = spin_cfg.spin_pack_amount
+    wallet = _get_or_create_wallet(request.user)
+    if wallet.balance < spin_pack_amount:
+        return JsonResponse({
+            'error': f'Insufficient balance. Please add at least ₹{spin_pack_amount} to your wallet first.',
+            'needs_topup': True,
+        }, status=402)
+    spin_pack_spins = spin_cfg.spin_pack_spins
     try:
         client = razorpay.Client(auth=(key_id, key_secret))
         amount_paise = int(spin_pack_amount * 100)
@@ -703,55 +704,41 @@ def jackpot_verify_payment(request):
 # ── Jackpot: Use a Spin ─────────────────────────────────────────────────────────
 @require_POST
 def jackpot_use_spin(request):
+    """Deducts one spin from the user's spin wallet. No winning logic — every spin is a loss."""
     if not request.user.is_authenticated:
-        return JsonResponse({'error': 'Login required'}, status=401)
+        return JsonResponse({'error': 'Login required', 'needs_login': True}, status=401)
+    # Check wallet balance — user must have enough balance to spin
+    spin_cfg   = get_spin_settings()
+    wallet     = _get_or_create_wallet(request.user)
     spin_wallet = _get_or_create_spin_wallet(request.user)
     if spin_wallet.spins < 1:
-        return JsonResponse({'success': False, 'error': 'No spins available'}, status=400)
+        return JsonResponse({'success': False, 'error': 'No spins available. Please buy more spins.', 'needs_topup': True}, status=400)
+    if wallet.balance < spin_cfg.spin_pack_amount:
+        return JsonResponse({
+            'success': False,
+            'error': f'Insufficient wallet balance. Please add at least ₹{spin_cfg.spin_pack_amount} to spin.',
+            'needs_topup': True,
+        }, status=402)
+    # Deduct one spin
     spin_wallet.spins -= 1
     spin_wallet.save()
-
-    # Credit wallet if user wins (outcome determined server-side via use_spin)
-    # Win credit is handled by jackpot_claim_win endpoint separately.
+    # Deduct spin cost from wallet
+    spin_cost = spin_cfg.spin_pack_amount / spin_cfg.spin_pack_spins
+    wallet.balance -= spin_cost
+    wallet.save()
+    WalletTransaction.objects.create(
+        wallet=wallet,
+        amount=spin_cost,
+        txn_type='debit',
+        description='Jackpot spin played',
+    )
     return JsonResponse({'success': True, 'remaining_spins': spin_wallet.spins})
 
 
-# ── Jackpot: Claim Win (credit wallet prize) ──────────────────────────────────
+# ── Jackpot: Claim Win — DISABLED (no winning)
 @require_POST
 def jackpot_claim_win(request):
-    """
-    Called by the frontend after a winning spin is confirmed.
-    combo: 'diamonds' | 'sevens' | 'cherries' | 'two_of_kind'
-    """
+    """Winning is disabled. This endpoint always returns no-prize."""
     if not request.user.is_authenticated:
         return JsonResponse({'error': 'Login required'}, status=401)
-    try:
-        data  = json.loads(request.body)
-        combo = data.get('combo', '')
-        spin_cfg = get_spin_settings()
-        prize_map = {
-            'diamonds':    spin_cfg.prize_diamonds,
-            'sevens':      spin_cfg.prize_sevens,
-            'cherries':    spin_cfg.prize_cherries,
-            'two_of_kind': spin_cfg.prize_two_of_kind,
-        }
-        prize = prize_map.get(combo)
-        if prize is None or prize <= 0:
-            return JsonResponse({'success': False, 'error': 'No prize for this combo'}, status=400)
-        wallet = _get_or_create_wallet(request.user)
-        wallet.balance += prize
-        wallet.save()
-        WalletTransaction.objects.create(
-            wallet=wallet,
-            amount=prize,
-            txn_type='credit',
-            description=f'Jackpot win — {combo.replace("_", " ").title()} combo!',
-        )
-        return JsonResponse({
-            'success':     True,
-            'prize':       float(prize),
-            'new_balance': float(wallet.balance),
-            'message':     f'🎉 ₹{prize} credited to your wallet!',
-        })
-    except Exception as e:
-        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+    return JsonResponse({'success': False, 'error': 'No prizes available on this machine.'}, status=200)

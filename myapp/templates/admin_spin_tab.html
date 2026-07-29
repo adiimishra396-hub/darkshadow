@@ -43,7 +43,7 @@
     </span>
   </div>
   <p style="font-size:13px;color:var(--grey);margin-bottom:24px;line-height:1.6;">
-    Changes take effect immediately on the homepage. Prize amounts are credited to the user's wallet on win.
+    Changes take effect immediately on the homepage.
   </p>
 
   <form method="post" action="{% url 'save_spin_settings' %}">
@@ -72,38 +72,17 @@
       </div>
     </div>
 
-    <!-- Prize Amounts -->
+    <!-- Homepage Jackpot Display Amount -->
     <div style="margin-bottom:20px;">
-      <div style="font-family:'Rajdhani',sans-serif;font-weight:700;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--grey);margin-bottom:12px;">🏆 Winning Prize Amounts (₹ credited to wallet)</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
-        <div class="rzp-field">
-          <label for="prize_diamonds">💎💎💎 Triple Diamonds</label>
-          <div class="input-wrap">
-            <input type="number" id="prize_diamonds" name="prize_diamonds" min="0" step="0.01"
-              value="{{ spin_cfg.prize_diamonds }}" required>
-          </div>
+      <div style="font-family:'Rajdhani',sans-serif;font-weight:700;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--grey);margin-bottom:12px;">🏆 Homepage Jackpot Display Amount</div>
+      <div class="rzp-field">
+        <label for="homepage_jackpot_display">Jackpot Amount (shown as ₹ on homepage)</label>
+        <div class="input-wrap">
+          <input type="text" id="homepage_jackpot_display" name="homepage_jackpot_display"
+            value="{{ spin_cfg.homepage_jackpot_display }}" required
+            placeholder="e.g. 84,52,910" style="font-family:'Rajdhani',sans-serif;font-weight:700;font-size:16px;">
         </div>
-        <div class="rzp-field">
-          <label for="prize_sevens">7️⃣7️⃣7️⃣ Lucky Sevens</label>
-          <div class="input-wrap">
-            <input type="number" id="prize_sevens" name="prize_sevens" min="0" step="0.01"
-              value="{{ spin_cfg.prize_sevens }}" required>
-          </div>
-        </div>
-        <div class="rzp-field">
-          <label for="prize_cherries">🍒🍒🍒 Triple Cherries</label>
-          <div class="input-wrap">
-            <input type="number" id="prize_cherries" name="prize_cherries" min="0" step="0.01"
-              value="{{ spin_cfg.prize_cherries }}" required>
-          </div>
-        </div>
-        <div class="rzp-field">
-          <label for="prize_two_of_kind">✨ Two of a Kind</label>
-          <div class="input-wrap">
-            <input type="number" id="prize_two_of_kind" name="prize_two_of_kind" min="0" step="0.01"
-              value="{{ spin_cfg.prize_two_of_kind }}" required>
-          </div>
-        </div>
+        <span class="field-hint">This is the display-only jackpot amount shown in the hero card on the homepage. No ₹ symbol needed — it's added automatically.</span>
       </div>
     </div>
 
