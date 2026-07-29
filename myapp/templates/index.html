@@ -128,7 +128,7 @@
   .legacy-stat.featured .s-lbl{font-size:13px;}
   /* Game Category Cards */
   .cat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;}
-  .cat-card{background:var(--white);border:1px solid var(--line);border-radius:var(--radius);padding:26px;position:relative;overflow:hidden;transition:transform .2s ease,box-shadow .2s ease,border-color .2s ease;display:block;cursor:pointer;}
+  .cat-card{background:var(--white);border:1px solid var(--line);border-radius:var(--radius);padding:26px;position:relative;overflow:hidden;transition:transform .2s ease,box-shadow .2s ease,border-color .2s ease;display:block;cursor:pointer;text-decoration:none;}
   .cat-card:hover{transform:translateY(-6px);box-shadow:0 20px 40px rgba(15,46,130,0.14);border-color:var(--blue);}
   .cat-card .icon{width:52px;height:52px;border-radius:12px;background:var(--navy);display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:18px;color:var(--gold);}
   .cat-card h3{font-size:19px;color:var(--navy);margin-bottom:8px;letter-spacing:0.3px;}
@@ -215,7 +215,7 @@
   .gf-btn{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:13px;letter-spacing:1px;text-transform:uppercase;padding:9px 20px;border-radius:30px;border:1px solid rgba(255,255,255,0.15);color:#9FB0D8;background:rgba(255,255,255,0.05);cursor:pointer;transition:all .2s;}
   .gf-btn.active,.gf-btn:hover{background:var(--gold);color:var(--navy);border-color:var(--gold);}
   .games-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:22px;}
-  .game-card{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:16px;overflow:hidden;transition:transform .2s,box-shadow .2s,border-color .2s;position:relative;}
+  .game-card{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:16px;overflow:hidden;transition:transform .2s,box-shadow .2s,border-color .2s;position:relative;display:block;text-decoration:none;}
   .game-card:hover{transform:translateY(-6px);box-shadow:0 24px 48px rgba(0,0,0,0.5);border-color:var(--gold);}
   .game-card-thumb{width:100%;height:140px;object-fit:cover;display:block;}
   .game-card-body{padding:16px 18px 18px;}
@@ -223,7 +223,7 @@
   .game-card-title{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:17px;color:var(--white);margin-bottom:6px;letter-spacing:0.3px;}
   .game-card-desc{font-size:12px;color:#8C99C2;line-height:1.5;margin-bottom:14px;}
   .game-card-play{display:inline-flex;align-items:center;gap:6px;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:13px;letter-spacing:0.5px;text-transform:uppercase;color:var(--gold);transition:color .15s;}
-  .game-card-play:hover{color:var(--white);}
+  .game-card:hover .game-card-play{color:var(--white);}
   .game-card-play::after{content:'\203A';font-size:18px;line-height:1;}
   .game-card .g-badge{position:absolute;top:12px;left:12px;background:var(--gold);color:var(--navy);font-family:'Rajdhani',sans-serif;font-weight:700;font-size:10px;padding:3px 9px;border-radius:20px;letter-spacing:0.5px;text-transform:uppercase;}
   .game-card .g-badge.new{background:#22c55e;color:#fff;}
@@ -325,8 +325,26 @@
           <a href="{% url 'signup' %}" class="btn btn-gold btn-small">Join Now</a>
         {% endif %}
       </div>
-      <button class="menu-toggle">&#9776;</button>
+      <button class="menu-toggle" onclick="document.getElementById('mobileMenu').classList.toggle('open')">&#9776;</button>
     </nav>
+    <!-- Mobile Menu -->
+    <div id="mobileMenu" style="display:none;background:var(--white);border-top:1px solid var(--line);padding:16px 20px;">
+      <ul style="display:flex;flex-direction:column;gap:14px;">
+        <li><a href="#games" style="font-family:'Rajdhani',sans-serif;font-weight:600;font-size:16px;color:var(--navy);text-transform:uppercase;" onclick="document.getElementById('mobileMenu').classList.remove('open')">Games</a></li>
+        <li><a href="#all-games" style="font-family:'Rajdhani',sans-serif;font-weight:600;font-size:16px;color:var(--navy);text-transform:uppercase;" onclick="document.getElementById('mobileMenu').classList.remove('open')">All Games</a></li>
+        <li><a href="#sports" style="font-family:'Rajdhani',sans-serif;font-weight:600;font-size:16px;color:var(--navy);text-transform:uppercase;" onclick="document.getElementById('mobileMenu').classList.remove('open')">Sports</a></li>
+        <li><a href="#promos" style="font-family:'Rajdhani',sans-serif;font-weight:600;font-size:16px;color:var(--navy);text-transform:uppercase;" onclick="document.getElementById('mobileMenu').classList.remove('open')">Promotions</a></li>
+        <li><a href="#how" style="font-family:'Rajdhani',sans-serif;font-weight:600;font-size:16px;color:var(--navy);text-transform:uppercase;" onclick="document.getElementById('mobileMenu').classList.remove('open')">How It Works</a></li>
+        <li style="display:flex;gap:10px;margin-top:6px;">
+          {% if user.is_authenticated %}
+            <a href="{% url 'logout' %}" class="btn btn-outline btn-small" style="flex:1;text-align:center;">Log Out</a>
+          {% else %}
+            <a href="{% url 'login' %}" class="btn btn-outline btn-small" style="flex:1;text-align:center;">Log In</a>
+            <a href="{% url 'signup' %}" class="btn btn-gold btn-small" style="flex:1;text-align:center;">Join Now</a>
+          {% endif %}
+        </li>
+      </ul>
+    </div>
   </header>
 
   <section class="hero" style="padding-bottom:0;position:relative;overflow:hidden;">
@@ -387,4 +405,500 @@
         </div>
       </div>
       <div class="legacy-right">
-        <di
+        <div class="legacy-stat"><div class="s-num">2.4M+</div><div class="s-lbl">Registered Players</div></div>
+        <div class="legacy-stat"><div class="s-num">&#8377;18Cr</div><div class="s-lbl">Monthly Payouts</div></div>
+        <div class="legacy-stat"><div class="s-num">99.2%</div><div class="s-lbl">Payout Rate</div></div>
+        <div class="legacy-stat"><div class="s-num">&lt;2 Min</div><div class="s-lbl">Avg Withdrawal</div></div>
+        <div class="legacy-stat featured"><div><div class="s-num">10 Years</div><div class="s-lbl">Trusted Since 2016 &mdash; India's #1 Gaming Platform</div></div><span style="font-size:40px;">&#127942;</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ GAME CATEGORIES ═══ -->
+  <section id="games" style="background:var(--white);">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <span class="sec-eyebrow">&#127914; Game Categories</span>
+        <h2>Pick Your Game</h2>
+        <p>From classic card games to live sports — find your perfect game and start winning today.</p>
+      </div>
+      <div class="cat-grid reveal">
+        <a href="#all-games" class="cat-card" onclick="filterGames('cards')">
+          <span class="badge">Hot</span>
+          <div class="icon">&#127183;</div>
+          <h3>Card Games</h3>
+          <p>Teen Patti, Rummy, Poker, Andar Bahar & more classic Indian card games.</p>
+          <span class="cnt">&#9654; 8 Games Available</span>
+        </a>
+        <a href="#all-games" class="cat-card" onclick="filterGames('casino')">
+          <span class="badge">Live</span>
+          <div class="icon">&#127922;</div>
+          <h3>Casino</h3>
+          <p>Slots, Blackjack, Baccarat, Roulette — Vegas-style thrills at your fingertips.</p>
+          <span class="cnt">&#9654; 6 Games Available</span>
+        </a>
+        <a href="#all-games" class="cat-card" onclick="filterGames('sports')">
+          <div class="icon">&#127944;</div>
+          <h3>Sports Betting</h3>
+          <p>IPL, Cricket, Football, Kabaddi — bet on live events with real-time odds.</p>
+          <span class="cnt">&#9654; 10+ Sports</span>
+        </a>
+        <a href="#all-games" class="cat-card" onclick="filterGames('table')">
+          <span class="badge">New</span>
+          <div class="icon">&#9929;</div>
+          <h3>Table &amp; Board</h3>
+          <p>Ludo, Pool, Dice, Satta Matka — fast games with instant results.</p>
+          <span class="cnt">&#9654; 5 Games Available</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ ALL GAMES SECTION ═══ -->
+  <section class="all-games-section" id="all-games">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <span class="sec-eyebrow" style="color:var(--gold);">&#127914; Complete Game Library</span>
+        <h2>All Games</h2>
+        <p>Explore our full collection of betting & gaming titles. Click any game to play now.</p>
+      </div>
+      <div class="games-filter" id="gamesFilter">
+        <button class="gf-btn active" onclick="filterGames('all')" data-cat="all">All Games</button>
+        <button class="gf-btn" onclick="filterGames('cards')" data-cat="cards">&#127183; Card Games</button>
+        <button class="gf-btn" onclick="filterGames('casino')" data-cat="casino">&#127922; Casino</button>
+        <button class="gf-btn" onclick="filterGames('sports')" data-cat="sports">&#127944; Sports</button>
+        <button class="gf-btn" onclick="filterGames('table')" data-cat="table">&#9929; Table &amp; Board</button>
+      </div>
+      <div class="games-grid" id="gamesGrid">
+
+        <!-- Teen Patti -->
+        <a href="https://www.teenpatti.com/" target="_blank" rel="noopener" class="game-card" data-cat="cards">
+          <span class="g-badge live">Live</span>
+          <img class="game-card-thumb" src="https://images.unsplash.com/photo-1541278107931-e006523892df?q=80&w=600&auto=format&fit=crop" alt="Teen Patti">
+          <div class="game-card-body">
+            <div class="game-card-cat">Card Games</div>
+            <div class="game-card-title">Teen Patti</div>
+            <div class="game-card-desc">India's most popular 3-card betting game. Blind, Seen & Sideshow rules.</div>
+            <span class="game-card-play">Play Now</span>
+          </div>
+        </a>
+
+        <!-- Rummy -->
+        <a href="https://www.rummycircle.com/" target="_blank" rel="noopener" class="game-card" data-cat="cards">
+          <span class="g-badge">Hot</span>
+          <img class="game-card-thumb" src="https://images.unsplash.com/photo-1611996575749-79a3a250f948?q=80&w=600&auto=format&fit=crop" alt="Rummy">
+          <div class="game-card-body">
+            <div class="game-card-cat">Card Games</div>
+            <div class="game-card-title">Rummy</div>
+            <div class="game-card-desc">Classic 13-card Indian Rummy. Form sets & sequences to declare and win.</div>
+            <span class="game-card-play">Play Now</span>
+          </div>
+        </a>
+
+        <!-- Poker -->
+        <a href="https://www.pokerbaazi.com/" target="_blank" rel="noopener" class="game-card" data-cat="cards">
+          <img class="game-card-thumb" src="https://images.unsplash.com/photo-1601597111158-2fceff292cdc?q=80&w=600&auto=format&fit=crop" alt="Poker">
+          <div class="game-card-body">
+            <div class="game-card-cat">Card Games</div>
+            <div class="game-card-title">Texas Hold'em Poker</div>
+            <div class="game-card-desc">The world's most famous poker variant. Bluff, bet and take the pot.</div>
+            <span class="game-card-play">Play Now</span>
+          </div>
+        </a>
+
+        <!-- Andar Bahar -->
+        <a href="https://share.casinodays.com/" target="_blank" rel="noopener" class="game-card" data-cat="cards">
+          <span class="g-badge new">New</span>
+          <img class="game-card-thumb" src="https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?q=80&w=600&auto=format&fit=crop" alt="Andar Bahar">
+          <div class="game-card-body">
+            <div class="game-card-cat">Card Games</div>
+            <div class="game-card-title">Andar Bahar</div>
+            <div class="game-card-desc">Pick Andar or Bahar — a classic Indian card betting game with 50/50 odds.</div>
+            <span class="game-card-play">Play Now</span>
+          </div>
+        </a>
+
+        <!-- 8-Ball Pool -->
+        <a href="https://www.miniclip.com/games/8-ball-pool/" target="_blank" rel="noopener" class="game-card" data-cat="table">
+          <span class="g-badge">Hot</span>
+          <img class="game-card-thumb" src="https://images.unsplash.com/photo-1610375461246-83df859d849d?q=80&w=600&auto=format&fit=crop" alt="8-Ball Pool">
+          <div class="game-card-body">
+            <div class="game-card-cat">Table &amp; Board</div>
+            <div class="game-card-title">8-Ball Pool</div>
+            <div class="game-card-desc">Pot all your balls and sink the 8-ball before your opponent to win chips.</div>
+            <span class="game-card-play">Play Now</span>
+          </div>
+        </a>
+
+        <!-- Ludo -->
+        <a href="https://www.ludoking.com/" target="_blank" rel="noopener" class="game-card" data-cat="table">
+          <img class="game-card-thumb" src="https://images.unsplash.com/photo-1566150905458-1bf1fc113f0d?q=80&w=600&auto=format&fit=crop" alt="Ludo">
+          <div class="game-card-body">
+            <div class="game-card-cat">Table &amp; Board</div>
+            <div class="game-card-title">Ludo King</div>
+            <div class="game-card-desc">Roll the dice and race your tokens home in this timeless classic board game.</div>
+            <span class="game-card-play">Play Now</span>
+          </div>
+        </a>
+
+        <!-- Dice / Sic Bo -->
+        <a href="https://freegames.org/sic-bo/" target="_blank" rel="noopener" class="game-card" data-cat="table">
+          <span class="g-badge new">New</span>
+          <img class="game-card-thumb" src="https://images.unsplash.com/photo-1585504198199-20277593b94f?q=80&w=600&auto=format&fit=crop" alt="Dice Sic Bo">
+          <div class="game-card-body">
+            <div class="game-card-cat">Table &amp; Board</div>
+            <div class="game-card-title">Sic Bo Dice</div>
+            <div class="game-card-desc">Bet on three dice outcomes. Simple rules, fast rounds, massive multipliers.</div>
+            <span class="game-card-play">Play Now</span>
+          </div>
+        </a>
+
+        <!-- Slots -->
+        <a href="https://slotmachinesfree.com/" target="_blank" rel="noopener" class="game-card" data-cat="casino">
+          <span class="g-badge live">Live</span>
+          <img class="game-card-thumb" src="https://images.unsplash.com/photo-1596838132731-3301c3fd4317?q=80&w=600&auto=format&fit=crop" alt="Slots">
+          <div class="game-card-body">
+            <div class="game-card-cat">Casino</div>
+            <div class="game-card-title">Lucky Slots</div>
+            <div class="game-card-desc">Spin the reels and match symbols for jackpots. 100+ slot variants available.</div>
+            <span class="game-card-play">Play Now</span>
+          </div>
+        </a>
+
+        <!-- Blackjack -->
+        <a href="https://www.247blackjack.com/" target="_blank" rel="noopener" class="game-card" data-cat="casino">
+          <img class="game-card-thumb" src="https://images.unsplash.com/photo-1517232115160-ff93364542dd?q=80&w=600&auto=format&fit=crop" alt="Blackjack">
+          <div class="game-card-body">
+            <div class="game-card-cat">Casino</div>
+            <div class="game-card-title">Blackjack 21</div>
+            <div class="game-card-desc">Beat the dealer by getting as close to 21 as possible without going bust.</div>
+            <span class="game-card-play">Play Now</span>
+          </div>
+        </a>
+
+        <!-- Roulette -->
+        <a href="https://www.247roulette.org/" target="_blank" rel="noopener" class="game-card" data-cat="casino">
+          <span class="g-badge">Hot</span>
+          <img class="game-card-thumb" src="https://images.unsplash.com/photo-1606107557195-0e29a4b5b4aa?q=80&w=600&auto=format&fit=crop" alt="Roulette">
+          <div class="game-card-body">
+            <div class="game-card-cat">Casino</div>
+            <div class="game-card-title">Roulette</div>
+            <div class="game-card-desc">Bet on red, black, numbers or columns. Watch the wheel decide your fate.</div>
+            <span class="game-card-play">Play Now</span>
+          </div>
+        </a>
+
+        <!-- Crash Game -->
+        <a href="https://bc.game/game/crash" target="_blank" rel="noopener" class="game-card" data-cat="casino">
+          <span class="g-badge live">Live</span>
+          <img class="game-card-thumb" src="https://images.unsplash.com/photo-1611532736597-de2d4265fba3?q=80&w=600&auto=format&fit=crop" alt="Crash Game">
+          <div class="game-card-body">
+            <div class="game-card-cat">Casino</div>
+            <div class="game-card-title">Crash Game</div>
+            <div class="game-card-desc">Watch the multiplier rise and cash out before it crashes. Nerve-wracking thrills.</div>
+            <span class="game-card-play">Play Now</span>
+          </div>
+        </a>
+
+        <!-- Baccarat -->
+        <a href="https://www.247baccarat.com/" target="_blank" rel="noopener" class="game-card" data-cat="casino">
+          <img class="game-card-thumb" src="https://images.unsplash.com/photo-1509316785289-025f5b846b35?q=80&w=600&auto=format&fit=crop" alt="Baccarat">
+          <div class="game-card-body">
+            <div class="game-card-cat">Casino</div>
+            <div class="game-card-title">Baccarat</div>
+            <div class="game-card-desc">Bet on Player, Banker or Tie. A high-class casino classic with elegant odds.</div>
+            <span class="game-card-play">Play Now</span>
+          </div>
+        </a>
+
+        <!-- Cricket Betting -->
+        <a href="https://www.betway.com/en/sports/cricket" target="_blank" rel="noopener" class="game-card" data-cat="sports">
+          <span class="g-badge live">Live</span>
+          <img class="game-card-thumb" src="https://images.unsplash.com/photo-1531415074968-036ba1b575da?q=80&w=600&auto=format&fit=crop" alt="Cricket Betting">
+          <div class="game-card-body">
+            <div class="game-card-cat">Sports Betting</div>
+            <div class="game-card-title">Cricket Betting</div>
+            <div class="game-card-desc">Live IPL, T20, ODI & Test match odds. Bet on runs, wickets & more.</div>
+            <span class="game-card-play">Bet Now</span>
+          </div>
+        </a>
+
+        <!-- Football Betting -->
+        <a href="https://www.betway.com/en/sports/football" target="_blank" rel="noopener" class="game-card" data-cat="sports">
+          <span class="g-badge">Hot</span>
+          <img class="game-card-thumb" src="https://images.unsplash.com/photo-1431324155629-1a6deb1dec8d?q=80&w=600&auto=format&fit=crop" alt="Football Betting">
+          <div class="game-card-body">
+            <div class="game-card-cat">Sports Betting</div>
+            <div class="game-card-title">Football Betting</div>
+            <div class="game-card-desc">Premier League, La Liga, Champions League — live match betting with best odds.</div>
+            <span class="game-card-play">Bet Now</span>
+          </div>
+        </a>
+
+        <!-- Kabaddi -->
+        <a href="https://www.dream11.com/" target="_blank" rel="noopener" class="game-card" data-cat="sports">
+          <span class="g-badge new">New</span>
+          <img class="game-card-thumb" src="https://images.unsplash.com/photo-1567593810070-7a3d471af022?q=80&w=600&auto=format&fit=crop" alt="Kabaddi">
+          <div class="game-card-body">
+            <div class="game-card-cat">Sports Betting</div>
+            <div class="game-card-title">Kabaddi &amp; More</div>
+            <div class="game-card-desc">Pro Kabaddi, Hockey, Basketball — bet on India's favourite sports.</div>
+            <span class="game-card-play">Bet Now</span>
+          </div>
+        </a>
+
+        <!-- 29 Card Game -->
+        <a href="https://www.29cardgame.com/" target="_blank" rel="noopener" class="game-card" data-cat="cards">
+          <img class="game-card-thumb" src="https://images.unsplash.com/photo-1596456964908-0a3d9adec05f?q=80&w=600&auto=format&fit=crop" alt="29 Card Game">
+          <div class="game-card-body">
+            <div class="game-card-cat">Card Games</div>
+            <div class="game-card-title">29 Card Game</div>
+            <div class="game-card-desc">Popular South Asian trick-taking card game. Bid, play & outsmart your team.</div>
+            <span class="game-card-play">Play Now</span>
+          </div>
+        </a>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ PROMOTIONS ═══ -->
+  <section id="promos" style="background:var(--white);">
+    <div class="wrap">
+      <div class="promo reveal">
+        <div class="promo-left">
+          <span class="sec-eyebrow">&#127873; Limited Time Offer</span>
+          <h2>New Player Welcome Bonus</h2>
+          <p>Sign up today and get a 150% match bonus on your first deposit — up to &#8377;30,000 plus 50 free spins on Lucky Slots. No complex wagering. Just play and win.</p>
+          <a href="{% url 'signup' %}" class="btn btn-gold">Claim Bonus Now</a>
+        </div>
+        <div class="promo-badge">
+          <div class="pct">150%</div>
+          <div class="lbl">Welcome Bonus</div>
+          <div style="font-size:11px;margin-top:6px;opacity:0.8;">Up to &#8377;30,000</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ HOW IT WORKS ═══ -->
+  <section id="how">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <span class="sec-eyebrow">&#9654; 3 Simple Steps</span>
+        <h2>How It Works</h2>
+        <p>Getting started on Darkshadow is quick, easy, and completely free.</p>
+      </div>
+      <div class="steps reveal">
+        <div class="step-card">
+          <div class="step-num">1</div>
+          <h3>Create Account</h3>
+          <p>Sign up in under 60 seconds with your name, email and mobile number. No documents needed to start.</p>
+        </div>
+        <div class="step-card">
+          <div class="step-num">2</div>
+          <h3>Add Money</h3>
+          <p>Deposit via UPI, Net Banking or Card. Instant credit to your Darkshadow wallet. Minimum deposit just &#8377;100.</p>
+        </div>
+        <div class="step-card">
+          <div class="step-num">3</div>
+          <h3>Play &amp; Win</h3>
+          <p>Choose your game, place your bet and win. Withdraw winnings instantly back to your bank account.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ RECENT BIG WINS ═══ -->
+  <section id="sports" style="background:var(--blue-tint);">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <span class="sec-eyebrow">&#127942; Recent Big Wins</span>
+        <h2>Today's Winners</h2>
+        <p>Real players, real winnings — updated live every minute.</p>
+      </div>
+      <div class="wins-table reveal">
+        <div class="wins-row head">
+          <span>Player</span><span>Game</span><span>Amount Won</span><span>Device</span>
+        </div>
+        <div class="wins-row">
+          <span class="player">Rahul K.</span><span>Teen Patti</span><span class="amt">&#8377;84,500</span>
+          <span><span class="live-dot"><span class="d"></span> Live</span></span>
+        </div>
+        <div class="wins-row">
+          <span class="player">Priya M.</span><span>Lucky Slots</span><span class="amt">&#8377;1,22,000</span>
+          <span>Mobile</span>
+        </div>
+        <div class="wins-row">
+          <span class="player">Amit S.</span><span>Rummy</span><span class="amt">&#8377;36,750</span>
+          <span>Desktop</span>
+        </div>
+        <div class="wins-row">
+          <span class="player">Sneha R.</span><span>Cricket Bet</span><span class="amt">&#8377;2,14,000</span>
+          <span><span class="live-dot"><span class="d"></span> Live</span></span>
+        </div>
+        <div class="wins-row">
+          <span class="player">Vikram T.</span><span>Blackjack 21</span><span class="amt">&#8377;58,300</span>
+          <span>Mobile</span>
+        </div>
+        <div class="wins-row">
+          <span class="player">Deepa N.</span><span>8-Ball Pool</span><span class="amt">&#8377;19,800</span>
+          <span>Desktop</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="wrap">
+      <div class="foot-grid">
+        <div>
+          <div class="foot-logo-wrap">
+            <div class="foot-logo"><span class="x">D</span> DARKSHADOW</div>
+            <span class="foot-tagline">Where Legends Play</span>
+          </div>
+          <p class="foot-desc">India's most trusted online gaming platform since 2016. Licensed, RNG-certified and committed to responsible gaming for 2.4 million+ players.</p>
+          <span class="foot-since">&#127942; Est. 2016</span>
+          <div class="foot-social">
+            <a href="#" aria-label="Facebook">f</a>
+            <a href="#" aria-label="Instagram">&#128248;</a>
+            <a href="#" aria-label="Telegram">&#128225;</a>
+            <a href="#" aria-label="Twitter/X">X</a>
+          </div>
+        </div>
+        <div>
+          <h4>Games</h4>
+          <ul>
+            <li><a href="#all-games" onclick="filterGames('cards')">Card Games</a></li>
+            <li><a href="#all-games" onclick="filterGames('casino')">Casino Games</a></li>
+            <li><a href="#all-games" onclick="filterGames('sports')">Sports Betting</a></li>
+            <li><a href="#all-games" onclick="filterGames('table')">Table Games</a></li>
+            <li><a href="#all-games">All Games</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4>Account</h4>
+          <ul>
+            <li><a href="{% url 'signup' %}">Sign Up</a></li>
+            <li><a href="{% url 'login' %}">Log In</a></li>
+            {% if user.is_authenticated and not user.is_superuser %}
+            <li><a href="{% url 'add_money' %}">Add Money</a></li>
+            <li><a href="{% url 'my_wallet' %}">My Wallet</a></li>
+            <li><a href="{% url 'edit_profile' %}">Edit Profile</a></li>
+            {% endif %}
+          </ul>
+        </div>
+        <div>
+          <h4>Support</h4>
+          <ul>
+            <li><a href="#">Help Centre</a></li>
+            <li><a href="#">Responsible Gaming</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms &amp; Conditions</a></li>
+            <li><a href="#">Contact Us</a></li>
+          </ul>
+        </div>
+      </div>
+      <hr class="foot-divider">
+      <div class="foot-bottom">
+        <div class="foot-bottom-left">
+          <span class="copy">&copy; 2024 Darkshadow Gaming Pvt. Ltd. All rights reserved.</span>
+          <span class="disclaimer">&#128286; 18+ only. Gambling can be addictive. Play responsibly. This platform is for entertainment purposes only.</span>
+        </div>
+        <div class="foot-bottom-right">
+          <span class="age-badge">18+ Only</span>
+          <span class="ssl-badge">&#128274; SSL Secured</span>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  {% include 'jackpot_modal.html' %}
+
+<script>
+  // ── Popup
+  (function(){
+    var pop = document.getElementById('welcomePopup');
+    if(pop){
+      setTimeout(function(){pop.classList.add('active');}, 1200);
+    }
+  })();
+  function closePopup(){
+    var pop = document.getElementById('welcomePopup');
+    if(pop) pop.classList.remove('active');
+  }
+
+  // ── User Dropdown
+  var ug = document.getElementById('userGreeting');
+  var ugb = document.getElementById('userGreetingBtn');
+  if(ugb){
+    ugb.addEventListener('click', function(e){
+      e.stopPropagation();
+      ug.classList.toggle('open');
+      ugb.setAttribute('aria-expanded', ug.classList.contains('open'));
+    });
+    document.addEventListener('click', function(){
+      if(ug) ug.classList.remove('open');
+    });
+  }
+
+  // ── Mobile Menu Toggle
+  var mm = document.getElementById('mobileMenu');
+  var mt = document.querySelector('.menu-toggle');
+  if(mm && mt){
+    mt.addEventListener('click', function(){
+      mm.style.display = mm.style.display === 'none' || mm.style.display === '' ? 'block' : 'none';
+    });
+  }
+
+  // ── Games Filter
+  function filterGames(cat){
+    // Scroll to all-games section
+    var sec = document.getElementById('all-games');
+    if(sec) sec.scrollIntoView({behavior:'smooth',block:'start'});
+    // Update active filter button
+    var btns = document.querySelectorAll('#gamesFilter .gf-btn');
+    btns.forEach(function(b){
+      b.classList.toggle('active', b.getAttribute('data-cat') === cat);
+    });
+    // Show/hide cards
+    var cards = document.querySelectorAll('#gamesGrid .game-card');
+    cards.forEach(function(card){
+      if(cat === 'all' || card.getAttribute('data-cat') === cat){
+        card.style.display = 'block';
+      } else {
+        card.style.display = 'none';
+      }
+    });
+  }
+
+  // Make gf-btn clicks also trigger filterGames with their data-cat
+  document.querySelectorAll('#gamesFilter .gf-btn').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      filterGames(this.getAttribute('data-cat'));
+    });
+  });
+
+  // ── Scroll Reveal
+  (function(){
+    var els = document.querySelectorAll('.reveal');
+    if(!els.length) return;
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(e){
+        if(e.isIntersecting){
+          e.target.classList.add('in-view');
+          io.unobserve(e.target);
+        }
+      });
+    },{threshold:0.1});
+    els.forEach(function(el){ io.observe(el); });
+  })();
+
+  // ── Flash message auto-dismiss
+  setTimeout(function(){
+    var msgs = document.querySelectorAll('.flash-msg');
+    msgs.forEach(function(m){ m.style.opacity='0';m.style.transition='opacity .5s';setTimeout(function(){m.remove();},500); });
+  }, 5000);
+</script>
+</body>
+</html>
