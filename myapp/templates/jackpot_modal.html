@@ -43,6 +43,7 @@
   display:none;position:fixed;inset:0;z-index:10000;
   background:rgba(0,0,0,.75);backdrop-filter:blur(4px);
   align-items:center;justify-content:center;
+  opacity:0;transition:opacity .25s ease;
 ">
   <div style="
     background:linear-gradient(160deg,#1a1a2e 0%,#16213e 60%,#0f3460 100%);
@@ -50,6 +51,7 @@
     padding:36px 32px;max-width:440px;width:92%;text-align:center;
     box-shadow:0 0 60px rgba(255,210,0,.15);
     position:relative;
+    transform:scale(0.92);transition:transform .25s cubic-bezier(.34,1.56,.64,1);
   ">
     <button onclick="closeJackpotModal()" style="
       position:absolute;top:14px;right:18px;
@@ -145,6 +147,7 @@
   display:none;position:fixed;inset:0;z-index:10001;
   background:rgba(0,0,0,.85);backdrop-filter:blur(6px);
   align-items:center;justify-content:center;
+  opacity:0;transition:opacity .25s ease;
 ">
   <div style="
     background:linear-gradient(160deg,#1a1a2e,#0f3460);
@@ -152,6 +155,7 @@
     padding:36px 32px;max-width:440px;width:94%;text-align:center;
     box-shadow:0 0 80px rgba(255,210,0,.2);
     position:relative;
+    transform:scale(0.92);transition:transform .25s cubic-bezier(.34,1.56,.64,1);
   ">
     <button onclick="closeSpinMachine()" style="
       position:absolute;top:14px;right:18px;
@@ -163,31 +167,43 @@
       Spins left: <strong id="spinCountDisplay" style="color:#4ade80;">0</strong>
     </p>
 
-    <!-- Slot reels -->
+    <!-- Slot reels — each reel is a viewport window with scrolling strip inside -->
     <div style="display:flex;gap:12px;justify-content:center;margin-bottom:24px;">
-      <div class="reel-box" id="reel1" style="
+      <div class="reel-window" id="reel1" style="
         width:90px;height:90px;background:#0d1b2a;
         border:2px solid #ffd200;border-radius:14px;
-        display:flex;align-items:center;justify-content:center;
-        font-size:2.8rem;transition:all .3s;
-      ">🍒</div>
-      <div class="reel-box" id="reel2" style="
+        overflow:hidden;position:relative;
+      ">
+        <div class="reel-strip" id="strip1" style="
+          position:absolute;top:0;left:0;width:100%;
+          display:flex;flex-direction:column;align-items:center;
+        "></div>
+      </div>
+      <div class="reel-window" id="reel2" style="
         width:90px;height:90px;background:#0d1b2a;
         border:2px solid #ffd200;border-radius:14px;
-        display:flex;align-items:center;justify-content:center;
-        font-size:2.8rem;transition:all .3s;
-      ">🍋</div>
-      <div class="reel-box" id="reel3" style="
+        overflow:hidden;position:relative;
+      ">
+        <div class="reel-strip" id="strip2" style="
+          position:absolute;top:0;left:0;width:100%;
+          display:flex;flex-direction:column;align-items:center;
+        "></div>
+      </div>
+      <div class="reel-window" id="reel3" style="
         width:90px;height:90px;background:#0d1b2a;
         border:2px solid #ffd200;border-radius:14px;
-        display:flex;align-items:center;justify-content:center;
-        font-size:2.8rem;transition:all .3s;
-      ">🍊</div>
+        overflow:hidden;position:relative;
+      ">
+        <div class="reel-strip" id="strip3" style="
+          position:absolute;top:0;left:0;width:100%;
+          display:flex;flex-direction:column;align-items:center;
+        "></div>
+      </div>
     </div>
 
     <div id="spinResult" style="
       min-height:36px;color:#ffd200;font-size:1.15rem;
-      font-weight:700;margin-bottom:18px;
+      font-weight:700;margin-bottom:18px;transition:all .3s;
     "></div>
 
     <button id="spinBtn" onclick="doSpin()" style="
@@ -215,14 +231,29 @@
   0%,100% { box-shadow: 0 4px 20px rgba(255,210,0,.55); }
   50%      { box-shadow: 0 4px 40px rgba(255,210,0,.9); }
 }
-.reel-spinning {
-  animation: reelSpin .12s linear infinite !important;
+
+/* Reel cell — each symbol cell in the strip */
+.reel-cell {
+  width:90px;height:90px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:2.8rem;flex-shrink:0;
 }
-@keyframes reelSpin {
-  0%   { transform: translateY(0); }
-  50%  { transform: translateY(-8px); }
-  100% { transform: translateY(0); }
+
+/* Glow border when reel has settled */
+.reel-window.settled {
+  border-color: rgba(255,255,255,0.5);
+  box-shadow: 0 0 16px rgba(255,210,0,.35);
 }
+
+/* Shake animation on loss */
+@keyframes shake {
+  0%,100%{transform:translateX(0);}
+  20%{transform:translateX(-6px);}
+  40%{transform:translateX(6px);}
+  60%{transform:translateX(-4px);}
+  80%{transform:translateX(4px);}
+}
+.reel-shake { animation:shake .4s ease; }
 </style>
 
 <!-- ═══════════════════════════════════════════════════════════
@@ -235,26 +266,47 @@ const SPIN_PACK_AMOUNT = {{ spin_pack_amount|default:10 }};
 
 let currentSpins = parseInt(document.getElementById('currentSpinCount')?.textContent || '0');
 
-function flex(el) { el.style.display = 'flex'; }
-function hide(el) { el.style.display = 'none'; }
+// ── Helper: get CSRF token robustly ──────────────────────────
+function getCsrf() {
+  const m = document.cookie.match(/(?:^|;\s*)csrftoken=([^;]+)/);
+  return m ? m[1] : '';
+}
 
-function openJackpotModal()  {
+// ── Modal helpers with smooth transitions ────────────────────
+function showModal(el) {
+  el.style.display = 'flex';
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      el.style.opacity = '1';
+      const inner = el.querySelector('div');
+      if (inner) inner.style.transform = 'scale(1)';
+    });
+  });
+}
+function hideModal(el) {
+  el.style.opacity = '0';
+  const inner = el.querySelector('div');
+  if (inner) inner.style.transform = 'scale(0.92)';
+  setTimeout(() => { el.style.display = 'none'; }, 260);
+}
+
+function openJackpotModal() {
   {% if not user.is_authenticated %}
     window.location.href = '{% url "login" %}';
     return;
   {% endif %}
-  // Check balance before opening
   checkBalanceAndOpen();
 }
 
 async function checkBalanceAndOpen() {
-  // Show modal first, then reveal warning if balance insufficient
-  flex(document.getElementById('jackpotModal'));
+  showModal(document.getElementById('jackpotModal'));
   const balanceEl = document.getElementById('walletBalanceDisplay');
   const warningEl = document.getElementById('insufficientBalanceMsg');
   const buyBtn    = document.getElementById('buySpinsBtn');
   if (!balanceEl || !warningEl || !buyBtn) return;
-  const rawBalance = parseFloat(balanceEl.textContent.replace('₹','').replace(',','')) || 0;
+  const rawBalance = parseFloat(
+    balanceEl.textContent.replace(/[₹,\s]/g, '')
+  ) || 0;
   if (rawBalance < SPIN_PACK_AMOUNT) {
     warningEl.style.display = 'block';
     buyBtn.disabled = true;
@@ -268,12 +320,35 @@ async function checkBalanceAndOpen() {
   }
 }
 
-function closeJackpotModal() { hide(document.getElementById('jackpotModal')); }
-function openSpinMachine()   {
-  document.getElementById('spinCountDisplay').textContent = currentSpins;
-  flex(document.getElementById('spinMachineModal'));
+function closeJackpotModal() {
+  hideModal(document.getElementById('jackpotModal'));
 }
-function closeSpinMachine()  { hide(document.getElementById('spinMachineModal')); }
+
+function openSpinMachine() {
+  document.getElementById('spinCountDisplay').textContent = currentSpins;
+  document.getElementById('spinResult').textContent = '';
+  // Init reel strips fresh
+  ['strip1','strip2','strip3'].forEach(id => buildReelStrip(id));
+  showModal(document.getElementById('spinMachineModal'));
+}
+
+function closeSpinMachine() {
+  hideModal(document.getElementById('spinMachineModal'));
+}
+
+// ── Build reel strip with 30 symbol cells ─────────────────────
+function buildReelStrip(stripId) {
+  const strip = document.getElementById(stripId);
+  if (!strip) return;
+  strip.innerHTML = '';
+  strip.style.top = '0px';
+  for (let i = 0; i < 30; i++) {
+    const cell = document.createElement('div');
+    cell.className = 'reel-cell';
+    cell.textContent = JACKPOT_SYMBOLS[i % JACKPOT_SYMBOLS.length];
+    strip.appendChild(cell);
+  }
+}
 
 // ── Purchase Flow ─────────────────────────────────────────────
 async function initiateSpinPurchase() {
@@ -285,11 +360,9 @@ async function initiateSpinPurchase() {
   btn.disabled = true;
   btn.textContent = 'Creating order…';
   try {
-    const csrfToken = document.cookie.match(/csrftoken=([^;]+)/);
-    const csrf = csrfToken ? csrfToken[1] : '';
-    const res  = await fetch('{% url "jackpot_create_order" %}', {
+    const res = await fetch('{% url "jackpot_create_order" %}', {
       method: 'POST',
-      headers: { 'X-CSRFToken': csrf, 'Content-Type': 'application/json' },
+      headers: { 'X-CSRFToken': getCsrf(), 'Content-Type': 'application/json' },
       body: JSON.stringify({})
     });
     const data = await res.json();
@@ -346,11 +419,9 @@ function launchRazorpay(order) {
 // ── Verify & Credit ───────────────────────────────────────────
 async function verifyAndCreditSpins(rzpResponse) {
   try {
-    const csrfToken = document.cookie.match(/csrftoken=([^;]+)/);
-    const csrf = csrfToken ? csrfToken[1] : '';
-    const res  = await fetch('{% url "jackpot_verify_payment" %}', {
+    const res = await fetch('{% url "jackpot_verify_payment" %}', {
       method: 'POST',
-      headers: { 'X-CSRFToken': csrf, 'Content-Type': 'application/json' },
+      headers: { 'X-CSRFToken': getCsrf(), 'Content-Type': 'application/json' },
       body: JSON.stringify({
         razorpay_order_id:   rzpResponse.razorpay_order_id,
         razorpay_payment_id: rzpResponse.razorpay_payment_id,
@@ -373,6 +444,52 @@ async function verifyAndCreditSpins(rzpResponse) {
   }
 }
 
+// ── Realistic Reel Scroll Animation ──────────────────────────
+// Scrolls the strip fast then eases to a stop at finalSymbol (last cell)
+function animateReel(stripId, windowId, finalSymbol, duration, onDone) {
+  const strip   = document.getElementById(stripId);
+  const window_ = document.getElementById(windowId);
+  if (!strip || !window_) { onDone && onDone(); return; }
+
+  // Remove settled style
+  window_.classList.remove('settled');
+  window_.style.borderColor = '#ffd200';
+  window_.style.boxShadow = '';
+
+  const CELL_H     = 90;
+  const totalCells = strip.children.length; // 30
+
+  // Overwrite the LAST cell with the chosen final symbol
+  strip.children[totalCells - 1].textContent = finalSymbol;
+
+  // Reset to top
+  strip.style.top = '0px';
+
+  const startTime  = performance.now();
+  const totalScroll = (totalCells - 1) * CELL_H;
+
+  function easeOut(t) {
+    // Cubic ease-out: fast start, slow end
+    return 1 - Math.pow(1 - t, 3);
+  }
+
+  function tick(now) {
+    const elapsed = now - startTime;
+    const t       = Math.min(elapsed / duration, 1);
+    const eased   = easeOut(t);
+    strip.style.top = -(eased * totalScroll) + 'px';
+
+    if (t < 1) {
+      requestAnimationFrame(tick);
+    } else {
+      strip.style.top = -((totalCells - 1) * CELL_H) + 'px';
+      window_.classList.add('settled');
+      onDone && onDone();
+    }
+  }
+  requestAnimationFrame(tick);
+}
+
 // ── Spin Machine Logic — NO WIN ───────────────────────────────
 async function doSpin() {
   {% if not user.is_authenticated %}
@@ -383,18 +500,22 @@ async function doSpin() {
     alert('You have no spins left! Buy more to continue.');
     return;
   }
-  const spinBtn = document.getElementById('spinBtn');
+  const spinBtn  = document.getElementById('spinBtn');
+  const resultEl = document.getElementById('spinResult');
   spinBtn.disabled = true;
-  document.getElementById('spinResult').textContent = '';
+  resultEl.textContent = '';
+  resultEl.style.color = '#ffd200';
 
-  const csrfToken = document.cookie.match(/csrftoken=([^;]+)/);
-  const csrf = csrfToken ? csrfToken[1] : '';
-  const res  = await fetch('{% url "jackpot_use_spin" %}', {
+  // Rebuild strips for a fresh animation
+  ['strip1','strip2','strip3'].forEach(id => buildReelStrip(id));
+
+  const res = await fetch('{% url "jackpot_use_spin" %}', {
     method: 'POST',
-    headers: { 'X-CSRFToken': csrf, 'Content-Type': 'application/json' },
+    headers: { 'X-CSRFToken': getCsrf(), 'Content-Type': 'application/json' },
     body: JSON.stringify({})
   });
   const data = await res.json();
+
   if (!data.success) {
     if (data.needs_topup) {
       const go = confirm('⚠️ ' + (data.error || 'Insufficient balance.') + '\n\nWould you like to add money now?');
@@ -405,40 +526,55 @@ async function doSpin() {
     spinBtn.disabled = false;
     return;
   }
+
   currentSpins = data.remaining_spins;
-  document.getElementById('spinCountDisplay').textContent = currentSpins;
-  const badge = document.getElementById('spinBadge');
+
+  // Update all spin count displays
+  const dispEl  = document.getElementById('spinCountDisplay');
+  const badge   = document.getElementById('spinBadge');
+  const countEl = document.getElementById('currentSpinCount');
+  if (dispEl)  dispEl.textContent  = currentSpins;
+  if (countEl) countEl.textContent = currentSpins;
   if (badge) {
-    badge.textContent = currentSpins + ' spins';
-    badge.style.display = currentSpins > 0 ? 'inline' : 'none';
+    badge.textContent    = currentSpins + ' spins';
+    badge.style.display  = currentSpins > 0 ? 'inline' : 'none';
   }
 
-  const reels  = [document.getElementById('reel1'), document.getElementById('reel2'), document.getElementById('reel3')];
-  reels.forEach(r => r.classList.add('reel-spinning'));
+  // Pick 3 guaranteed-different symbols (ensures no-win)
+  const shuffled = [...JACKPOT_SYMBOLS].sort(() => Math.random() - 0.5);
+  const [sym1, sym2, sym3] = shuffled;
 
-  // Force all three reels to always show DIFFERENT symbols (guaranteed no-win)
-  const delays = [800, 1100, 1400];
-  let pickedSymbols = [];
-  reels.forEach((reel, i) => {
-    setTimeout(() => {
-      reel.classList.remove('reel-spinning');
-      let sym;
-      // Pick a symbol that hasn't been picked yet to ensure no two-of-a-kind
-      let available = JACKPOT_SYMBOLS.filter(s => !pickedSymbols.includes(s));
-      if (available.length === 0) available = JACKPOT_SYMBOLS;
-      sym = available[Math.floor(Math.random() * available.length)];
-      pickedSymbols[i] = sym;
-      reel.textContent = sym;
-      if (i === 2) {
-        setTimeout(() => {
-          const spinResultEl = document.getElementById('spinResult');
-          spinResultEl.textContent = '😔 No match — better luck next time!';
-          spinResultEl.style.color = '#ef4444';
-          spinBtn.disabled = false;
-        }, 200);
-      }
-    }, delays[i]);
-  });
+  // Animate reels with staggered stop times
+  let reelsSettled = 0;
+  function onReelDone() {
+    reelsSettled++;
+    if (reelsSettled === 3) showResult();
+  }
+
+  animateReel('strip1', 'reel1', sym1, 1200, onReelDone);
+  animateReel('strip2', 'reel2', sym2, 1650, onReelDone);
+  animateReel('strip3', 'reel3', sym3, 2100, onReelDone);
+
+  function showResult() {
+    resultEl.style.color = '#ef4444';
+    resultEl.textContent = '😔 No match — better luck next time!';
+    // Shake all reels on loss
+    ['reel1','reel2','reel3'].forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.classList.remove('reel-shake');
+      void el.offsetWidth; // force reflow to restart animation
+      el.classList.add('reel-shake');
+      setTimeout(() => el.classList.remove('reel-shake'), 500);
+    });
+    spinBtn.disabled = false;
+    if (currentSpins < 1) {
+      spinBtn.textContent       = '🎰 No Spins Left';
+      spinBtn.style.opacity     = '0.5';
+      spinBtn.style.cursor      = 'not-allowed';
+      spinBtn.onclick           = null;
+    }
+  }
 }
 </script>
 {% endif %}
