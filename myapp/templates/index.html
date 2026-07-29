@@ -126,8 +126,9 @@
   .legacy-stat.featured{grid-column:span 2;background:rgba(255,193,7,0.1);border-color:rgba(255,193,7,0.3);display:flex;align-items:center;justify-content:space-between;padding:20px 28px;text-align:left;}
   .legacy-stat.featured .s-num{font-size:38px;}
   .legacy-stat.featured .s-lbl{font-size:13px;}
+  /* Game Category Cards */
   .cat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;}
-  .cat-card{background:var(--white);border:1px solid var(--line);border-radius:var(--radius);padding:26px;position:relative;overflow:hidden;transition:transform .2s ease,box-shadow .2s ease,border-color .2s ease;}
+  .cat-card{background:var(--white);border:1px solid var(--line);border-radius:var(--radius);padding:26px;position:relative;overflow:hidden;transition:transform .2s ease,box-shadow .2s ease,border-color .2s ease;display:block;cursor:pointer;}
   .cat-card:hover{transform:translateY(-6px);box-shadow:0 20px 40px rgba(15,46,130,0.14);border-color:var(--blue);}
   .cat-card .icon{width:52px;height:52px;border-radius:12px;background:var(--navy);display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:18px;color:var(--gold);}
   .cat-card h3{font-size:19px;color:var(--navy);margin-bottom:8px;letter-spacing:0.3px;}
@@ -206,11 +207,32 @@
   .gallery-item:hover img{transform:scale(1.08);}
   .gallery-overlay{position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,26,60,0) 40%,rgba(10,26,60,0.85) 100%);display:flex;align-items:flex-end;padding:16px;}
   .gallery-overlay h4{color:var(--white);font-family:'Rajdhani',sans-serif;font-weight:700;font-size:18px;letter-spacing:0.5px;text-transform:uppercase;}
+  /* ── ALL GAMES SECTION ── */
+  .all-games-section{background:linear-gradient(135deg,#060f28 0%,var(--navy) 60%,#0a2060 100%);padding:90px 0;}
+  .all-games-section .sec-head h2{color:var(--white);}
+  .all-games-section .sec-head p{color:#9FB0D8;}
+  .games-filter{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:44px;}
+  .gf-btn{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:13px;letter-spacing:1px;text-transform:uppercase;padding:9px 20px;border-radius:30px;border:1px solid rgba(255,255,255,0.15);color:#9FB0D8;background:rgba(255,255,255,0.05);cursor:pointer;transition:all .2s;}
+  .gf-btn.active,.gf-btn:hover{background:var(--gold);color:var(--navy);border-color:var(--gold);}
+  .games-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:22px;}
+  .game-card{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:16px;overflow:hidden;transition:transform .2s,box-shadow .2s,border-color .2s;position:relative;}
+  .game-card:hover{transform:translateY(-6px);box-shadow:0 24px 48px rgba(0,0,0,0.5);border-color:var(--gold);}
+  .game-card-thumb{width:100%;height:140px;object-fit:cover;display:block;}
+  .game-card-body{padding:16px 18px 18px;}
+  .game-card-cat{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);margin-bottom:6px;}
+  .game-card-title{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:17px;color:var(--white);margin-bottom:6px;letter-spacing:0.3px;}
+  .game-card-desc{font-size:12px;color:#8C99C2;line-height:1.5;margin-bottom:14px;}
+  .game-card-play{display:inline-flex;align-items:center;gap:6px;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:13px;letter-spacing:0.5px;text-transform:uppercase;color:var(--gold);transition:color .15s;}
+  .game-card-play:hover{color:var(--white);}
+  .game-card-play::after{content:'\203A';font-size:18px;line-height:1;}
+  .game-card .g-badge{position:absolute;top:12px;left:12px;background:var(--gold);color:var(--navy);font-family:'Rajdhani',sans-serif;font-weight:700;font-size:10px;padding:3px 9px;border-radius:20px;letter-spacing:0.5px;text-transform:uppercase;}
+  .game-card .g-badge.new{background:#22c55e;color:#fff;}
+  .game-card .g-badge.live{background:#ef4444;color:#fff;}
   .reveal{opacity:0;transform:translateY(24px);transition:opacity .6s ease,transform .6s ease;}
   .reveal.in-view{opacity:1;transform:translateY(0);}
   @media(max-width:1080px){header .wrap{padding:10px;}.nav-links{gap:22px;}}
-  @media(max-width:980px){.hero-inner{grid-template-columns:1fr;}.hero h1{font-size:42px;}.cat-grid{grid-template-columns:repeat(2,1fr);}.steps{grid-template-columns:1fr;}.foot-grid{grid-template-columns:1fr 1fr;}.promo{flex-direction:column;gap:26px;text-align:center;align-items:center;}.promo-left{max-width:100%;}.legacy-inner{grid-template-columns:1fr;}.legacy-right{grid-template-columns:repeat(4,1fr);}}
-  @media(max-width:640px){.nav-links,.nav-cta .btn-outline{display:none;}.menu-toggle{display:block;}header .wrap{padding:0 20px;}.hero{padding:60px 0 70px;}.hero h1{font-size:32px;}.hero-stats{flex-wrap:wrap;gap:20px;}.cat-grid{grid-template-columns:1fr;}.wins-row{grid-template-columns:1.4fr 1fr 1fr;font-size:12px;}.wins-row .device{display:none;}.foot-grid{grid-template-columns:1fr;}.promo{padding:34px 26px;}.logo .brand-name{font-size:15px;}.popup-box{padding:34px 24px;}.popup-box h2{font-size:18px;}.foot-bottom{flex-direction:column;align-items:flex-start;}}
+  @media(max-width:980px){.hero-inner{grid-template-columns:1fr;}.hero h1{font-size:42px;}.cat-grid{grid-template-columns:repeat(2,1fr);}.steps{grid-template-columns:1fr;}.foot-grid{grid-template-columns:1fr 1fr;}.promo{flex-direction:column;gap:26px;text-align:center;align-items:center;}.promo-left{max-width:100%;}.legacy-inner{grid-template-columns:1fr;}.legacy-right{grid-template-columns:repeat(4,1fr);}.games-grid{grid-template-columns:repeat(2,1fr);}}
+  @media(max-width:640px){.nav-links,.nav-cta .btn-outline{display:none;}.menu-toggle{display:block;}header .wrap{padding:0 20px;}.hero{padding:60px 0 70px;}.hero h1{font-size:32px;}.hero-stats{flex-wrap:wrap;gap:20px;}.cat-grid{grid-template-columns:1fr;}.wins-row{grid-template-columns:1.4fr 1fr 1fr;font-size:12px;}.wins-row .device{display:none;}.foot-grid{grid-template-columns:1fr;}.promo{padding:34px 26px;}.logo .brand-name{font-size:15px;}.popup-box{padding:34px 24px;}.popup-box h2{font-size:18px;}.foot-bottom{flex-direction:column;align-items:flex-start;}.games-grid{grid-template-columns:1fr;}}
   @media(max-width:980px){.gallery-grid{grid-template-columns:repeat(2,1fr);}}
   @media(max-width:640px){.gallery-grid{grid-template-columns:1fr;}}
 </style>
@@ -267,6 +289,7 @@
       </a>
       <ul class="nav-links">
         <li><a href="#games">Games</a></li>
+        <li><a href="#all-games">All Games</a></li>
         <li><a href="#sports">Sports</a></li>
         <li><a href="#promos">Promotions</a></li>
         <li><a href="#how">How It Works</a></li>
@@ -316,7 +339,7 @@
         <p>Sports betting, live casino and slot games on one platform. Trusted by millions since 2016. Fast KYC, instant payouts, and odds that don't hide the fine print.</p>
         <div class="hero-ctas">
           <a href="{% url 'signup' %}" class="btn btn-gold">Claim &#8377;30,000 Bonus</a>
-          <a href="#games" class="btn btn-ghost">Explore Games</a>
+          <a href="#all-games" class="btn btn-ghost">Explore Games</a>
         </div>
         <div class="hero-stats">
           <div><div class="num">2.4M+</div><div class="lbl">Registered Users</div></div>
@@ -324,10 +347,6 @@
           <div><div class="num">10 Yrs</div><div class="lbl">In Gaming</div></div>
         </div>
       </div>
-
-      <!-- ═══════════════════════════════════════════════════════════
-           JACKPOT CARD — dynamic amount + spin machine trigger
-           ═══════════════════════════════════════════════════════════ -->
       <div class="jackpot-card">
         <img src="https://images.unsplash.com/photo-1596838132731-3301c3fd4317?q=80&w=800&auto=format&fit=crop" alt="Slot machine" style="width:100%;height:140px;object-fit:cover;border-radius:10px;margin-bottom:14px;">
         <div class="tag">Today's Jackpot</div>
@@ -368,156 +387,4 @@
         </div>
       </div>
       <div class="legacy-right">
-        <div class="legacy-stat"><div class="s-num">2016</div><div class="s-lbl">Founded &amp; Operating</div></div>
-        <div class="legacy-stat"><div class="s-num">2.4M+</div><div class="s-lbl">Registered Players</div></div>
-        <div class="legacy-stat"><div class="s-num">&#8377;18Cr+</div><div class="s-lbl">Paid Monthly</div></div>
-        <div class="legacy-stat"><div class="s-num">4.8&#9733;</div><div class="s-lbl">Player Rating</div></div>
-        <div class="legacy-stat featured"><div><div class="s-num">&#8377;500Cr+</div><div class="s-lbl">Total Paid to Winners Since 2016</div></div><span style="font-size:36px;">&#127942;</span></div>
-      </div>
-    </div>
-  </section>
-
-  <section id="games">
-    <div class="wrap">
-      <div class="sec-head"><span class="sec-eyebrow">Game Library</span><h2>Choose Your Arena</h2><p>From cricket odds to live dealer tables — every category built for fast play and clear payouts.</p></div>
-      <div class="cat-grid">
-        <div class="cat-card"><span class="badge">Hot</span><img src="https://images.unsplash.com/photo-1518091043644-c1d4457512c6?q=80&w=600&auto=format&fit=crop" alt="Sports Betting" style="width:100%;height:120px;object-fit:cover;border-radius:10px;margin-bottom:10px;"><div class="icon">&#127951;</div><h3>Sports Betting</h3><p>Cricket, football, tennis &amp; kabaddi with live in-play odds.</p><div class="cnt">120+ Markets Live</div></div>
-        <div class="cat-card"><img src="https://images.unsplash.com/photo-1596838132731-3301c3fd4317?q=80&w=600&auto=format&fit=crop" alt="Slot Games" style="width:100%;height:120px;object-fit:cover;border-radius:10px;margin-bottom:10px;"><div class="icon">&#127920;</div><h3>Slot Games</h3><p>Spin reels with themed jackpots and daily free spin drops.</p><div class="cnt">300+ Titles</div></div>
-        <div class="cat-card"><span class="badge">New</span><img src="https://images.unsplash.com/photo-1541278107931-e006523892df?q=80&w=600&auto=format&fit=crop" alt="Live Casino" style="width:100%;height:120px;object-fit:cover;border-radius:10px;margin-bottom:10px;"><div class="icon">&#127183;</div><h3>Live Casino</h3><p>Real dealers, real-time tables — Teen Patti, Roulette &amp; more.</p><div class="cnt">40+ Live Tables</div></div>
-        <div class="cat-card"><img src="https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=600&auto=format&fit=crop" alt="Mini Games" style="width:100%;height:120px;object-fit:cover;border-radius:10px;margin-bottom:10px;"><div class="icon">&#127919;</div><h3>Mini Games</h3><p>Fast rounds like Aviator, Mines and Dice for quick sessions.</p><div class="cnt">25+ Quick Plays</div></div>
-      </div>
-    </div>
-  </section>
-
-  <section id="gallery" class="reveal">
-    <div class="wrap">
-      <div class="sec-head"><span class="sec-eyebrow">Fan Favorites</span><h2>Popular Games</h2><p>A closer look at the titles players are grinding right now.</p></div>
-      <div class="gallery-grid">
-        <div class="gallery-item"><img src="https://images.unsplash.com/photo-1596838132731-3301c3fd4317?q=80&w=700&auto=format&fit=crop" alt="Aviator"><div class="gallery-overlay"><h4>Aviator</h4></div></div>
-        <div class="gallery-item"><img src="https://images.unsplash.com/photo-1541278107931-e006523892df?q=80&w=700&auto=format&fit=crop" alt="Roulette"><div class="gallery-overlay"><h4>Roulette</h4></div></div>
-        <div class="gallery-item"><img src="https://images.unsplash.com/photo-1609743522653-52354461eb27?q=80&w=700&auto=format&fit=crop" alt="Teen Patti"><div class="gallery-overlay"><h4>Teen Patti</h4></div></div>
-        <div class="gallery-item"><img src="https://images.unsplash.com/photo-1518091043644-c1d4457512c6?q=80&w=700&auto=format&fit=crop" alt="Cricket Betting"><div class="gallery-overlay"><h4>Cricket Odds</h4></div></div>
-        <div class="gallery-item"><img src="https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=700&auto=format&fit=crop" alt="Mines"><div class="gallery-overlay"><h4>Mines</h4></div></div>
-        <div class="gallery-item"><img src="https://images.unsplash.com/photo-1587202372634-32705e3bf99c?q=80&w=700&auto=format&fit=crop" alt="Poker"><div class="gallery-overlay"><h4>Poker Tables</h4></div></div>
-      </div>
-    </div>
-  </section>
-
-  <section id="promos" style="background:var(--blue-tint);">
-    <div class="wrap">
-      <div class="promo">
-        <div class="promo-left">
-          <span class="sec-eyebrow">Limited Time</span>
-          <h2>150% Welcome Bonus on First Deposit</h2>
-          <p>New players get matched bonus funds instantly, plus 50 free spins on select slot titles. No hidden wagering tricks — terms shown upfront.</p>
-          <a href="{% url 'signup' %}" class="btn btn-gold">Claim Offer</a>
-        </div>
-        <div class="promo-badge"><div class="pct">150%</div><div class="lbl">Match Bonus</div></div>
-      </div>
-    </div>
-  </section>
-
-  <section id="how">
-    <div class="wrap">
-      <div class="sec-head"><span class="sec-eyebrow">Getting Started</span><h2>Three Steps to Play</h2></div>
-      <div class="steps">
-        <div class="step-card"><div class="step-num">1</div><h3>Create Your Account</h3><p>Sign up in under a minute with your name, email and phone — complete KYC anytime before withdrawal.</p></div>
-        <div class="step-card"><div class="step-num">2</div><h3>Add Funds Securely</h3><p>Deposit via UPI, net banking or wallets. Funds reflect in your account instantly.</p></div>
-        <div class="step-card"><div class="step-num">3</div><h3>Play &amp; Withdraw</h3><p>Bet on sports or spin a slot, then cash out winnings with same-day payout processing.</p></div>
-      </div>
-    </div>
-  </section>
-
-  <section style="background:var(--blue-tint);">
-    <div class="wrap">
-      <div class="sec-head"><span class="sec-eyebrow">Right Now</span><h2>Live Winner Feed</h2></div>
-      <div class="wins-table">
-        <div class="wins-row head"><div>Player</div><div>Game</div><div>Amount</div><div class="device">Status</div></div>
-        <div class="wins-row"><div class="player">R***h K.</div><div>Aviator</div><div class="amt">&#8377;42,600</div><div class="device"><span class="live-dot"><span class="d"></span>Live</span></div></div>
-        <div class="wins-row"><div class="player">S***a P.</div><div>Cricket &mdash; IPL</div><div class="amt">&#8377;1,18,400</div><div class="device"><span class="live-dot"><span class="d"></span>Live</span></div></div>
-        <div class="wins-row"><div class="player">A***t M.</div><div>Teen Patti</div><div class="amt">&#8377;8,950</div><div class="device"><span class="live-dot"><span class="d"></span>Live</span></div></div>
-        <div class="wins-row"><div class="player">V***y S.</div><div>Fortune Wheel</div><div class="amt">&#8377;26,150</div><div class="device"><span class="live-dot"><span class="d"></span>Live</span></div></div>
-      </div>
-    </div>
-  </section>
-
-  <footer>
-    <div class="wrap">
-      <div class="foot-grid">
-        <div>
-          <div class="foot-logo-wrap"><div class="foot-logo"><span class="x">D</span>DARKSHADOW</div></div>
-          <span class="foot-tagline">Where Legends Play</span>
-          <p class="foot-desc">Darkshadow has been India's most trusted online gaming &amp; sports betting platform since 2016. Powered by passion for fair play and player-first values.</p>
-          <div class="foot-since">&#127942; Trusted Since 2016 — 10 Years Strong</div>
-          <div class="foot-social">
-            <a href="#" title="Telegram">&#128228;</a><a href="#" title="Instagram">&#128247;</a>
-            <a href="#" title="Twitter">&#120143;</a><a href="#" title="YouTube">&#9654;</a>
-            <a href="#" title="WhatsApp">&#128172;</a>
-          </div>
-        </div>
-        <div><h4>Platform</h4><ul><li><a href="#">Sports Betting</a></li><li><a href="#">Live Casino</a></li><li><a href="#">Slot Games</a></li><li><a href="#">Mini Games</a></li><li><a href="#">Promotions</a></li></ul></div>
-        <div><h4>Support</h4><ul><li><a href="#">Help Center</a></li><li><a href="#">Responsible Gaming</a></li><li><a href="#">Contact Us</a></li><li><a href="#">Payment Methods</a></li><li><a href="#">Withdrawal Guide</a></li></ul></div>
-        <div><h4>Legal</h4><ul><li><a href="#">Terms of Service</a></li><li><a href="#">Privacy Policy</a></li><li><a href="#">KYC Policy</a></li><li><a href="#">Fair Play Certification</a></li><li><a href="#">Cookie Policy</a></li></ul></div>
-      </div>
-    </div>
-    <hr class="foot-divider">
-    <div class="wrap">
-      <div class="foot-bottom">
-        <div class="foot-bottom-left">
-          <span class="copy">&copy; 2016&ndash;2026 Darkshadow. All rights reserved.</span>
-          <span class="disclaimer">&#128274; SSL Secured &nbsp;&middot;&nbsp; RNG Certified &nbsp;&middot;&nbsp; 18+ Only &nbsp;&middot;&nbsp; Play Responsibly &nbsp;&middot;&nbsp; Gambling can be addictive. Please play within your means.</span>
-        </div>
-        <div class="foot-bottom-right">
-          <span class="ssl-badge">&#128274; SSL Secured</span>
-          <span class="age-badge">18+ Play Responsibly</span>
-        </div>
-      </div>
-    </div>
-  </footer>
-
-  <!-- ═══════════════════════════════════════════════════════════
-       SPIN MACHINE — floating button + all modals + JS
-       ═══════════════════════════════════════════════════════════ -->
-  {% include 'jackpot_modal.html' %}
-
-<script>
-  // Mobile menu toggle
-  const menuToggle = document.querySelector('.menu-toggle');
-  const navLinks   = document.querySelector('.nav-links');
-  if(menuToggle) menuToggle.addEventListener('click', ()=> navLinks.classList.toggle('open'));
-
-  // Scroll reveal
-  const revealEls = document.querySelectorAll('.reveal');
-  const observer  = new IntersectionObserver(entries =>{
-    entries.forEach(e =>{ if(e.isIntersecting) e.target.classList.add('in-view'); });
-  }, {threshold:0.1});
-  revealEls.forEach(el => observer.observe(el));
-
-  // Welcome popup (guests only)
-  function closePopup(){
-    const p = document.getElementById('welcomePopup');
-    if(p){ p.classList.remove('active'); sessionStorage.setItem('popupSeen','1'); }
-  }
-  window.addEventListener('load', ()=>{
-    const p = document.getElementById('welcomePopup');
-    if(p && !sessionStorage.getItem('popupSeen')){
-      setTimeout(()=> p.classList.add('active'), 1200);
-    }
-  });
-  const wp = document.getElementById('welcomePopup');
-  if(wp) wp.addEventListener('click', e =>{ if(e.target === wp) closePopup(); });
-
-  // User greeting dropdown
-  (function(){
-    const wrap = document.getElementById('userGreeting');
-    const btn  = document.getElementById('userGreetingBtn');
-    if(!wrap || !btn) return;
-    const open  = ()=>{ wrap.classList.add('open');    btn.setAttribute('aria-expanded','true');  };
-    const close = ()=>{ wrap.classList.remove('open'); btn.setAttribute('aria-expanded','false'); };
-    btn.addEventListener('click', e =>{ e.stopPropagation(); wrap.classList.contains('open') ? close() : open(); });
-    document.addEventListener('click', e =>{ if(!wrap.contains(e.target)) close(); });
-    document.addEventListener('keydown', e =>{ if(e.key === 'Escape') close(); });
-  })();
-</script>
-</body>
-</html>
+        <di
