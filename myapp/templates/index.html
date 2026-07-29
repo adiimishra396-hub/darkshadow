@@ -1,1 +1,410 @@
-open('/tmp/index_new.html').read()
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DarkShadow - Spin & Win</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;background:#0a0a0f;color:#e8e8f0;min-height:100vh}
+.navbar{display:flex;justify-content:space-between;align-items:center;padding:1rem 2rem;background:rgba(255,255,255,0.03);border-bottom:1px solid rgba(255,255,255,0.08);position:sticky;top:0;z-index:100;backdrop-filter:blur(12px)}
+.logo{font-family:'Rajdhani',sans-serif;font-size:1.6rem;font-weight:700;color:#c9a227;letter-spacing:2px}
+.nav-links{display:flex;gap:1rem;align-items:center}
+.nav-links a{color:#b0b0c0;text-decoration:none;font-size:.875rem;font-weight:500;padding:.4rem .8rem;border-radius:6px;transition:all .2s}
+.nav-links a:hover{color:#fff;background:rgba(255,255,255,0.06)}
+.btn{display:inline-flex;align-items:center;gap:.4rem;padding:.5rem 1.2rem;border-radius:8px;font-size:.875rem;font-weight:600;cursor:pointer;border:none;transition:all .2s;text-decoration:none}
+.btn-gold{background:linear-gradient(135deg,#c9a227,#e8c547);color:#0a0a0f}
+.btn-gold:hover{transform:translateY(-1px);box-shadow:0 4px 16px rgba(201,162,39,.4)}
+.btn-outline{background:transparent;border:1px solid rgba(255,255,255,.15);color:#c0c0d0}
+.btn-outline:hover{border-color:rgba(255,255,255,.3);background:rgba(255,255,255,.05)}
+.btn-sm{padding:.35rem .8rem;font-size:.8rem}
+
+/* Hero */
+.hero{text-align:center;padding:4rem 2rem 2rem;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;top:-100px;left:50%;transform:translateX(-50%);width:600px;height:600px;background:radial-gradient(circle,rgba(201,162,39,.08) 0%,transparent 70%);pointer-events:none}
+.hero h1{font-family:'Rajdhani',sans-serif;font-size:clamp(2.2rem,5vw,3.8rem);font-weight:700;color:#fff;letter-spacing:1px;line-height:1.1;margin-bottom:.75rem}
+.hero h1 span{color:#c9a227}
+.hero p{color:#8888a0;font-size:1rem;max-width:480px;margin:0 auto 2rem}
+
+/* Jackpot display */
+.jackpot-banner{display:inline-flex;flex-direction:column;align-items:center;background:linear-gradient(135deg,rgba(201,162,39,.1),rgba(232,197,71,.05));border:1px solid rgba(201,162,39,.3);border-radius:16px;padding:1.5rem 2.5rem;margin-bottom:2.5rem}
+.jackpot-label{font-size:.75rem;font-weight:600;color:#c9a227;letter-spacing:3px;text-transform:uppercase;margin-bottom:.4rem}
+.jackpot-amount{font-family:'Rajdhani',sans-serif;font-size:clamp(2rem,5vw,3.2rem);font-weight:700;color:#e8c547;letter-spacing:2px}
+.jackpot-amount::before{content:'₹'}
+
+/* Spin machine */
+.spin-section{display:flex;justify-content:center;padding:1rem 2rem 4rem}
+.spin-card{background:linear-gradient(160deg,#12121a,#0d0d15);border:1px solid rgba(255,255,255,.08);border-radius:20px;padding:2rem;width:100%;max-width:440px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.spin-card h2{font-family:'Rajdhani',sans-serif;font-size:1.5rem;color:#fff;margin-bottom:1.5rem;letter-spacing:1px}
+
+/* Reels */
+.reels-wrapper{display:flex;gap:1rem;justify-content:center;margin-bottom:1.5rem}
+.reel{width:90px;height:110px;background:#0a0a12;border:2px solid rgba(201,162,39,.3);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:2.8rem;overflow:hidden;position:relative;transition:border-color .3s}
+.reel.spinning{border-color:#c9a227;box-shadow:0 0 20px rgba(201,162,39,.3);animation:reelGlow .15s infinite alternate}
+@keyframes reelGlow{from{box-shadow:0 0 10px rgba(201,162,39,.2)}to{box-shadow:0 0 30px rgba(201,162,39,.5)}}
+.reel-value{transition:transform .1s;display:block}
+.reel.spinning .reel-value{animation:spinFlicker .08s infinite}
+@keyframes spinFlicker{0%{transform:translateY(-8px);opacity:.6}50%{transform:translateY(0);opacity:1}100%{transform:translateY(8px);opacity:.6}}
+
+/* Prize table */
+.prize-table{width:100%;border-collapse:collapse;margin-bottom:1.5rem;font-size:.82rem}
+.prize-table th{color:#8888a0;font-weight:500;padding:.4rem .6rem;text-align:left;border-bottom:1px solid rgba(255,255,255,.06)}
+.prize-table td{padding:.4rem .6rem;color:#c0c0d0}
+.prize-table tr:last-child td{border:none}
+.combo-icons{font-size:1.1rem;letter-spacing:2px}
+
+/* Spin button */
+.btn-spin{width:100%;padding:1rem;font-size:1.05rem;font-weight:700;font-family:'Rajdhani',sans-serif;letter-spacing:2px;background:linear-gradient(135deg,#c9a227,#e8c547);color:#0a0a0f;border:none;border-radius:12px;cursor:pointer;transition:all .3s;margin-bottom:.75rem}
+.btn-spin:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 8px 24px rgba(201,162,39,.5)}
+.btn-spin:disabled{opacity:.5;cursor:not-allowed;transform:none}
+
+.spin-info{font-size:.8rem;color:#666;margin-top:.5rem}
+.spin-count-badge{display:inline-flex;align-items:center;gap:.3rem;background:rgba(201,162,39,.1);border:1px solid rgba(201,162,39,.25);border-radius:20px;padding:.25rem .75rem;font-size:.8rem;color:#c9a227;margin-bottom:1rem}
+
+/* Result overlay */
+.result-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:1000;align-items:center;justify-content:center;backdrop-filter:blur(6px)}
+.result-overlay.show{display:flex}
+.result-card{background:linear-gradient(160deg,#16161f,#12121a);border:1px solid rgba(201,162,39,.35);border-radius:24px;padding:2.5rem;text-align:center;max-width:360px;width:90%;position:relative;animation:resultIn .4s cubic-bezier(.16,1,.3,1)}
+@keyframes resultIn{from{transform:scale(.85);opacity:0}to{transform:scale(1);opacity:1}}
+.result-emoji{font-size:3.5rem;margin-bottom:.75rem;display:block}
+.result-title{font-family:'Rajdhani',sans-serif;font-size:1.8rem;font-weight:700;color:#fff;margin-bottom:.4rem}
+.result-subtitle{color:#8888a0;font-size:.9rem;margin-bottom:1.5rem}
+.result-prize{font-family:'Rajdhani',sans-serif;font-size:2.4rem;font-weight:700;color:#e8c547;margin-bottom:1.5rem}
+.result-prize::before{content:'₹'}
+.result-close{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);color:#e0e0f0;border-radius:10px;padding:.65rem 1.8rem;font-size:.9rem;cursor:pointer;font-weight:600}
+.result-close:hover{background:rgba(255,255,255,.12)}
+
+/* Auth modal (login required / no balance) */
+.auth-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:2000;align-items:center;justify-content:center;backdrop-filter:blur(6px)}
+.auth-modal.show{display:flex}
+.auth-modal-card{background:linear-gradient(160deg,#16161f,#12121a);border:1px solid rgba(201,162,39,.25);border-radius:20px;padding:2.5rem;text-align:center;max-width:360px;width:90%;animation:resultIn .35s cubic-bezier(.16,1,.3,1)}
+.auth-modal-icon{font-size:3rem;display:block;margin-bottom:.75rem}
+.auth-modal-title{font-family:'Rajdhani',sans-serif;font-size:1.6rem;font-weight:700;color:#fff;margin-bottom:.4rem}
+.auth-modal-subtitle{color:#8888a0;font-size:.875rem;margin-bottom:1.75rem;line-height:1.5}
+.auth-modal-actions{display:flex;gap:.75rem;justify-content:center;flex-wrap:wrap}
+
+/* How it works */
+.how-section{padding:3rem 2rem;max-width:960px;margin:0 auto}
+.how-section h2{font-family:'Rajdhani',sans-serif;font-size:1.8rem;color:#fff;text-align:center;margin-bottom:2rem;letter-spacing:1px}
+.how-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1.2rem}
+.how-card{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:1.5rem;text-align:center}
+.how-icon{font-size:2rem;display:block;margin-bottom:.75rem}
+.how-card h3{font-size:1rem;font-weight:600;color:#e0e0f0;margin-bottom:.5rem}
+.how-card p{font-size:.82rem;color:#6868808;line-height:1.5;color:#6a6a80}
+
+/* Footer */
+footer{text-align:center;padding:2rem;border-top:1px solid rgba(255,255,255,.06);color:#44445a;font-size:.8rem}
+
+/* Toast */
+.toast{position:fixed;bottom:1.5rem;right:1.5rem;background:#1a1a28;border:1px solid rgba(201,162,39,.3);border-radius:10px;padding:.85rem 1.25rem;font-size:.875rem;color:#e0e0f0;z-index:3000;display:none;animation:slideUp .3s ease;max-width:320px}
+.toast.show{display:block}
+@keyframes slideUp{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
+.toast-win{border-color:rgba(201,162,39,.6);background:linear-gradient(135deg,rgba(201,162,39,.12),rgba(14,14,22,.95))}
+</style>
+</head>
+<body>
+
+<!-- Navbar -->
+<nav class="navbar">
+  <div class="logo">DARK<span style="color:#fff">SHADOW</span></div>
+  <div class="nav-links">
+    {% if user.is_authenticated %}
+      {% if user.is_superuser %}
+        <a href="{% url 'admin_panel' %}" class="btn btn-outline btn-sm">Admin Panel</a>
+      {% else %}
+        <a href="{% url 'my_wallet' %}" class="btn btn-outline btn-sm">💰 Wallet</a>
+        <a href="{% url 'edit_profile' %}" class="btn btn-outline btn-sm">Profile</a>
+        <a href="{% url 'logout' %}" class="btn btn-outline btn-sm">Logout</a>
+      {% endif %}
+    {% else %}
+      <a href="{% url 'login' %}" class="btn btn-outline btn-sm">Login</a>
+      <a href="{% url 'signup' %}" class="btn btn-gold btn-sm">Sign Up</a>
+    {% endif %}
+  </div>
+</nav>
+
+<!-- Hero -->
+<section class="hero">
+  <h1>Spin The <span>Jackpot</span><br>Win Big Prizes</h1>
+  <p>Try your luck on our jackpot machine — real prizes, instant wins, credited straight to your wallet.</p>
+  <div class="jackpot-banner">
+    <div class="jackpot-label">Current Jackpot Prize</div>
+    <div class="jackpot-amount">{{ jackpot_display_amount }}</div>
+  </div>
+</section>
+
+<!-- Spin Machine -->
+<section class="spin-section">
+  <div class="spin-card">
+    <h2>🎰 Jackpot Machine</h2>
+
+    {% if user.is_authenticated and not user.is_superuser %}
+      <div class="spin-count-badge">🎫 {{ spin_wallet.spins|default:0 }} spin{{ spin_wallet.spins|pluralize }} available</div>
+    {% endif %}
+
+    <!-- Reels -->
+    <div class="reels-wrapper">
+      <div class="reel" id="reel1"><span class="reel-value" id="rv1">🎰</span></div>
+      <div class="reel" id="reel2"><span class="reel-value" id="rv2">🎰</span></div>
+      <div class="reel" id="reel3"><span class="reel-value" id="rv3">🎰</span></div>
+    </div>
+
+    <!-- Prize table -->
+    <table class="prize-table">
+      <thead><tr><th>Combo</th><th>Prize</th></tr></thead>
+      <tbody>
+        <tr><td><span class="combo-icons">💎💎💎</span> Three Diamonds</td><td style="color:#e8c547;font-weight:600">₹{{ prize_diamonds }}</td></tr>
+        <tr><td><span class="combo-icons">7️⃣7️⃣7️⃣</span> Three Sevens</td><td style="color:#e8c547;font-weight:600">₹{{ prize_sevens }}</td></tr>
+        <tr><td><span class="combo-icons">🍒🍒🍒</span> Three Cherries</td><td style="color:#e8c547;font-weight:600">₹{{ prize_cherries }}</td></tr>
+        <tr><td>Any Two Matching</td><td style="color:#c0c0d0">₹{{ prize_two_of_kind }}</td></tr>
+      </tbody>
+    </table>
+
+    <!-- Spin Button -->
+    {% if user.is_authenticated and not user.is_superuser %}
+      {% if spin_wallet.spins > 0 %}
+        <button class="btn-spin" id="spinBtn" onclick="handleSpinClick()">
+          🎰 Spin &amp; Try Your Luck
+          <span style="font-size:12px;opacity:0.8;">({{ spin_wallet.spins }} spin{{ spin_wallet.spins|pluralize }} left)</span>
+        </button>
+      {% else %}
+        <button class="btn-spin" onclick="showNoBalanceModal()">
+          🎰 Spin &amp; Try Your Luck
+        </button>
+        <p class="spin-info">You have no spins left. Add money to buy more spins.</p>
+      {% endif %}
+    {% elif user.is_superuser %}
+      <button class="btn-spin" disabled>Admin cannot spin</button>
+    {% else %}
+      <button class="btn-spin" onclick="showLoginModal()">
+        🎰 Spin &amp; Try Your Luck
+      </button>
+      <p class="spin-info">Login required to spin. <a href="{% url 'login' %}" style="color:#c9a227">Login here</a></p>
+    {% endif %}
+
+    <p class="spin-info">{{ spin_pack_spins }} spins for ₹{{ spin_pack_amount }} · Buy at <a href="{% url 'my_wallet' %}" style="color:#c9a227">My Wallet</a></p>
+  </div>
+</section>
+
+<!-- How it works -->
+<section class="how-section">
+  <h2>How It Works</h2>
+  <div class="how-grid">
+    <div class="how-card"><span class="how-icon">💰</span><h3>Add Money</h3><p>Top up your wallet using Razorpay — UPI, cards, netbanking accepted.</p></div>
+    <div class="how-card"><span class="how-icon">🎫</span><h3>Buy Spins</h3><p>Purchase spin packs from your wallet. {{ spin_pack_spins }} spins for just ₹{{ spin_pack_amount }}.</p></div>
+    <div class="how-card"><span class="how-icon">🎰</span><h3>Spin &amp; Win</h3><p>Hit the jackpot and prizes are instantly credited to your wallet.</p></div>
+    <div class="how-card"><span class="how-icon">🏦</span><h3>Withdraw</h3><p>Your winnings sit in your wallet ready to be withdrawn anytime.</p></div>
+  </div>
+</section>
+
+<footer>© 2025 DarkShadow · Play responsibly · 18+ only</footer>
+
+<!-- Win Result Modal -->
+<div class="result-overlay" id="resultOverlay">
+  <div class="result-card">
+    <span class="result-emoji" id="resultEmoji">🎉</span>
+    <div class="result-title" id="resultTitle">You Won!</div>
+    <div class="result-subtitle" id="resultSubtitle">Jackpot combo!</div>
+    <div class="result-prize" id="resultPrize" style="display:none"></div>
+    <button class="result-close" onclick="closeResult()">Collect & Continue</button>
+  </div>
+</div>
+
+<!-- Login Required Modal -->
+<div class="auth-modal" id="loginModal">
+  <div class="auth-modal-card">
+    <span class="auth-modal-icon">🔐</span>
+    <div class="auth-modal-title">Login Required</div>
+    <div class="auth-modal-subtitle">You need to be logged in to spin the jackpot machine and win prizes.</div>
+    <div class="auth-modal-actions">
+      <a href="{% url 'login' %}" class="btn btn-gold">Login</a>
+      <a href="{% url 'signup' %}" class="btn btn-outline">Sign Up</a>
+      <button onclick="closeLoginModal()" class="btn btn-outline">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- No Balance Modal -->
+<div class="auth-modal" id="noBalanceModal">
+  <div class="auth-modal-card">
+    <span class="auth-modal-icon">🎫</span>
+    <div class="auth-modal-title">No Spins Left</div>
+    <div class="auth-modal-subtitle">You have no spins available. Buy a spin pack ({{ spin_pack_spins }} spins for ₹{{ spin_pack_amount }}) to continue playing.</div>
+    <div class="auth-modal-actions">
+      <a href="{% url 'my_wallet' %}" class="btn btn-gold">Add Money &amp; Buy Spins</a>
+      <button onclick="closeNoBalanceModal()" class="btn btn-outline">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// Winning symbols from backend
+const WINNING = ['{{ winning_reel_1 }}', '{{ winning_reel_2 }}', '{{ winning_reel_3 }}'];
+
+const SYMBOLS = ['💎','7️⃣','🍒','⭐','🔔','🍋','🃏'];
+const PRIZE_MAP = {
+  diamonds: {{ prize_diamonds }},
+  sevens: {{ prize_sevens }},
+  cherries: {{ prize_cherries }},
+  two_of_kind: {{ prize_two_of_kind }},
+};
+
+let isSpinning = false;
+
+function showLoginModal() {
+  document.getElementById('loginModal').classList.add('show');
+}
+function closeLoginModal() {
+  document.getElementById('loginModal').classList.remove('show');
+}
+function showNoBalanceModal() {
+  document.getElementById('noBalanceModal').classList.add('show');
+}
+function closeNoBalanceModal() {
+  document.getElementById('noBalanceModal').classList.remove('show');
+}
+
+function handleSpinClick() {
+  if (isSpinning) return;
+  isSpinning = true;
+  const btn = document.getElementById('spinBtn');
+  if (btn) btn.disabled = true;
+
+  // Use the spin via API
+  fetch('/jackpot/use-spin/', {method:'POST', headers:{'X-CSRFToken': getCookie('csrftoken'), 'Content-Type':'application/json'}, body:'{}'})
+    .then(r => r.json())
+    .then(data => {
+      if (!data.success) {
+        showNoBalanceModal();
+        isSpinning = false;
+        if (btn) btn.disabled = false;
+        return;
+      }
+      startSpinAnimation(data.remaining_spins);
+    })
+    .catch(() => { isSpinning = false; if (btn) btn.disabled = false; });
+}
+
+function startSpinAnimation(remainingSpins) {
+  const reels = [document.getElementById('reel1'), document.getElementById('reel2'), document.getElementById('reel3')];
+  const vals  = [document.getElementById('rv1'),   document.getElementById('rv2'),   document.getElementById('rv3')];
+
+  reels.forEach(r => r.classList.add('spinning'));
+  let ticks = 0;
+  const interval = setInterval(() => {
+    vals.forEach(v => { v.textContent = SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)]; });
+    ticks++;
+    if (ticks > 20) {
+      clearInterval(interval);
+      revealResult(reels, vals, remainingSpins);
+    }
+  }, 80);
+}
+
+function revealResult(reels, vals, remainingSpins) {
+  // Use winning symbols from admin setting for the jackpot combo
+  const winSymbols = { '7': '7️⃣', 'X': '⭐', '💎': '💎', '🍒': '🍒' };
+  const finalSymbols = WINNING.map(s => winSymbols[s] || s);
+
+  // 15% chance to win (for demo; in production the server decides)
+  const won = Math.random() < 0.15;
+  let r1, r2, r3;
+  if (won) {
+    [r1, r2, r3] = finalSymbols;
+  } else {
+    // Make sure it's NOT a full match
+    const pool = SYMBOLS.filter(s => s !== finalSymbols[0]);
+    r1 = pool[Math.floor(Math.random() * pool.length)];
+    r2 = SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)];
+    r3 = SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)];
+  }
+
+  vals[0].textContent = r1;
+  vals[1].textContent = r2;
+  vals[2].textContent = r3;
+  reels.forEach(r => r.classList.remove('spinning'));
+
+  // Detect combo
+  let combo = null;
+  if (r1 === r2 && r2 === r3) {
+    if (r1 === '💎') combo = 'diamonds';
+    else if (r1 === '7️⃣') combo = 'sevens';
+    else if (r1 === '🍒') combo = 'cherries';
+    else combo = 'sevens'; // generic three of a kind
+  } else if (r1 === r2 || r2 === r3 || r1 === r3) {
+    combo = 'two_of_kind';
+  }
+
+  // Update spin count in badge
+  const badge = document.querySelector('.spin-count-badge');
+  if (badge) badge.textContent = '🎫 ' + remainingSpins + ' spin' + (remainingSpins !== 1 ? 's' : '') + ' available';
+
+  setTimeout(() => {
+    if (combo) {
+      showWinResult(combo);
+    } else {
+      showLoseResult();
+    }
+    isSpinning = false;
+    const btn = document.getElementById('spinBtn');
+    if (btn) {
+      btn.disabled = remainingSpins < 1;
+      if (remainingSpins > 0) {
+        btn.innerHTML = '🎰 Spin &amp; Try Your Luck <span style="font-size:12px;opacity:0.8;">(' + remainingSpins + ' spin' + (remainingSpins !== 1 ? 's' : '') + ' left)</span>';
+      }
+    }
+  }, 400);
+}
+
+function showWinResult(combo) {
+  const prize = PRIZE_MAP[combo] || 0;
+  const titles = {diamonds:'💎 Diamond Jackpot!', sevens:'7️⃣ Lucky Sevens!', cherries:'🍒 Cherry Bonus!', two_of_kind:'⭐ Matching Pair!'};
+  document.getElementById('resultEmoji').textContent = combo === 'diamonds' ? '💎' : combo === 'sevens' ? '7️⃣' : '🍒';
+  document.getElementById('resultTitle').textContent = titles[combo] || 'You Won!';
+  document.getElementById('resultSubtitle').textContent = 'Winnings are credited to your wallet!';
+  const prizeEl = document.getElementById('resultPrize');
+  prizeEl.style.display = 'block';
+  prizeEl.textContent = prize;
+
+  // Claim win from server
+  fetch('/jackpot/claim-win/', {method:'POST', headers:{'X-CSRFToken': getCookie('csrftoken'), 'Content-Type':'application/json'}, body: JSON.stringify({combo})})
+    .then(r => r.json()).then(d => { if (d.success) showToast('🎉 ₹' + d.prize + ' credited to your wallet!', true); });
+
+  document.getElementById('resultOverlay').classList.add('show');
+}
+
+function showLoseResult() {
+  document.getElementById('resultEmoji').textContent = '😔';
+  document.getElementById('resultTitle').textContent = 'Better Luck Next Time!';
+  document.getElementById('resultSubtitle').textContent = 'Keep spinning — the jackpot is waiting!';
+  document.getElementById('resultPrize').style.display = 'none';
+  document.getElementById('resultOverlay').classList.add('show');
+}
+
+function closeResult() {
+  document.getElementById('resultOverlay').classList.remove('show');
+}
+
+function showToast(msg, isWin) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (isWin ? ' toast-win' : '');
+  setTimeout(() => t.classList.remove('show'), 4000);
+}
+
+function getCookie(name) {
+  let v = null;
+  document.cookie.split(';').forEach(c => { const [k,val] = c.trim().split('='); if (k === name) v = decodeURIComponent(val); });
+  return v;
+}
+
+// Close modals on backdrop click
+document.getElementById('loginModal').addEventListener('click', function(e){ if(e.target===this) closeLoginModal(); });
+document.getElementById('noBalanceModal').addEventListener('click', function(e){ if(e.target===this) closeNoBalanceModal(); });
+document.getElementById('resultOverlay').addEventListener('click', function(e){ if(e.target===this) closeResult(); });
+</script>
+</body>
+</html>
