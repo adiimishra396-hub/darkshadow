@@ -1,1 +1,397 @@
-open('/tmp/admin_panel_new.html').read()
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Panel - DarkShadow</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0a0a0f;--surface:#12121a;--surface2:#16161f;--border:rgba(255,255,255,.07);
+  --text:#e8e8f0;--muted:#8888a0;--faint:#44445a;
+  --gold:#c9a227;--gold2:#e8c547;
+  --green:#22c55e;--red:#ef4444;--blue:#3b82f6;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+
+/* Navbar */
+.navbar{display:flex;justify-content:space-between;align-items:center;padding:.85rem 2rem;background:rgba(255,255,255,.02);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;backdrop-filter:blur(12px)}
+.logo{font-family:'Rajdhani',sans-serif;font-size:1.4rem;font-weight:700;color:var(--gold);letter-spacing:2px}
+.nav-right{display:flex;gap:.75rem;align-items:center}
+.btn{display:inline-flex;align-items:center;gap:.3rem;padding:.45rem 1rem;border-radius:7px;font-size:.82rem;font-weight:600;cursor:pointer;border:none;text-decoration:none;transition:all .18s}
+.btn-gold{background:linear-gradient(135deg,var(--gold),var(--gold2));color:#0a0a0f}
+.btn-gold:hover{opacity:.9;transform:translateY(-1px)}
+.btn-outline{background:transparent;border:1px solid rgba(255,255,255,.12);color:var(--muted)}
+.btn-outline:hover{border-color:rgba(255,255,255,.25);color:var(--text)}
+.btn-danger{background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.25);color:var(--red)}
+.btn-danger:hover{background:rgba(239,68,68,.2)}
+.btn-sm{padding:.3rem .7rem;font-size:.75rem}
+.btn-xs{padding:.2rem .5rem;font-size:.72rem}
+
+/* Layout */
+.layout{display:flex;min-height:calc(100vh - 53px)}
+.sidebar{width:200px;flex-shrink:0;background:rgba(255,255,255,.015);border-right:1px solid var(--border);padding:1.5rem 0;position:sticky;top:53px;height:calc(100vh - 53px);overflow-y:auto}
+.sidebar-item{display:flex;align-items:center;gap:.6rem;padding:.65rem 1.25rem;font-size:.82rem;font-weight:500;color:var(--muted);cursor:pointer;border-left:2px solid transparent;transition:all .18s;border:none;background:none;width:100%;text-align:left}
+.sidebar-item:hover{color:var(--text);background:rgba(255,255,255,.04)}
+.sidebar-item.active{color:var(--gold);border-left-color:var(--gold);background:rgba(201,162,39,.06)}
+.main{flex:1;overflow-y:auto;padding:2rem}
+
+/* Tabs */
+.tab-section{display:none}
+.tab-section.active{display:block}
+
+/* Cards */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:1.5rem;margin-bottom:1.25rem}
+.card-title{font-family:'Rajdhani',sans-serif;font-size:1.1rem;font-weight:700;color:var(--text);margin-bottom:1.25rem;letter-spacing:.5px;display:flex;align-items:center;gap:.5rem}
+
+/* Stats grid */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1rem;margin-bottom:1.25rem}
+.stat-card{background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:1.2rem 1rem;text-align:center}
+.stat-value{font-family:'Rajdhani',sans-serif;font-size:1.8rem;font-weight:700;color:var(--gold);line-height:1}
+.stat-label{font-size:.75rem;color:var(--muted);margin-top:.4rem;font-weight:500}
+
+/* Table */
+.table-wrap{overflow-x:auto;border-radius:10px;border:1px solid var(--border)}
+table{width:100%;border-collapse:collapse;font-size:.82rem}
+th{background:var(--surface2);color:var(--muted);font-weight:600;padding:.7rem 1rem;text-align:left;white-space:nowrap;font-size:.78rem;letter-spacing:.5px;text-transform:uppercase}
+td{padding:.7rem 1rem;border-top:1px solid var(--border);color:var(--text);vertical-align:middle}
+tr:hover td{background:rgba(255,255,255,.02)}
+
+/* Forms */
+.form-group{margin-bottom:1rem}
+.form-group label{display:block;font-size:.78rem;font-weight:600;color:var(--muted);margin-bottom:.4rem;letter-spacing:.5px;text-transform:uppercase}
+.form-control{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:.55rem .85rem;font-size:.875rem;color:var(--text);outline:none;transition:border-color .18s}
+.form-control:focus{border-color:rgba(201,162,39,.5)}
+.form-control::placeholder{color:var(--faint)}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+@media(max-width:600px){.form-grid{grid-template-columns:1fr}}
+
+/* Badges */
+.badge{display:inline-flex;align-items:center;padding:.2rem .6rem;border-radius:20px;font-size:.72rem;font-weight:600;letter-spacing:.3px}
+.badge-green{background:rgba(34,197,94,.12);color:var(--green);border:1px solid rgba(34,197,94,.25)}
+.badge-red{background:rgba(239,68,68,.12);color:var(--red);border:1px solid rgba(239,68,68,.25)}
+.badge-gold{background:rgba(201,162,39,.12);color:var(--gold);border:1px solid rgba(201,162,39,.25)}
+.badge-blue{background:rgba(59,130,246,.12);color:var(--blue);border:1px solid rgba(59,130,246,.25)}
+
+/* Messages */
+.messages{margin-bottom:1.25rem}
+.alert{padding:.75rem 1rem;border-radius:8px;font-size:.85rem;margin-bottom:.5rem;display:flex;align-items:center;gap:.5rem}
+.alert-success{background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.25);color:var(--green)}
+.alert-error{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.25);color:var(--red)}
+
+/* Spin section styles */
+.s-section{margin-bottom:1.75rem}
+.s-divider{height:1px;background:var(--border);margin:1.5rem 0}
+.s-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:.85rem}
+.s-field label{display:block;font-size:.75rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:.35rem}
+.s-field input[type=text],.s-field input[type=number]{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:.5rem .8rem;color:var(--text);font-size:.875rem;outline:none;transition:border-color .18s}
+.s-field input:focus{border-color:rgba(201,162,39,.4)}
+.toggle-wrap{display:flex;align-items:center;gap:.75rem}
+.toggle-wrap input[type=checkbox]{width:36px;height:20px;accent-color:var(--gold);cursor:pointer}
+.toggle-label{font-size:.85rem;color:var(--muted)}
+
+.reel-inputs{display:flex;gap:.5rem;align-items:center;justify-content:center;margin:.75rem 0}
+.reel-inputs input{width:64px;text-align:center;font-family:'Rajdhani',sans-serif;font-size:1.4rem;font-weight:700;background:var(--surface2);border:1px solid rgba(201,162,39,.3);border-radius:10px;padding:.5rem .25rem;color:var(--gold2);outline:none;transition:border-color .18s}
+.reel-inputs input:focus{border-color:var(--gold)}
+.reel-separator{font-size:1.2rem;color:var(--muted);font-weight:700}
+.reel-preview{display:flex;gap:.5rem;justify-content:center;margin-top:.5rem}
+.reel-box{width:56px;height:64px;background:var(--bg);border:2px solid rgba(201,162,39,.3);border-radius:10px;display:flex;align-items:center;justify-content:center;font-family:'Rajdhani',sans-serif;font-size:1.5rem;font-weight:700;color:var(--gold2)}
+</style>
+</head>
+<body>
+
+<nav class="navbar">
+  <div class="logo">DARK<span style="color:#fff">SHADOW</span> <span style="font-size:.75rem;color:var(--muted);font-family:'Inter',sans-serif;font-weight:500;letter-spacing:0">Admin</span></div>
+  <div class="nav-right">
+    <a href="{% url 'home' %}" class="btn btn-outline btn-sm">🏠 Home</a>
+    <a href="{% url 'logout' %}" class="btn btn-danger btn-sm">Logout</a>
+  </div>
+</nav>
+
+<div class="layout">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <button class="sidebar-item active" onclick="switchTab('overview')">&#128202; Overview</button>
+    <button class="sidebar-item" onclick="switchTab('users')">&#128100; Users</button>
+    <button class="sidebar-item" onclick="switchTab('payments')">&#128179; Payments</button>
+    <button class="sidebar-item" onclick="switchTab('spin')">&#127922; Spin Machine</button>
+    <button class="sidebar-item" onclick="switchTab('razorpay')">&#9881; Razorpay</button>
+  </aside>
+
+  <!-- Main -->
+  <main class="main">
+
+    {% if messages %}
+    <div class="messages">
+      {% for msg in messages %}
+      <div class="alert {% if 'Error' in msg.tags or 'error' in msg.tags %}alert-error{% else %}alert-success{% endif %}">{{ msg }}</div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- ========== OVERVIEW ========== -->
+    <section class="tab-section active" id="tab-overview">
+      <div class="card-title" style="font-family:'Rajdhani',sans-serif;font-size:1.4rem;margin-bottom:1.5rem">📊 Dashboard Overview</div>
+      <div class="stats-grid">
+        <div class="stat-card"><div class="stat-value">{{ total_users }}</div><div class="stat-label">Total Users</div></div>
+        <div class="stat-card"><div class="stat-value">₹{{ total_revenue|floatformat:0 }}</div><div class="stat-label">Total Revenue</div></div>
+        <div class="stat-card"><div class="stat-value">{{ success_count }}</div><div class="stat-label">Successful Payments</div></div>
+        <div class="stat-card"><div class="stat-value">₹{{ spin_total_revenue|floatformat:0 }}</div><div class="stat-label">Spin Revenue</div></div>
+        <div class="stat-card"><div class="stat-value">{{ spin_total_spins_sold|default:0 }}</div><div class="stat-label">Spins Sold</div></div>
+        <div class="stat-card"><div class="stat-value">{{ spin_unique_buyers|default:0 }}</div><div class="stat-label">Spin Buyers</div></div>
+      </div>
+    </section>
+
+    <!-- ========== USERS ========== -->
+    <section class="tab-section" id="tab-users">
+      <div class="card">
+        <div class="card-title">👥 All Users <span class="badge badge-gold" style="font-family:'Inter',sans-serif;font-weight:600;font-size:.8rem">{{ total_users }}</span></div>
+
+        <!-- Add user form -->
+        <details style="margin-bottom:1.25rem">
+          <summary style="cursor:pointer;font-size:.85rem;font-weight:600;color:var(--gold);padding:.5rem 0">➕ Add New User</summary>
+          <form method="POST" action="{% url 'admin_add_user' %}" style="margin-top:1rem">
+            {% csrf_token %}
+            <div class="form-grid">
+              <div class="form-group"><label>Username *</label><input name="username" class="form-control" required placeholder="username" autocomplete="off"></div>
+              <div class="form-group"><label>Password *</label><input name="password" type="password" class="form-control" required placeholder="password"></div>
+              <div class="form-group"><label>First Name</label><input name="first_name" class="form-control" placeholder="First name"></div>
+              <div class="form-group"><label>Last Name</label><input name="last_name" class="form-control" placeholder="Last name"></div>
+              <div class="form-group"><label>Email</label><input name="email" type="email" class="form-control" placeholder="email@example.com"></div>
+              <div class="form-group"><label>Phone</label><input name="phone_number" class="form-control" placeholder="+91..."></div>
+            </div>
+            <button type="submit" class="btn btn-gold btn-sm">➕ Create User</button>
+          </form>
+        </details>
+
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>#</th><th>Username</th><th>Name</th><th>Email</th><th>Phone</th><th>Age</th><th>Joined</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody>
+              {% for u in user_data %}
+              <tr>
+                <td style="color:var(--faint)">{{ forloop.counter }}</td>
+                <td style="font-weight:600">@{{ u.username }}</td>
+                <td>{{ u.first_name }} {{ u.last_name }}</td>
+                <td style="color:var(--muted)">{{ u.email }}</td>
+                <td style="color:var(--muted)">{{ u.phone }}</td>
+                <td style="color:var(--muted)">{{ u.age }}</td>
+                <td style="color:var(--faint);font-size:.78rem">{{ u.date_joined|date:"d M Y" }}</td>
+                <td>{% if u.is_active %}<span class="badge badge-green">Active</span>{% else %}<span class="badge badge-red">Banned</span>{% endif %}</td>
+                <td>
+                  <div style="display:flex;gap:.4rem">
+                    <a href="{% url 'toggle_user_active' u.id %}" class="btn btn-xs {% if u.is_active %}btn-danger{% else %}btn-outline{% endif %}">{% if u.is_active %}Ban{% else %}Unban{% endif %}</a>
+                    <a href="{% url 'delete_user' u.id %}" class="btn btn-xs btn-danger" onclick="return confirm('Delete @{{ u.username }}?')">Del</a>
+                  </div>
+                </td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="9" style="text-align:center;color:var(--faint);padding:2rem">No users yet.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== PAYMENTS ========== -->
+    <section class="tab-section" id="tab-payments">
+      <div class="card">
+        <div class="card-title">💳 Payments</div>
+        <div class="stats-grid" style="margin-bottom:1.25rem">
+          <div class="stat-card"><div class="stat-value">₹{{ total_revenue|floatformat:0 }}</div><div class="stat-label">Total Revenue</div></div>
+          <div class="stat-card"><div class="stat-value">{{ success_count }}</div><div class="stat-label">Successful</div></div>
+          <div class="stat-card"><div class="stat-value">₹{{ total_pending|floatformat:0 }}</div><div class="stat-label">Pending Amount</div></div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>User</th><th>Amount</th><th>Status</th><th>Txn ID</th><th>Date</th></tr></thead>
+            <tbody>
+              {% for p in payments %}
+              <tr>
+                <td style="font-weight:600">@{{ p.user.username }}</td>
+                <td style="color:var(--gold);font-weight:600">₹{{ p.amount }}</td>
+                <td>{% if p.status == 'success' %}<span class="badge badge-green">Success</span>{% elif p.status == 'pending' %}<span class="badge badge-gold">Pending</span>{% else %}<span class="badge badge-red">{{ p.status }}</span>{% endif %}</td>
+                <td style="font-family:monospace;font-size:.75rem;color:var(--faint)">{{ p.transaction_id|truncatechars:24 }}</td>
+                <td style="color:var(--faint);font-size:.78rem">{{ p.created_at|date:"d M Y H:i" }}</td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="5" style="text-align:center;color:var(--faint);padding:2rem">No payments recorded.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== SPIN MACHINE ========== -->
+    <section class="tab-section" id="tab-spin">
+      <div class="card">
+        <div class="card-title">🎠 Spin Machine Settings</div>
+
+        <form method="POST" action="{% url 'save_spin_settings' %}">
+          {% csrf_token %}
+
+          <!-- 1. Jackpot Display Amount -->
+          <!-- Jackpot Display Amount -->
+          <div style="font-family:'Rajdhani',sans-serif;font-weight:700;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);margin-bottom:12px;">&#128181; Jackpot Display Amount</div>
+          <div class="s-form-grid" style="margin-bottom:24px;">
+            <div class="s-field">
+              <label>Display Amount (Homepage)</label>
+              <input type="text" name="jackpot_display_amount" value="{{ spin_cfg.jackpot_display_amount }}" placeholder="84,52,910" maxlength="30"
+                     style="font-family:'Rajdhani',sans-serif;font-weight:700;font-size:1.2rem;color:var(--gold2);letter-spacing:1px">
+              <div style="font-size:.72rem;color:var(--faint);margin-top:.3rem">Shown as ₹[amount] on homepage jackpot banner</div>
+            </div>
+          </div>
+
+          <div class="s-divider"></div>
+
+          <!-- 2. Winning Reel Code -->
+          <div style="font-family:'Rajdhani',sans-serif;font-weight:700;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);margin-bottom:12px;">&#127920; Winning Reel Code</div>
+          <div style="margin-bottom:8px;font-size:.82rem;color:var(--muted)">Set the 3-symbol combination that triggers a jackpot win.</div>
+          <div style="text-align:center;margin-bottom:1rem">
+            <div class="reel-inputs">
+              <input type="text" name="winning_reel_1" id="wr1" maxlength="2" value="{{ spin_cfg.winning_reel_1 }}" oninput="updatePreview()">
+              <span class="reel-separator">|</span>
+              <input type="text" name="winning_reel_2" id="wr2" maxlength="2" value="{{ spin_cfg.winning_reel_2 }}" oninput="updatePreview()">
+              <span class="reel-separator">|</span>
+              <input type="text" name="winning_reel_3" id="wr3" maxlength="2" value="{{ spin_cfg.winning_reel_3 }}" oninput="updatePreview()">
+            </div>
+            <div style="font-size:.75rem;color:var(--faint);margin-bottom:.75rem">Symbols: 7, X, 💎, 🍒 (use single characters)</div>
+            <div class="reel-preview" id="reelPreview">
+              <div class="reel-box" id="rp1">{{ spin_cfg.winning_reel_1 }}</div>
+              <div class="reel-box" id="rp2">{{ spin_cfg.winning_reel_2 }}</div>
+              <div class="reel-box" id="rp3">{{ spin_cfg.winning_reel_3 }}</div>
+            </div>
+            <div style="font-size:.72rem;color:var(--faint);margin-top:.4rem">Live preview of jackpot-winning combination</div>
+          </div>
+
+          <div class="s-divider"></div>
+
+          <!-- 3. Spin Pack Pricing -->
+          <div style="font-family:'Rajdhani',sans-serif;font-weight:700;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);margin-bottom:12px;">&#127914; Spin Pack Pricing</div>
+          <div class="s-form-grid" style="margin-bottom:24px;">
+            <div class="s-field">
+              <label>Price per Pack (₹)</label>
+              <input type="number" name="spin_pack_amount" value="{{ spin_cfg.spin_pack_amount }}" min="1" step="1" placeholder="10">
+              <div style="font-size:.72rem;color:var(--faint);margin-top:.3rem">Amount users pay per spin pack</div>
+            </div>
+            <div class="s-field">
+              <label>Spins per Pack</label>
+              <input type="number" name="spin_pack_spins" value="{{ spin_cfg.spin_pack_spins }}" min="1" max="100" placeholder="3">
+              <div style="font-size:.72rem;color:var(--faint);margin-top:.3rem">How many spins are given per pack</div>
+            </div>
+          </div>
+
+          <div class="s-divider"></div>
+
+          <!-- 4. Prize Amounts -->
+          <div style="font-family:'Rajdhani',sans-serif;font-weight:700;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);margin-bottom:12px;">&#127942; Prize Amounts</div>
+          <div class="s-form-grid" style="margin-bottom:24px;">
+            <div class="s-field">
+              <label>💎💎💎 Three Diamonds</label>
+              <input type="number" name="prize_diamonds" value="{{ spin_cfg.prize_diamonds }}" min="0" step="0.01" placeholder="500">
+            </div>
+            <div class="s-field">
+              <label>7️⃣7️⃣7️⃣ Three Sevens</label>
+              <input type="number" name="prize_sevens" value="{{ spin_cfg.prize_sevens }}" min="0" step="0.01" placeholder="300">
+            </div>
+            <div class="s-field">
+              <label>🍒🍒🍒 Three Cherries</label>
+              <input type="number" name="prize_cherries" value="{{ spin_cfg.prize_cherries }}" min="0" step="0.01" placeholder="100">
+            </div>
+            <div class="s-field">
+              <label>Any Two Matching</label>
+              <input type="number" name="prize_two_of_kind" value="{{ spin_cfg.prize_two_of_kind }}" min="0" step="0.01" placeholder="20">
+            </div>
+          </div>
+
+          <div class="s-divider"></div>
+
+          <!-- 5. Visibility Toggle -->
+          <div style="margin-bottom:1.5rem">
+            <div class="toggle-wrap">
+              <input type="checkbox" name="is_active" id="isActive" {% if spin_cfg.is_active %}checked{% endif %}>
+              <label for="isActive" class="toggle-label">Spin machine visible on homepage</label>
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-gold">💾 Save Spin Settings</button>
+        </form>
+      </div>
+
+      <!-- Spin Stats -->
+      <div class="card">
+        <div class="card-title">📊 Spin Machine Stats</div>
+        <div class="stats-grid">
+          <div class="stat-card"><div class="stat-value">₹{{ spin_total_revenue|floatformat:0 }}</div><div class="stat-label">Spin Revenue</div></div>
+          <div class="stat-card"><div class="stat-value">{{ spin_total_spins_sold|default:0 }}</div><div class="stat-label">Total Spins Sold</div></div>
+          <div class="stat-card"><div class="stat-value">{{ spin_purchases_count|default:0 }}</div><div class="stat-label">Purchases</div></div>
+          <div class="stat-card"><div class="stat-value">{{ spin_unique_buyers|default:0 }}</div><div class="stat-label">Unique Buyers</div></div>
+        </div>
+
+        {% if spin_recent %}
+        <div style="margin-top:1rem">
+          <div style="font-size:.8rem;font-weight:600;color:var(--muted);margin-bottom:.75rem;text-transform:uppercase;letter-spacing:.5px">Recent Spin Purchases</div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>User</th><th>Spins</th><th>Amount</th><th>Date</th></tr></thead>
+              <tbody>
+                {% for sp in spin_recent %}
+                <tr>
+                  <td style="font-weight:600">@{{ sp.user.username }}</td>
+                  <td><span class="badge badge-gold">{{ sp.spins_purchased }} spins</span></td>
+                  <td style="color:var(--gold)">₹{{ sp.amount }}</td>
+                  <td style="color:var(--faint);font-size:.78rem">{{ sp.created_at|date:"d M Y H:i" }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        {% endif %}
+      </div>
+    </section>
+
+    <!-- ========== RAZORPAY ========== -->
+    <section class="tab-section" id="tab-razorpay">
+      <div class="card">
+        <div class="card-title">⚙️ Razorpay Configuration</div>
+        {% if razorpay_configured %}
+        <div class="alert alert-success" style="margin-bottom:1.25rem">✅ Razorpay is configured. Payments are live.</div>
+        {% else %}
+        <div class="alert alert-error" style="margin-bottom:1.25rem">⚠️ Razorpay not configured. Payments are disabled.</div>
+        {% endif %}
+        <form method="POST" action="{% url 'save_razorpay_settings' %}">
+          {% csrf_token %}
+          <div class="form-grid">
+            <div class="form-group"><label>Razorpay Key ID</label><input name="rzp_key_id" class="form-control" value="{% if rzp_settings %}{{ rzp_settings.key_id }}{% endif %}" placeholder="rzp_live_..." autocomplete="off"></div>
+            <div class="form-group"><label>Razorpay Key Secret</label><input name="rzp_key_secret" type="password" class="form-control" value="{% if rzp_settings %}{{ rzp_settings.key_secret }}{% endif %}" placeholder="••••••••" autocomplete="new-password"></div>
+          </div>
+          <button type="submit" class="btn btn-gold">💾 Save Razorpay Keys</button>
+        </form>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<script>
+function switchTab(name) {
+  document.querySelectorAll('.tab-section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.sidebar-item').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  event.currentTarget.classList.add('active');
+}
+
+function updatePreview() {
+  document.getElementById('rp1').textContent = document.getElementById('wr1').value || '-';
+  document.getElementById('rp2').textContent = document.getElementById('wr2').value || '-';
+  document.getElementById('rp3').textContent = document.getElementById('wr3').value || '-';
+}
+</script>
+
+</body>
+</html>
