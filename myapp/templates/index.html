@@ -29,7 +29,6 @@
   .marquee-strip{background:var(--navy);color:var(--gold);font-family:'Rajdhani',sans-serif;font-weight:600;font-size:13px;letter-spacing:1px;padding:7px 0;overflow:hidden;white-space:nowrap;}
   .marquee-track{display:inline-block;padding-left:100%;animation:scroll-left 22s linear infinite;}
   @keyframes scroll-left{0%{transform:translateX(0);}100%{transform:translateX(-100%);}}
-  /* FIX: overflow:visible lets dropdown escape the sticky header's clipping context */
   header{position:sticky;top:0;z-index:200;background:var(--white);border-bottom:1px solid var(--line);overflow:visible;}
   header .wrap{padding:15px;overflow:visible;}
   nav{display:flex;align-items:center;justify-content:space-between;padding:16px 0;gap:24px;}
@@ -46,29 +45,20 @@
   .nav-cta{display:flex;gap:12px;align-items:center;flex-shrink:0;}
   .btn-small{padding:11px 28px;font-size:14px;min-width:96px;white-space:nowrap;}
   .menu-toggle{display:none;background:none;border:none;font-size:26px;color:var(--navy);cursor:pointer;margin-left:8px;}
-
-  /* ── Flash messages banner ── */
   .flash-messages{padding:0;list-style:none;}
-  .flash-msg{
-    padding:14px 20px;font-family:'Rajdhani',sans-serif;font-weight:600;font-size:14px;
-    letter-spacing:0.3px;display:flex;align-items:center;gap:10px;
-    border-bottom:1px solid transparent;
-  }
+  .flash-msg{padding:14px 20px;font-family:'Rajdhani',sans-serif;font-weight:600;font-size:14px;letter-spacing:0.3px;display:flex;align-items:center;gap:10px;border-bottom:1px solid transparent;}
   .flash-msg.success{background:#d1fae5;color:#065f46;border-color:#6ee7b7;}
   .flash-msg.error{background:#fee2e2;color:#991b1b;border-color:#fca5a5;}
   .flash-msg.warning{background:#fef9c3;color:#854d0e;border-color:#fde047;}
   .flash-msg.info{background:#dbeafe;color:#1e40af;border-color:#93c5fd;}
   .flash-msg .fm-close{margin-left:auto;background:none;border:none;cursor:pointer;font-size:16px;opacity:0.5;line-height:1;}
   .flash-msg .fm-close:hover{opacity:1;}
-
-  /* ── User Greeting Dropdown ── */
   .user-greeting{position:relative;display:inline-flex;align-items:center;}
   .user-greeting-btn{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:14px;color:var(--navy);white-space:nowrap;background:none;border:1px solid var(--line);cursor:pointer;display:inline-flex;align-items:center;gap:8px;padding:7px 12px 7px 8px;border-radius:50px;transition:background .2s,border-color .2s,box-shadow .2s;user-select:none;}
   .user-greeting-btn:hover,.user-greeting.open .user-greeting-btn{background:var(--blue-tint);border-color:var(--blue);box-shadow:0 2px 10px rgba(30,95,255,0.12);}
   .user-avatar{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--blue-deep),var(--blue));color:var(--white);font-family:'Rajdhani',sans-serif;font-weight:700;font-size:13px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;}
   .chevron{display:inline-block;width:0;height:0;border-left:4px solid transparent;border-right:4px solid transparent;border-top:5px solid var(--grey);transition:transform .2s ease;flex-shrink:0;margin-left:2px;}
   .user-greeting.open .chevron{transform:rotate(180deg);}
-  /* FIX: z-index raised to 9999 so dropdown always paints above page content */
   .user-dropdown{position:absolute;top:calc(100% + 6px);right:0;background:var(--white);border:1px solid var(--line);border-radius:12px;box-shadow:0 16px 40px rgba(10,26,60,0.16);min-width:210px;padding:6px 0;opacity:0;pointer-events:none;transform:translateY(8px) scale(0.97);transition:opacity .18s ease,transform .18s ease;z-index:9999;transform-origin:top right;}
   .user-greeting.open .user-dropdown{opacity:1;pointer-events:all;transform:translateY(0) scale(1);}
   .user-dropdown a{display:flex;align-items:center;gap:10px;padding:11px 16px;font-family:'Rajdhani',sans-serif;font-weight:600;font-size:14px;color:var(--navy);letter-spacing:0.3px;transition:background .15s,color .15s;white-space:nowrap;}
@@ -77,11 +67,9 @@
   .user-dropdown hr{border:none;border-top:1px solid var(--line);margin:5px 0;}
   .user-dropdown a.admin-link{color:#7c3aed;font-weight:700;}
   .user-dropdown a.admin-link:hover{background:#f5f3ff;color:#5b21b6;}
-  /* Dropdown user info header */
   .dd-user-info{padding:12px 16px 8px;border-bottom:1px solid var(--line);margin-bottom:4px;}
   .dd-user-info .dd-name{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:15px;color:var(--navy);}
   .dd-user-info .dd-email{font-size:11px;color:var(--grey);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:180px;}
-
   .hero{position:relative;background:radial-gradient(120% 140% at 15% 0%,var(--blue-deep) 0%,var(--navy) 55%,#060f28 100%);color:var(--white);padding:90px 0 110px;overflow:hidden;}
   .hero::before{content:'';position:absolute;inset:0;background-image:radial-gradient(circle at 85% 20%,rgba(255,193,7,0.18) 0%,transparent 40%),radial-gradient(circle at 75% 75%,rgba(30,95,255,0.35) 0%,transparent 45%);pointer-events:none;}
   .hero-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,0.035) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.035) 1px,transparent 1px);background-size:44px 44px;mask-image:linear-gradient(180deg,rgba(0,0,0,0.9),transparent 80%);}
@@ -229,7 +217,6 @@
 </head>
 <body>
 
-  <!-- Welcome Popup (only for guests) -->
   {% if not user.is_authenticated %}
   <div class="popup-overlay" id="welcomePopup">
     <div class="popup-box">
@@ -255,7 +242,6 @@
     <span class="marquee-track">&#9889; TRUSTED GAMING PLATFORM SINCE 2016 &nbsp; &bull; &nbsp; &#127881; WELCOME BONUS 150% UP TO &#8377;30,000 &nbsp; &bull; &nbsp; &#128293; IPL SPECIAL ODDS LIVE NOW &nbsp; &bull; &nbsp; &#128176; INSTANT WITHDRAWALS &nbsp; &bull; &nbsp; &#127942; 10 YEARS OF GAMING EXCELLENCE &nbsp; &bull; &nbsp; &#127881; JOIN 2.4M+ WINNERS TODAY &nbsp;</span>
   </div>
 
-  <!-- Flash messages -->
   {% if messages %}
   <ul class="flash-messages">
     {% for message in messages %}
@@ -294,16 +280,13 @@
               <span class="chevron"></span>
             </button>
             <div class="user-dropdown" id="userDropdown" role="menu">
-              <!-- User info header -->
               <div class="dd-user-info">
                 <div class="dd-name">{{ user.get_full_name|default:user.username }}</div>
                 <div class="dd-email">{{ user.email }}</div>
               </div>
               {% if user.is_superuser %}
-                <!-- Superuser: show only Admin Panel -->
                 <a href="{% url 'admin_panel' %}" class="admin-link" role="menuitem"><span class="dd-icon">&#9881;</span> Admin Panel</a>
               {% else %}
-                <!-- Normal user: show all options -->
                 <a href="{% url 'add_money' %}" role="menuitem"><span class="dd-icon">&#128176;</span> Add Money</a>
                 <a href="{% url 'my_wallet' %}" role="menuitem"><span class="dd-icon">&#128179;</span> My Wallet</a>
                 <hr>
@@ -341,15 +324,23 @@
           <div><div class="num">10 Yrs</div><div class="lbl">In Gaming</div></div>
         </div>
       </div>
+
+      <!-- ═══════════════════════════════════════════════════════════
+           JACKPOT CARD — dynamic amount + spin machine trigger
+           ═══════════════════════════════════════════════════════════ -->
       <div class="jackpot-card">
         <img src="https://images.unsplash.com/photo-1596838132731-3301c3fd4317?q=80&w=800&auto=format&fit=crop" alt="Slot machine" style="width:100%;height:140px;object-fit:cover;border-radius:10px;margin-bottom:14px;">
         <div class="tag">Today's Jackpot</div>
-        <div class="jackpot-amt">&#8377;<span>84,52,910</span></div>
+        <div class="jackpot-amt">&#8377;<span>{{ homepage_jackpot_display|default:"84,52,910" }}</span></div>
         <div class="jackpot-sub">Growing every second &middot; Next draw in 02:14:36</div>
         <div class="reel-row">
           <div class="reel">7</div><div class="reel">X</div><div class="reel">7</div>
         </div>
-        <a href="{% url 'signup' %}" class="btn btn-gold">Spin &amp; Try Your Luck</a>
+        {% if spin_machine_active %}
+          <button type="button" onclick="openJackpotModal()" class="btn btn-gold" style="width:100%;cursor:pointer;">Spin &amp; Try Your Luck</button>
+        {% else %}
+          <a href="{% url 'signup' %}" class="btn btn-gold">Join Now &amp; Play</a>
+        {% endif %}
       </div>
     </div>
   </section>
@@ -484,6 +475,11 @@
     </div>
   </footer>
 
+  <!-- ═══════════════════════════════════════════════════════════
+       SPIN MACHINE — floating button + all modals + JS
+       ═══════════════════════════════════════════════════════════ -->
+  {% include 'jackpot_modal.html' %}
+
 <script>
   // Mobile menu toggle
   const menuToggle = document.querySelector('.menu-toggle');
@@ -519,18 +515,9 @@
     const open  = ()=>{ wrap.classList.add('open');    btn.setAttribute('aria-expanded','true');  };
     const close = ()=>{ wrap.classList.remove('open'); btn.setAttribute('aria-expanded','false'); };
     btn.addEventListener('click', e =>{ e.stopPropagation(); wrap.classList.contains('open') ? close() : open(); });
-    document.addEventListener('click',   e =>{ if(!wrap.contains(e.target)) close(); });
-    document.addEventListener('keydown',  e =>{ if(e.key==='Escape') close(); });
+    document.addEventListener('click', e =>{ if(!wrap.contains(e.target)) close(); });
+    document.addEventListener('keydown', e =>{ if(e.key === 'Escape') close(); });
   })();
-
-  // Auto-dismiss flash messages after 5s
-  setTimeout(()=>{
-    document.querySelectorAll('.flash-msg').forEach(el =>{
-      el.style.transition = 'opacity 0.4s';
-      el.style.opacity = '0';
-      setTimeout(()=> el.remove(), 400);
-    });
-  }, 5000);
 </script>
 </body>
 </html>
