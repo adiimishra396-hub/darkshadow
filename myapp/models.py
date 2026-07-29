@@ -146,6 +146,14 @@ class SpinMachineSettings(models.Model):
         help_text='Prize for 3x Cherries (wallet credit)')
     prize_two_of_kind = models.DecimalField(max_digits=10, decimal_places=2, default='20.00',
         help_text='Prize for any two-of-a-kind match (wallet credit)')
+    jackpot_display_amount = models.CharField(max_length=30, default='84,52,910',
+        help_text='Display amount shown on homepage jackpot card (e.g. 84,52,910)')
+    winning_reel_1    = models.CharField(max_length=10, default='7',
+        help_text='First reel symbol for winning code')
+    winning_reel_2    = models.CharField(max_length=10, default='X',
+        help_text='Second reel symbol for winning code')
+    winning_reel_3    = models.CharField(max_length=10, default='7',
+        help_text='Third reel symbol for winning code')
     is_active         = models.BooleanField(default=True,
         help_text='Show/hide the spin machine on the homepage')
     updated_at        = models.DateTimeField(auto_now=True)
