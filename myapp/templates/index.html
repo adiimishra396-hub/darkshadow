@@ -245,7 +245,7 @@
         <div class="pb-div"></div>
         <div class="pb-item"><div class="pb-val">50</div><div class="pb-lbl">Free Spins</div></div>
       </div>
-      <a href="/signup/" class="popup-btn" onclick="closePopup()">&#127942; Claim My Bonus Now</a>
+      <a href="{% url 'signup' %}" class="popup-btn" onclick="closePopup()">&#127942; Claim My Bonus Now</a>
       <button class="popup-skip" onclick="closePopup()">No thanks, I'll play without a bonus</button>
     </div>
   </div>
@@ -272,7 +272,7 @@
 
   <header>
     <nav class="wrap">
-      <a href="/" class="logo">
+      <a href="{% url 'home' %}" class="logo">
         <span class="icon-box">D</span>
         <span class="brand">
           <span class="brand-name">DARKSHADOW</span>
@@ -301,22 +301,22 @@
               </div>
               {% if user.is_superuser %}
                 <!-- Superuser: show only Admin Panel -->
-                <a href="/admin-panel/" class="admin-link" role="menuitem"><span class="dd-icon">&#9881;</span> Admin Panel</a>
+                <a href="{% url 'admin_panel' %}" class="admin-link" role="menuitem"><span class="dd-icon">&#9881;</span> Admin Panel</a>
               {% else %}
                 <!-- Normal user: show all options -->
-                <a href="/add-money/" role="menuitem"><span class="dd-icon">&#128176;</span> Add Money</a>
-                <a href="/my-wallet/" role="menuitem"><span class="dd-icon">&#128179;</span> My Wallet</a>
+                <a href="{% url 'add_money' %}" role="menuitem"><span class="dd-icon">&#128176;</span> Add Money</a>
+                <a href="{% url 'my_wallet' %}" role="menuitem"><span class="dd-icon">&#128179;</span> My Wallet</a>
                 <hr>
-                <a href="/edit-profile/" role="menuitem"><span class="dd-icon">&#9998;</span> Edit Profile</a>
-                <a href="/change-password/" role="menuitem"><span class="dd-icon">&#128274;</span> Change Password</a>
+                <a href="{% url 'edit_profile' %}" role="menuitem"><span class="dd-icon">&#9998;</span> Edit Profile</a>
+                <a href="{% url 'change_password' %}" role="menuitem"><span class="dd-icon">&#128274;</span> Change Password</a>
               {% endif %}
               <hr>
-              <a href="/logout/" role="menuitem" style="color:#dc2626;"><span class="dd-icon">&#128682;</span> Log Out</a>
+              <a href="{% url 'logout' %}" role="menuitem" style="color:#dc2626;"><span class="dd-icon">&#128682;</span> Log Out</a>
             </div>
           </div>
         {% else %}
-          <a href="/login/" class="btn btn-outline btn-small">Log In</a>
-          <a href="/signup/" class="btn btn-gold btn-small">Join Now</a>
+          <a href="{% url 'login' %}" class="btn btn-outline btn-small">Log In</a>
+          <a href="{% url 'signup' %}" class="btn btn-gold btn-small">Join Now</a>
         {% endif %}
       </div>
       <button class="menu-toggle">&#9776;</button>
@@ -332,7 +332,7 @@
         <h1>Play Big.<br>Win <span>Bigger.</span></h1>
         <p>Sports betting, live casino and slot games on one platform. Trusted by millions since 2016. Fast KYC, instant payouts, and odds that don't hide the fine print.</p>
         <div class="hero-ctas">
-          <a href="/signup/" class="btn btn-gold">Claim &#8377;30,000 Bonus</a>
+          <a href="{% url 'signup' %}" class="btn btn-gold">Claim &#8377;30,000 Bonus</a>
           <a href="#games" class="btn btn-ghost">Explore Games</a>
         </div>
         <div class="hero-stats">
@@ -349,7 +349,7 @@
         <div class="reel-row">
           <div class="reel">7</div><div class="reel">X</div><div class="reel">7</div>
         </div>
-        <a href="/signup/" class="btn btn-gold">Spin &amp; Try Your Luck</a>
+        <a href="{% url 'signup' %}" class="btn btn-gold">Spin &amp; Try Your Luck</a>
       </div>
     </div>
   </section>
@@ -372,7 +372,7 @@
         <p>Since 2016, Darkshadow has been India's most trusted online gaming destination. We started with a simple promise — fair odds, real winnings, and a platform players can rely on. Today, over 2.4 million players call us home.</p>
         <div class="legacy-earn"><span class="earn-icon">&#128176;</span><div><h4>Sign Up &amp; Start Earning</h4><p>Create your free account in under 60 seconds. Claim your 150% welcome bonus, place your first bet or spin, and withdraw your winnings instantly to your UPI or bank account — no hidden fees, no delays.</p></div></div>
         <div class="legacy-cta-row">
-          <a href="/signup/" class="btn btn-gold">Join Free &mdash; Claim Bonus</a>
+          <a href="{% url 'signup' %}" class="btn btn-gold">Join Free &mdash; Claim Bonus</a>
           <a href="#how" class="btn btn-ghost" style="border-color:rgba(255,255,255,0.3);">How It Works</a>
         </div>
       </div>
@@ -419,7 +419,7 @@
           <span class="sec-eyebrow">Limited Time</span>
           <h2>150% Welcome Bonus on First Deposit</h2>
           <p>New players get matched bonus funds instantly, plus 50 free spins on select slot titles. No hidden wagering tricks — terms shown upfront.</p>
-          <a href="/signup/" class="btn btn-gold">Claim Offer</a>
+          <a href="{% url 'signup' %}" class="btn btn-gold">Claim Offer</a>
         </div>
         <div class="promo-badge"><div class="pct">150%</div><div class="lbl">Match Bonus</div></div>
       </div>
