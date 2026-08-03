@@ -1,0 +1,253 @@
+{% comment %}
+  Dice Roll — real win/lose game, wallet-integrated. Modal + JS.
+  Requires context: wallet, dice_active, dice_min_bet, dice_max_bet, dice_house_edge
+  Opened via openDiceModal() from a game-card in the All Games section.
+{% endcomment %}
+
+{% if dice_active %}
+<div id="diceModal" style="
+  display:none;position:fixed;inset:0;z-index:10003;
+  background:rgba(0,0,0,.8);backdrop-filter:blur(6px);
+  align-items:center;justify-content:center;
+  opacity:0;transition:opacity .25s ease;
+">
+  <div style="
+    background:linear-gradient(160deg,#1a1a2e 0%,#16213e 60%,#0f3460 100%);
+    border:1px solid rgba(255,210,0,.3);border-radius:20px;
+    padding:32px 30px;max-width:440px;width:92%;text-align:center;
+    box-shadow:0 0 60px rgba(255,210,0,.15);
+    position:relative;
+    transform:scale(0.92);transition:transform .25s cubic-bezier(.34,1.56,.64,1);
+  ">
+    <button onclick="closeDiceModal()" style="
+      position:absolute;top:14px;right:18px;
+      background:none;border:none;color:#aaa;font-size:1.4rem;cursor:pointer;
+    ">✕</button>
+
+    <h2 style="color:#ffd200;font-size:1.5rem;margin-bottom:4px;">🎲 Dice Roll</h2>
+    <p style="color:#aaa;font-size:.85rem;margin-bottom:18px;">
+      Pick a target, roll under or over it, win the multiplier.
+    </p>
+
+    {% if user.is_authenticated %}
+      <!-- Wallet balance -->
+      <div style="
+        background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);
+        border-radius:10px;padding:12px 16px;margin-bottom:18px;
+        display:flex;align-items:center;justify-content:space-between;
+      ">
+        <span style="color:#aaa;font-size:.88rem;">💰 Wallet Balance</span>
+        <span style="color:#4ade80;font-weight:700;font-size:1rem;" id="dcWalletBalance">
+          ₹{% if wallet %}{{ wallet.balance|floatformat:2 }}{% else %}0.00{% endif %}
+        </span>
+      </div>
+
+      <!-- Roll display -->
+      <div style="display:flex;justify-content:center;margin-bottom:16px;">
+        <div id="diceFace" style="
+          width:100px;height:100px;border-radius:18px;
+          background:linear-gradient(135deg,#f7971e,#ffd200);
+          display:flex;align-items:center;justify-content:center;
+          font-size:2.2rem;font-weight:800;color:#1a1a2e;
+          box-shadow:0 6px 24px rgba(255,210,0,.4);
+        ">🎲</div>
+      </div>
+
+      <div id="dcResult" style="
+        min-height:32px;font-size:1.05rem;font-weight:700;margin-bottom:14px;
+      "></div>
+
+      <!-- Direction toggle -->
+      <div style="display:flex;gap:10px;margin-bottom:16px;">
+        <button type="button" id="dcDirUnder" onclick="selectDiceDirection('under')" style="
+          flex:1;padding:12px;border-radius:10px;cursor:pointer;font-weight:700;
+          border:2px solid #ffd200;background:rgba(255,210,0,.15);color:#ffd200;
+        ">Roll Under</button>
+        <button type="button" id="dcDirOver" onclick="selectDiceDirection('over')" style="
+          flex:1;padding:12px;border-radius:10px;cursor:pointer;font-weight:700;
+          border:2px solid rgba(255,255,255,.25);background:transparent;color:#aaa;
+        ">Roll Over</button>
+      </div>
+
+      <!-- Target slider -->
+      <div style="text-align:left;margin-bottom:16px;">
+        <label style="color:#aaa;font-size:.82rem;display:flex;justify-content:space-between;margin-bottom:6px;">
+          <span>Target</span>
+          <span id="dcTargetVal" style="color:#ffd200;font-weight:700;">50</span>
+        </label>
+        <input type="range" id="dcTarget" min="2" max="97" value="50" step="1"
+          oninput="updateDiceOdds()" style="width:100%;accent-color:#ffd200;">
+      </div>
+
+      <!-- Live odds preview -->
+      <div style="
+        display:flex;justify-content:space-between;gap:10px;margin-bottom:16px;
+        background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);
+        border-radius:10px;padding:10px 14px;font-size:.85rem;
+      ">
+        <span style="color:#aaa;">Win Chance: <strong id="dcWinChance" style="color:#fff;">49%</strong></span>
+        <span style="color:#aaa;">Payout: <strong id="dcMultiplier" style="color:#4ade80;">1.94x</strong></span>
+      </div>
+
+      <!-- Bet amount -->
+      <div style="text-align:left;margin-bottom:18px;">
+        <label style="color:#aaa;font-size:.82rem;display:block;margin-bottom:6px;">
+          Bet Amount (₹{{ dice_min_bet }} – ₹{{ dice_max_bet }})
+        </label>
+        <input type="number" id="dcBetAmount" value="{{ dice_min_bet }}"
+          min="{{ dice_min_bet }}" max="{{ dice_max_bet }}" step="1"
+          style="
+            width:100%;padding:12px 14px;border-radius:10px;
+            border:1px solid rgba(255,210,0,.3);background:rgba(255,255,255,.06);
+            color:#fff;font-size:1rem;box-sizing:border-box;
+          ">
+      </div>
+
+      <button id="dcRollBtn" onclick="playDiceRoll()" style="
+        width:100%;padding:14px;border:none;border-radius:14px;
+        background:linear-gradient(135deg,#f7971e,#ffd200);
+        color:#1a1a2e;font-size:1.1rem;font-weight:800;
+        cursor:pointer;box-shadow:0 4px 18px rgba(255,210,0,.45);
+        transition:transform .15s;
+      " onmouseover="this.style.transform='scale(1.03)'" onmouseout="this.style.transform='scale(1)'">
+        🎲 ROLL!
+      </button>
+    {% else %}
+      <a href="{% url 'login' %}" style="
+        display:block;width:100%;padding:14px;border:none;border-radius:12px;
+        background:linear-gradient(135deg,#f7971e,#ffd200);
+        color:#1a1a2e;font-size:1.1rem;font-weight:800;text-decoration:none;
+        box-shadow:0 4px 15px rgba(255,210,0,.4);
+      ">Login to Play 🎲</a>
+    {% endif %}
+
+    <p style="color:#666;font-size:.78rem;margin-top:16px;">18+ only · Gamble responsibly</p>
+  </div>
+</div>
+
+<script>
+let dcDirection = 'under';
+const DICE_HOUSE_EDGE = {{ dice_house_edge|default:5 }};
+
+function dcGetCsrf() {
+  const m = document.cookie.match(/(?:^|;\s*)csrftoken=([^;]+)/);
+  return m ? m[1] : '';
+}
+
+function dcShowModal(el) {
+  el.style.display = 'flex';
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      el.style.opacity = '1';
+      const inner = el.querySelector('div');
+      if (inner) inner.style.transform = 'scale(1)';
+    });
+  });
+}
+function dcHideModal(el) {
+  el.style.opacity = '0';
+  const inner = el.querySelector('div');
+  if (inner) inner.style.transform = 'scale(0.92)';
+  setTimeout(() => { el.style.display = 'none'; }, 260);
+}
+
+function openDiceModal() {
+  {% if not user.is_authenticated %}
+    window.location.href = '{% url "login" %}';
+    return;
+  {% endif %}
+  dcShowModal(document.getElementById('diceModal'));
+  updateDiceOdds();
+}
+
+function closeDiceModal() {
+  dcHideModal(document.getElementById('diceModal'));
+}
+
+function selectDiceDirection(direction) {
+  dcDirection = direction;
+  const underBtn = document.getElementById('dcDirUnder');
+  const overBtn  = document.getElementById('dcDirOver');
+  const active   = 'border:2px solid #ffd200;background:rgba(255,210,0,.15);color:#ffd200;';
+  const inactive = 'border:2px solid rgba(255,255,255,.25);background:transparent;color:#aaa;';
+  underBtn.style.cssText = 'flex:1;padding:12px;border-radius:10px;cursor:pointer;font-weight:700;' + (direction === 'under' ? active : inactive);
+  overBtn.style.cssText  = 'flex:1;padding:12px;border-radius:10px;cursor:pointer;font-weight:700;' + (direction === 'over' ? active : inactive);
+  updateDiceOdds();
+}
+
+function updateDiceOdds() {
+  const target = parseInt(document.getElementById('dcTarget').value, 10);
+  document.getElementById('dcTargetVal').textContent = target;
+  const winChance = dcDirection === 'under' ? target : (99 - target);
+  const multiplier = (100 - DICE_HOUSE_EDGE) / winChance;
+  document.getElementById('dcWinChance').textContent = winChance + '%';
+  document.getElementById('dcMultiplier').textContent = multiplier.toFixed(2) + 'x';
+}
+
+async function playDiceRoll() {
+  {% if not user.is_authenticated %}
+    window.location.href = '{% url "login" %}';
+    return;
+  {% endif %}
+  const betInput = document.getElementById('dcBetAmount');
+  const rollBtn  = document.getElementById('dcRollBtn');
+  const resultEl = document.getElementById('dcResult');
+  const target   = parseInt(document.getElementById('dcTarget').value, 10);
+  const betAmount = parseFloat(betInput.value);
+
+  if (!betAmount || betAmount <= 0) {
+    alert('Enter a valid bet amount.');
+    return;
+  }
+
+  rollBtn.disabled = true;
+  betInput.disabled = true;
+  resultEl.textContent = '';
+  resultEl.style.color = '#ffd200';
+  document.getElementById('diceFace').textContent = '🎲';
+
+  let data;
+  try {
+    const res = await fetch('{% url "dice_play" %}', {
+      method: 'POST',
+      headers: { 'X-CSRFToken': dcGetCsrf(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ direction: dcDirection, target: target, bet_amount: betAmount })
+    });
+    data = await res.json();
+  } catch (e) {
+    alert('Network error — your bet was not placed. Please try again.');
+    rollBtn.disabled = false;
+    betInput.disabled = false;
+    return;
+  }
+
+  if (!data.success) {
+    if (data.needs_topup) {
+      const go = confirm('⚠️ ' + (data.error || 'Insufficient balance.') + '\n\nAdd money to your wallet now?');
+      if (go) window.location.href = '{% url "add_money" %}';
+    } else {
+      alert(data.error || 'Could not place bet');
+    }
+    rollBtn.disabled = false;
+    betInput.disabled = false;
+    return;
+  }
+
+  document.getElementById('diceFace').textContent = data.roll;
+
+  const balanceEl = document.getElementById('dcWalletBalance');
+  if (balanceEl) balanceEl.textContent = '₹' + Number(data.new_balance).toFixed(2);
+
+  if (data.won) {
+    resultEl.style.color = '#4ade80';
+    resultEl.textContent = `🎉 Rolled ${data.roll}! You won ₹${data.payout.toFixed(2)} (${data.multiplier}x)`;
+  } else {
+    resultEl.style.color = '#ef4444';
+    resultEl.textContent = `😔 Rolled ${data.roll} — you lost ₹${betAmount.toFixed(2)}`;
+  }
+
+  rollBtn.disabled = false;
+  betInput.disabled = false;
+}
+</script>
+{% endif %}

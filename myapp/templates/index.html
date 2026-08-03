@@ -485,6 +485,20 @@
         </a>
         {% endif %}
 
+        {% if dice_active %}
+        <!-- Dice Roll — in-house, real win/lose game -->
+        <a href="javascript:void(0)" onclick="openDiceModal()" class="game-card" data-cat="table">
+          <span class="g-badge new">Play In-House</span>
+          <img class="game-card-thumb" src="https://images.unsplash.com/photo-1595842595179-1b3d3ce5f5f3?q=80&w=600&auto=format&fit=crop" alt="Dice Roll">
+          <div class="game-card-body">
+            <div class="game-card-cat">Table &amp; Board</div>
+            <div class="game-card-title">Dice Roll</div>
+            <div class="game-card-desc">Pick your target, roll under or over it, and win a multiplier — right here on Darkshadow.</div>
+            <span class="game-card-play">Play Now</span>
+          </div>
+        </a>
+        {% endif %}
+
         <!-- Teen Patti -->
         <a href="https://www.teenpatti.com/" target="_blank" rel="noopener" class="game-card" data-cat="cards">
           <span class="g-badge live">Live</span>
@@ -829,6 +843,7 @@
 
   {% include 'jackpot_modal.html' %}
   {% include 'coinflip_modal.html' %}
+  {% include 'dice_modal.html' %}
 
 <script>
   // ── Popup

@@ -10,7 +10,7 @@ from decimal import Decimal, InvalidOperation
 from .models import (
     UserProfile, Payment, Wallet, WalletTransaction,
     SpinWallet, SpinPurchase, RazorpaySettings, SpinMachineSettings,
-    CoinFlipSettings, CoinFlipBet,
+    CoinFlipSettings, CoinFlipBet, DiceSettings, DiceBet,
 )
 import razorpay
 import os
@@ -65,6 +65,19 @@ def get_coinflip_settings():
         return _Defaults()
 
 
+def get_dice_settings():
+    """Returns the DiceSettings singleton. Safe fallback if table missing."""
+    try:
+        return DiceSettings.get_singleton()
+    except Exception:
+        class _Defaults:
+            house_edge_percent = Decimal('5.00')
+            min_bet            = Decimal('10.00')
+            max_bet            = Decimal('5000.00')
+            is_active          = True
+        return _Defaults()
+
+
 # ── Admin bootstrap ─────────────────────────────────────────────────────────────
 def _ensure_admin():
     user, created = User.objects.get_or_create(
@@ -110,6 +123,7 @@ def home(request):
     key_id, _ = get_razorpay_keys()
     spin_cfg     = get_spin_settings()
     coinflip_cfg = get_coinflip_settings()
+    dice_cfg     = get_dice_settings()
     return render(request, 'index.html', {
         'spin_wallet':              spin_wallet,
         'wallet':                   wallet,
@@ -122,6 +136,10 @@ def home(request):
         'coinflip_min_bet':         coinflip_cfg.min_bet,
         'coinflip_max_bet':         coinflip_cfg.max_bet,
         'coinflip_win_multiplier':  coinflip_cfg.win_multiplier,
+        'dice_active':              dice_cfg.is_active,
+        'dice_min_bet':             dice_cfg.min_bet,
+        'dice_max_bet':             dice_cfg.max_bet,
+        'dice_house_edge':          dice_cfg.house_edge_percent,
     })
 
 
@@ -841,6 +859,85 @@ def coinflip_play(request):
         'success':     True,
         'result':      result,
         'won':         won,
+        'payout':      float(payout),
+        'new_balance': float(wallet.balance),
+    })
+
+
+# ── Dice Roll: Play a Round ─────────────────────────────────────────────────────
+def _dice_multiplier(win_chance_percent, house_edge_percent):
+    """Multiplier derivation shared by the live-preview check and the actual play,
+    so the UI's odds display always matches what the server actually pays."""
+    return ((Decimal('100') - house_edge_percent) / win_chance_percent).quantize(Decimal('0.01'))
+
+
+@require_POST
+def dice_play(request):
+    """Real win/lose game. Roll is 0-99, decided server-side with a CSPRNG.
+    Player picks Under/Over and a target (2-97); the payout multiplier is
+    derived from win chance & house edge so every target carries the same
+    house edge. Bet is debited immediately; a win credits the multiplier
+    back to the wallet."""
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'Login required', 'needs_login': True}, status=401)
+    if request.user.is_superuser:
+        return JsonResponse({'error': 'Admins cannot play'}, status=403)
+
+    cfg = get_dice_settings()
+    if not cfg.is_active:
+        return JsonResponse({'error': 'Dice Roll is currently unavailable'}, status=503)
+
+    try:
+        data       = json.loads(request.body)
+        direction  = data.get('direction')
+        target     = int(data.get('target', 0))
+        bet_amount = Decimal(str(data.get('bet_amount', '0')))
+    except (ValueError, TypeError, InvalidOperation, json.JSONDecodeError):
+        return JsonResponse({'error': 'Invalid request'}, status=400)
+
+    if direction not in ('under', 'over'):
+        return JsonResponse({'error': 'Choose Roll Under or Roll Over'}, status=400)
+    if target < 2 or target > 97:
+        return JsonResponse({'error': 'Target must be between 2 and 97'}, status=400)
+    if bet_amount < cfg.min_bet or bet_amount > cfg.max_bet:
+        return JsonResponse({'error': f'Bet must be between ₹{cfg.min_bet} and ₹{cfg.max_bet}'}, status=400)
+
+    win_chance_percent = Decimal(target) if direction == 'under' else Decimal(99 - target)
+    multiplier = _dice_multiplier(win_chance_percent, cfg.house_edge_percent)
+
+    with transaction.atomic():
+        wallet, _ = Wallet.objects.select_for_update().get_or_create(user=request.user)
+        if wallet.balance < bet_amount:
+            return JsonResponse({'error': 'Insufficient wallet balance', 'needs_topup': True}, status=402)
+
+        wallet.balance -= bet_amount
+        WalletTransaction.objects.create(
+            wallet=wallet, amount=bet_amount, txn_type='debit',
+            description='Dice Roll bet',
+        )
+
+        roll = secrets.randbelow(100)  # 0-99
+        won  = (roll < target) if direction == 'under' else (roll > target)
+        payout = (bet_amount * multiplier).quantize(Decimal('0.01')) if won else Decimal('0.00')
+
+        if won:
+            wallet.balance += payout
+            WalletTransaction.objects.create(
+                wallet=wallet, amount=payout, txn_type='credit',
+                description='Dice Roll payout',
+            )
+        wallet.save()
+
+        DiceBet.objects.create(
+            user=request.user, bet_amount=bet_amount, direction=direction,
+            target=target, roll=roll, won=won, multiplier=multiplier, payout=payout,
+        )
+
+    return JsonResponse({
+        'success':     True,
+        'roll':        roll,
+        'won':         won,
+        'multiplier':  float(multiplier),
         'payout':      float(payout),
         'new_balance': float(wallet.balance),
     })

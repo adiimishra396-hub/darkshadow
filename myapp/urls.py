@@ -35,4 +35,7 @@ urlpatterns = [
 
     # Coin Flip
     path('coinflip/play/', views.coinflip_play, name='coinflip_play'),
+
+    # Dice Roll
+    path('dice/play/', views.dice_play, name='dice_play'),
 ]

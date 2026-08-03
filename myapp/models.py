@@ -178,6 +178,60 @@ class CoinFlipBet(models.Model):
         return f"{self.user.username} | ₹{self.bet_amount} | called {self.choice}, got {self.result} | {outcome}"
 
 
+class DiceSettings(models.Model):
+    """
+    Singleton model (id=1). Admin sets Dice Roll house edge & bet limits.
+    Real win/lose game — roll is 0-99. Player picks a target (2-97) and
+    Under/Over; payout multiplier is derived from win chance & house edge
+    so every target/direction combo carries the same house edge.
+    """
+    house_edge_percent = models.DecimalField(max_digits=4, decimal_places=2, default='5.00',
+        help_text='House edge as a percentage (e.g. 5.00 = 5%). Lower = better payouts for players.')
+    min_bet    = models.DecimalField(max_digits=10, decimal_places=2, default='10.00',
+        help_text='Minimum bet amount (INR)')
+    max_bet    = models.DecimalField(max_digits=10, decimal_places=2, default='5000.00',
+        help_text='Maximum bet amount (INR)')
+    is_active  = models.BooleanField(default=True,
+        help_text='Show/hide Dice Roll on the homepage')
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Dice Roll Settings'
+        verbose_name_plural = 'Dice Roll Settings'
+
+    def __str__(self):
+        return f'Dice Roll Settings (updated {self.updated_at})'
+
+    @classmethod
+    def get_singleton(cls):
+        obj, _ = cls.objects.get_or_create(pk=1)
+        return obj
+
+
+class DiceBet(models.Model):
+    """Records every Dice Roll play (audit trail for a real win/lose game)."""
+    DIRECTION_CHOICES = [
+        ('under', 'Roll Under'),
+        ('over',  'Roll Over'),
+    ]
+    user        = models.ForeignKey(User, on_delete=models.CASCADE, related_name='dice_bets')
+    bet_amount  = models.DecimalField(max_digits=10, decimal_places=2)
+    direction   = models.CharField(max_length=5, choices=DIRECTION_CHOICES)
+    target      = models.PositiveSmallIntegerField(help_text='Target number (2-97) chosen by the player')
+    roll        = models.PositiveSmallIntegerField(help_text='Actual roll, 0-99')
+    won         = models.BooleanField(default=False)
+    multiplier  = models.DecimalField(max_digits=6, decimal_places=2, default=0)
+    payout      = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    created_at  = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        outcome = 'WON' if self.won else 'LOST'
+        return f"{self.user.username} | ₹{self.bet_amount} | {self.direction} {self.target}, rolled {self.roll} | {outcome}"
+
+
 class SpinMachineSettings(models.Model):
     """
     Singleton model (id=1). Admin sets spin pack pricing and the jackpot
