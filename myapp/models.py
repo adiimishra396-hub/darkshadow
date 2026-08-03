@@ -568,6 +568,69 @@ class BlackjackRound(models.Model):
         return f"{self.user.username} | ₹{self.bet_amount} | {self.outcome.upper()}"
 
 
+class BaccaratSettings(models.Model):
+    """
+    Singleton model (id=1). Real win/lose game — Player vs Banker with
+    standard baccarat third-card drawing rules (automatic, no player
+    decision). Bet on Player, Banker, or Tie. A tie result pushes
+    (refunds) Player/Banker bets rather than losing them, matching real
+    baccarat rules.
+    """
+    player_multiplier = models.DecimalField(max_digits=4, decimal_places=2, default=Decimal('1.90'),
+        help_text='Payout multiplier when betting Player and Player wins')
+    banker_multiplier = models.DecimalField(max_digits=4, decimal_places=2, default=Decimal('1.80'),
+        help_text='Payout multiplier when betting Banker and Banker wins (lower than Player — Banker wins slightly more often, mirrors the real-world commission)')
+    tie_multiplier     = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal('9.00'),
+        help_text='Payout multiplier when betting Tie and the hand ties (~9-10% chance, standard odds are "8 to 1" i.e. 9x total return)')
+    min_bet    = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('10.00'))
+    max_bet    = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('5000.00'))
+    is_active  = models.BooleanField(default=True, help_text='Show/hide Baccarat on the homepage')
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Baccarat Settings'
+        verbose_name_plural = 'Baccarat Settings'
+
+    def __str__(self):
+        return f'Baccarat Settings (updated {self.updated_at})'
+
+    @classmethod
+    def get_singleton(cls):
+        obj, _ = cls.objects.get_or_create(pk=1)
+        return obj
+
+
+class BaccaratBet(models.Model):
+    """Records every Baccarat play."""
+    SIDE_CHOICES = [
+        ('player', 'Player'),
+        ('banker', 'Banker'),
+        ('tie',    'Tie'),
+    ]
+    OUTCOME_CHOICES = [
+        ('win',  'Win'),
+        ('lose', 'Lose'),
+        ('push', 'Push'),
+    ]
+    user          = models.ForeignKey(User, on_delete=models.CASCADE, related_name='baccarat_bets')
+    bet_amount    = models.DecimalField(max_digits=10, decimal_places=2)
+    bet_side      = models.CharField(max_length=6, choices=SIDE_CHOICES)
+    player_cards  = models.JSONField()
+    banker_cards  = models.JSONField()
+    player_total  = models.PositiveSmallIntegerField(help_text='0-9')
+    banker_total  = models.PositiveSmallIntegerField(help_text='0-9')
+    winner        = models.CharField(max_length=6, choices=SIDE_CHOICES)
+    outcome       = models.CharField(max_length=4, choices=OUTCOME_CHOICES)
+    payout        = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    created_at    = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.user.username} | ₹{self.bet_amount} | bet {self.bet_side}, {self.player_total} vs {self.banker_total} ({self.winner}) | {self.outcome.upper()}"
+
+
 class SpinMachineSettings(models.Model):
     """
     Singleton model (id=1). Admin sets spin pack pricing and the jackpot

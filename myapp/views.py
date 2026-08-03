@@ -15,7 +15,7 @@ from .models import (
     CardHighLowSettings, CardHighLowRound,
     AndarBaharSettings, AndarBaharBet, RouletteSettings, RouletteBet,
     SicBoSettings, SicBoBet, TeenPattiSettings, TeenPattiBet,
-    BlackjackSettings, BlackjackRound,
+    BlackjackSettings, BlackjackRound, BaccaratSettings, BaccaratBet,
 )
 import razorpay
 import os
@@ -162,6 +162,21 @@ def get_blackjack_settings():
         return _Defaults()
 
 
+def get_baccarat_settings():
+    """Returns the BaccaratSettings singleton. Safe fallback if table missing."""
+    try:
+        return BaccaratSettings.get_singleton()
+    except Exception:
+        class _Defaults:
+            player_multiplier = Decimal('1.90')
+            banker_multiplier = Decimal('1.80')
+            tie_multiplier    = Decimal('9.00')
+            min_bet           = Decimal('10.00')
+            max_bet           = Decimal('5000.00')
+            is_active         = True
+        return _Defaults()
+
+
 # ── Admin bootstrap ─────────────────────────────────────────────────────────────
 def _ensure_admin():
     user, created = User.objects.get_or_create(
@@ -214,6 +229,7 @@ def home(request):
     sicbo_cfg      = get_sicbo_settings()
     teenpatti_cfg  = get_teenpatti_settings()
     blackjack_cfg  = get_blackjack_settings()
+    baccarat_cfg   = get_baccarat_settings()
     return render(request, 'index.html', {
         'spin_wallet':              spin_wallet,
         'wallet':                   wallet,
@@ -255,6 +271,12 @@ def home(request):
         'blackjack_max_bet':             blackjack_cfg.max_bet,
         'blackjack_win_multiplier':      blackjack_cfg.win_multiplier,
         'blackjack_blackjack_multiplier': blackjack_cfg.blackjack_multiplier,
+        'baccarat_active':            baccarat_cfg.is_active,
+        'baccarat_min_bet':           baccarat_cfg.min_bet,
+        'baccarat_max_bet':           baccarat_cfg.max_bet,
+        'baccarat_player_multiplier': baccarat_cfg.player_multiplier,
+        'baccarat_banker_multiplier': baccarat_cfg.banker_multiplier,
+        'baccarat_tie_multiplier':    baccarat_cfg.tie_multiplier,
     })
 
 
@@ -1823,6 +1845,141 @@ def blackjack_stand(request):
         'dealer_cards': dealer_cards,
         'dealer_total': dealer_total,
         'player_total': player_total,
+        'outcome':      outcome,
+        'payout':       float(payout),
+        'new_balance':  float(wallet.balance),
+    })
+
+
+# ── Baccarat: Play a Round ──────────────────────────────────────────────────────
+def _baccarat_card_value(rank):
+    """rank 2-14 (J=11,Q=12,K=13,A=14). Baccarat values: A=1, 2-9=face, 10/J/Q/K=0."""
+    if rank == 14:
+        return 1
+    if rank >= 10:
+        return 0
+    return rank
+
+
+def _baccarat_hand_total(cards):
+    return sum(_baccarat_card_value(r) for r, s in cards) % 10
+
+
+def _baccarat_banker_draws(banker_total, player_third_card_value):
+    """Standard baccarat third-card rule for the banker.
+    player_third_card_value: None if the player stood (didn't draw a
+    third card), else 0-9 (the baccarat value of the player's third
+    card)."""
+    if player_third_card_value is None:
+        return banker_total <= 5
+    if banker_total <= 2:
+        return True
+    if banker_total == 3:
+        return player_third_card_value != 8
+    if banker_total == 4:
+        return player_third_card_value in (2, 3, 4, 5, 6, 7)
+    if banker_total == 5:
+        return player_third_card_value in (4, 5, 6, 7)
+    if banker_total == 6:
+        return player_third_card_value in (6, 7)
+    return False  # banker_total == 7 always stands
+
+
+@require_POST
+def baccarat_play(request):
+    """Real win/lose game. Player vs Banker, standard baccarat third-card
+    drawing rules applied automatically (no player decision). Bet on
+    Player, Banker, or Tie. A tie result pushes (refunds) Player/Banker
+    bets rather than losing them."""
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'Login required', 'needs_login': True}, status=401)
+    if request.user.is_superuser:
+        return JsonResponse({'error': 'Admins cannot play'}, status=403)
+
+    cfg = get_baccarat_settings()
+    if not cfg.is_active:
+        return JsonResponse({'error': 'Baccarat is currently unavailable'}, status=503)
+
+    try:
+        data       = json.loads(request.body)
+        bet_side   = data.get('bet_side')
+        bet_amount = Decimal(str(data.get('bet_amount', '0')))
+    except (ValueError, TypeError, InvalidOperation, json.JSONDecodeError):
+        return JsonResponse({'error': 'Invalid request'}, status=400)
+
+    if bet_side not in ('player', 'banker', 'tie'):
+        return JsonResponse({'error': 'Choose Player, Banker, or Tie'}, status=400)
+    if bet_amount < cfg.min_bet or bet_amount > cfg.max_bet:
+        return JsonResponse({'error': f'Bet must be between ₹{cfg.min_bet} and ₹{cfg.max_bet}'}, status=400)
+
+    with transaction.atomic():
+        wallet, _ = Wallet.objects.select_for_update().get_or_create(user=request.user)
+        if wallet.balance < bet_amount:
+            return JsonResponse({'error': 'Insufficient wallet balance', 'needs_topup': True}, status=402)
+
+        wallet.balance -= bet_amount
+        WalletTransaction.objects.create(
+            wallet=wallet, amount=bet_amount, txn_type='debit',
+            description='Baccarat bet',
+        )
+
+        deck = _secure_shuffle([(r, s) for r in CARD_RANKS for s in CARD_SUITS])
+        player_cards = [deck.pop(), deck.pop()]
+        banker_cards = [deck.pop(), deck.pop()]
+        player_total = _baccarat_hand_total(player_cards)
+        banker_total = _baccarat_hand_total(banker_cards)
+
+        if player_total < 8 and banker_total < 8:
+            player_third_value = None
+            if player_total <= 5:
+                card = deck.pop()
+                player_cards.append(card)
+                player_third_value = _baccarat_card_value(card[0])
+                player_total = _baccarat_hand_total(player_cards)
+            if _baccarat_banker_draws(banker_total, player_third_value):
+                banker_cards.append(deck.pop())
+                banker_total = _baccarat_hand_total(banker_cards)
+
+        if player_total > banker_total:
+            winner = 'player'
+        elif banker_total > player_total:
+            winner = 'banker'
+        else:
+            winner = 'tie'
+
+        if bet_side == winner:
+            outcome = 'win'
+            multiplier = {'player': cfg.player_multiplier, 'banker': cfg.banker_multiplier, 'tie': cfg.tie_multiplier}[winner]
+            payout = (bet_amount * multiplier).quantize(Decimal('0.01'))
+        elif winner == 'tie' and bet_side in ('player', 'banker'):
+            outcome = 'push'
+            payout = bet_amount
+        else:
+            outcome = 'lose'
+            payout = Decimal('0.00')
+
+        if payout > 0:
+            wallet.balance += payout
+            WalletTransaction.objects.create(
+                wallet=wallet, amount=payout, txn_type='credit',
+                description=f"Baccarat {'payout' if outcome == 'win' else 'push refund'}",
+            )
+        wallet.save()
+
+        BaccaratBet.objects.create(
+            user=request.user, bet_amount=bet_amount, bet_side=bet_side,
+            player_cards=player_cards, banker_cards=banker_cards,
+            player_total=player_total, banker_total=banker_total,
+            winner=winner, outcome=outcome, payout=payout,
+        )
+
+    return JsonResponse({
+        'success':      True,
+        'player_cards': player_cards,
+        'banker_cards': banker_cards,
+        'player_total': player_total,
+        'banker_total': banker_total,
+        'winner':       winner,
         'outcome':      outcome,
         'payout':       float(payout),
         'new_balance':  float(wallet.balance),

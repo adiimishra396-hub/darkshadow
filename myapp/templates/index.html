@@ -632,16 +632,19 @@
           </div>
         </a>
 
-        <!-- Baccarat -->
-        <a href="https://www.247baccarat.com/" target="_blank" rel="noopener" class="game-card" data-cat="casino">
+        {% if baccarat_active %}
+        <!-- Baccarat — in-house, real win/lose game, standard drawing rules -->
+        <a href="javascript:void(0)" onclick="openBaccaratModal()" class="game-card" data-cat="casino">
+          <span class="g-badge new">Play In-House</span>
           <img class="game-card-thumb" src="https://images.unsplash.com/photo-1509316785289-025f5b846b35?q=80&w=600&auto=format&fit=crop" alt="Baccarat">
           <div class="game-card-body">
             <div class="game-card-cat">Casino</div>
             <div class="game-card-title">Baccarat</div>
-            <div class="game-card-desc">Bet on Player, Banker or Tie. A high-class casino classic with elegant odds.</div>
+            <div class="game-card-desc">Bet on Player, Banker or Tie, right here on Darkshadow.</div>
             <span class="game-card-play">Play Now</span>
           </div>
         </a>
+        {% endif %}
 
       </div>
     </div>
@@ -807,6 +810,7 @@
   {% include 'sicbo_modal.html' %}
   {% include 'teenpatti_modal.html' %}
   {% include 'blackjack_modal.html' %}
+  {% include 'baccarat_modal.html' %}
 
 <script>
   // ── Popup

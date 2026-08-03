@@ -59,4 +59,7 @@ urlpatterns = [
     path('blackjack/deal/', views.blackjack_deal, name='blackjack_deal'),
     path('blackjack/hit/', views.blackjack_hit, name='blackjack_hit'),
     path('blackjack/stand/', views.blackjack_stand, name='blackjack_stand'),
+
+    # Baccarat
+    path('baccarat/play/', views.baccarat_play, name='baccarat_play'),
 ]
