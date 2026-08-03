@@ -28,6 +28,7 @@ urlpatterns = [
 
     # Jackpot / Spin Machine
     path('jackpot/create-order/', views.jackpot_create_order, name='jackpot_create_order'),
+    path('jackpot/buy-with-wallet/', views.jackpot_buy_with_wallet, name='jackpot_buy_with_wallet'),
     path('jackpot/verify-payment/', views.jackpot_verify_payment, name='jackpot_verify_payment'),
     path('jackpot/use-spin/', views.jackpot_use_spin, name='jackpot_use_spin'),
     path('jackpot/claim-win/', views.jackpot_claim_win, name='jackpot_claim_win'),

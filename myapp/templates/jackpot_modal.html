@@ -100,6 +100,23 @@
         🎰 Current Spins: <strong id="currentSpinCount">{% if spin_wallet %}{{ spin_wallet.spins }}{% else %}0{% endif %}</strong>
       </div>
 
+      {% if wallet and wallet.balance >= spin_pack_amount %}
+      <button id="buyWithWalletBtn" onclick="buyWithWallet()" style="
+        width:100%;padding:14px;border:none;border-radius:12px;
+        background:linear-gradient(135deg,#22c55e,#4ade80);
+        color:#0f2417;font-size:1.1rem;font-weight:800;cursor:pointer;
+        box-shadow:0 4px 15px rgba(74,222,128,.4);transition:transform .15s;margin-bottom:10px;
+      " onmouseover="this.style.transform='scale(1.03)'" onmouseout="this.style.transform='scale(1)'">
+        💰 Pay with Wallet — ₹{{ spin_pack_amount }}
+      </button>
+      <button id="buySpinsBtn" onclick="initiateSpinPurchase()" style="
+        width:100%;padding:12px;border:1px solid rgba(255,210,0,.5);border-radius:12px;
+        background:transparent;color:#ffd200;font-size:.95rem;font-weight:700;cursor:pointer;
+        transition:background .2s;
+      " onmouseover="this.style.background='rgba(255,210,0,.1)'" onmouseout="this.style.background='transparent'">
+        Or pay via UPI/Card — ₹{{ spin_pack_amount }}
+      </button>
+      {% else %}
       <button id="buySpinsBtn" onclick="initiateSpinPurchase()" style="
         width:100%;padding:14px;border:none;border-radius:12px;
         background:linear-gradient(135deg,#f7971e,#ffd200);
@@ -108,6 +125,7 @@
       " onmouseover="this.style.transform='scale(1.03)'" onmouseout="this.style.transform='scale(1)'">
         Spin &amp; Try Your Luck — ₹{{ spin_pack_amount }}
       </button>
+      {% endif %}
       {% if spin_wallet and spin_wallet.spins > 0 %}
       <button onclick="closeJackpotModal();openSpinMachine()" style="
         width:100%;padding:12px;border:1px solid #ffd200;border-radius:12px;
@@ -252,6 +270,9 @@
 <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 <script>
 const JACKPOT_SYMBOLS = ['🍒','🍋','🍊','🍇','💎','7️⃣','🔔','⭐','🃏'];
+const BUY_BTN_LABEL = {% if wallet and wallet.balance >= spin_pack_amount %}'Or pay via UPI/Card — ₹{{ spin_pack_amount }}'{% else %}'Spin & Try Your Luck — ₹{{ spin_pack_amount }}'{% endif %};
+const BUY_WALLET_BTN_LABEL = '💰 Pay with Wallet — ₹{{ spin_pack_amount }}';
+const SPIN_PACK_AMOUNT_NUM = {{ spin_pack_amount|default:0 }};
 
 let currentSpins = parseInt(document.getElementById('currentSpinCount')?.textContent || '0');
 
@@ -317,7 +338,48 @@ function buildReelStrip(stripId) {
   }
 }
 
-// ── Purchase Flow ─────────────────────────────────────────────
+// ── Purchase Flow — Wallet Balance ─────────────────────────────
+async function buyWithWallet() {
+  {% if not user.is_authenticated %}
+    window.location.href = '{% url "login" %}';
+    return;
+  {% endif %}
+  const btn = document.getElementById('buyWithWalletBtn');
+  if (!btn) return;
+  btn.disabled = true;
+  btn.textContent = 'Processing…';
+  try {
+    const res = await fetch('{% url "jackpot_buy_with_wallet" %}', {
+      method: 'POST',
+      headers: { 'X-CSRFToken': getCsrf(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({})
+    });
+    const data = await res.json();
+    if (!res.ok || data.error) {
+      alert('Error: ' + (data.error || 'Could not complete purchase'));
+      btn.disabled = false;
+      btn.textContent = BUY_WALLET_BTN_LABEL;
+      return;
+    }
+    currentSpins = data.total_spins;
+    const badge      = document.getElementById('spinBadge');
+    const count      = document.getElementById('currentSpinCount');
+    const balanceEl  = document.getElementById('walletBalanceDisplay');
+    if (badge)     { badge.textContent = currentSpins + ' spins'; badge.style.display = 'inline'; }
+    if (count)     { count.textContent = currentSpins; }
+    if (balanceEl) { balanceEl.textContent = '₹' + Number(data.new_balance).toFixed(2); }
+    if (Number(data.new_balance) < SPIN_PACK_AMOUNT_NUM) { btn.style.display = 'none'; }
+    else { btn.disabled = false; btn.textContent = BUY_WALLET_BTN_LABEL; }
+    closeJackpotModal();
+    openSpinMachine();
+  } catch(e) {
+    alert('Network error. Please try again.');
+    btn.disabled = false;
+    btn.textContent = BUY_WALLET_BTN_LABEL;
+  }
+}
+
+// ── Purchase Flow — Razorpay ────────────────────────────────────
 async function initiateSpinPurchase() {
   {% if not user.is_authenticated %}
     window.location.href = '{% url "login" %}';
@@ -336,7 +398,7 @@ async function initiateSpinPurchase() {
     if (!res.ok || data.error) {
       alert('Error: ' + (data.error || 'Could not create order'));
       btn.disabled = false;
-      btn.textContent = 'Spin & Try Your Luck — ₹{{ spin_pack_amount }}';
+      btn.textContent = BUY_BTN_LABEL;
       return;
     }
     closeJackpotModal();
@@ -344,7 +406,7 @@ async function initiateSpinPurchase() {
   } catch(e) {
     alert('Network error. Please try again.');
     btn.disabled = false;
-    btn.textContent = 'Spin & Try Your Luck — ₹{{ spin_pack_amount }}';
+    btn.textContent = BUY_BTN_LABEL;
   }
 }
 
@@ -365,7 +427,7 @@ function launchRazorpay(order) {
     modal: {
       ondismiss: function() {
         const btn = document.getElementById('buySpinsBtn');
-        if (btn) { btn.disabled = false; btn.textContent = 'Spin & Try Your Luck — ₹{{ spin_pack_amount }}'; }
+        if (btn) { btn.disabled = false; btn.textContent = BUY_BTN_LABEL; }
         openJackpotModal();
       }
     }

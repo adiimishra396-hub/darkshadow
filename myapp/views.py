@@ -656,6 +656,47 @@ def jackpot_create_order(request):
         return JsonResponse({'error': str(e)}, status=500)
 
 
+# ── Jackpot: Buy Spin Pack with Wallet Balance ─────────────────────────────────
+@require_POST
+def jackpot_buy_with_wallet(request):
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'Login required'}, status=401)
+    if request.user.is_superuser:
+        return JsonResponse({'error': 'Admins cannot purchase spins'}, status=403)
+    spin_cfg = get_spin_settings()
+    spin_pack_amount = spin_cfg.spin_pack_amount
+    spin_pack_spins  = spin_cfg.spin_pack_spins
+    with transaction.atomic():
+        wallet, _ = Wallet.objects.select_for_update().get_or_create(user=request.user)
+        if wallet.balance < spin_pack_amount:
+            return JsonResponse({
+                'error': f'Insufficient wallet balance. Please add at least ₹{spin_pack_amount}.',
+                'needs_topup': True,
+            }, status=402)
+        wallet.balance -= spin_pack_amount
+        wallet.save()
+        WalletTransaction.objects.create(
+            wallet=wallet, amount=spin_pack_amount, txn_type='debit',
+            description=f'{spin_pack_spins} Jackpot Spins (wallet purchase)',
+        )
+        SpinPurchase.objects.create(
+            user=request.user,
+            spins_purchased=spin_pack_spins,
+            amount=spin_pack_amount,
+            status='success',
+        )
+        spin_wallet, _ = SpinWallet.objects.select_for_update().get_or_create(user=request.user)
+        spin_wallet.spins += spin_pack_spins
+        spin_wallet.save()
+    return JsonResponse({
+        'success':         True,
+        'spins_credited':  spin_pack_spins,
+        'total_spins':     spin_wallet.spins,
+        'new_balance':     float(wallet.balance),
+        'message':         f'🎉 {spin_pack_spins} spins credited to your account!'
+    })
+
+
 # ── Jackpot: Verify Payment & Credit Spins ─────────────────────────────────────
 @require_POST
 def jackpot_verify_payment(request):
