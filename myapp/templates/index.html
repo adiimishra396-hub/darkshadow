@@ -592,16 +592,19 @@
         </a>
         {% endif %}
 
-        <!-- Blackjack -->
-        <a href="https://www.247blackjack.com/" target="_blank" rel="noopener" class="game-card" data-cat="casino">
+        {% if blackjack_active %}
+        <!-- Blackjack — in-house, real win/lose game (vs virtual dealer) -->
+        <a href="javascript:void(0)" onclick="openBlackjackModal()" class="game-card" data-cat="casino">
+          <span class="g-badge new">Play In-House</span>
           <img class="game-card-thumb" src="https://images.unsplash.com/photo-1517232115160-ff93364542dd?q=80&w=600&auto=format&fit=crop" alt="Blackjack">
           <div class="game-card-body">
             <div class="game-card-cat">Casino</div>
             <div class="game-card-title">Blackjack 21</div>
-            <div class="game-card-desc">Beat the dealer by getting as close to 21 as possible without going bust.</div>
+            <div class="game-card-desc">Beat the dealer by getting as close to 21 as possible, right here on Darkshadow.</div>
             <span class="game-card-play">Play Now</span>
           </div>
         </a>
+        {% endif %}
 
         {% if roulette_active %}
         <!-- Roulette — in-house, real win/lose game -->
@@ -803,6 +806,7 @@
   {% include 'roulette_modal.html' %}
   {% include 'sicbo_modal.html' %}
   {% include 'teenpatti_modal.html' %}
+  {% include 'blackjack_modal.html' %}
 
 <script>
   // ── Popup

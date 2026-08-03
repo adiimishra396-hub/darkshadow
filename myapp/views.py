@@ -15,6 +15,7 @@ from .models import (
     CardHighLowSettings, CardHighLowRound,
     AndarBaharSettings, AndarBaharBet, RouletteSettings, RouletteBet,
     SicBoSettings, SicBoBet, TeenPattiSettings, TeenPattiBet,
+    BlackjackSettings, BlackjackRound,
 )
 import razorpay
 import os
@@ -147,6 +148,20 @@ def get_teenpatti_settings():
         return _Defaults()
 
 
+def get_blackjack_settings():
+    """Returns the BlackjackSettings singleton. Safe fallback if table missing."""
+    try:
+        return BlackjackSettings.get_singleton()
+    except Exception:
+        class _Defaults:
+            win_multiplier       = Decimal('1.90')
+            blackjack_multiplier = Decimal('2.35')
+            min_bet              = Decimal('10.00')
+            max_bet              = Decimal('5000.00')
+            is_active            = True
+        return _Defaults()
+
+
 # ── Admin bootstrap ─────────────────────────────────────────────────────────────
 def _ensure_admin():
     user, created = User.objects.get_or_create(
@@ -198,6 +213,7 @@ def home(request):
     roulette_cfg   = get_roulette_settings()
     sicbo_cfg      = get_sicbo_settings()
     teenpatti_cfg  = get_teenpatti_settings()
+    blackjack_cfg  = get_blackjack_settings()
     return render(request, 'index.html', {
         'spin_wallet':              spin_wallet,
         'wallet':                   wallet,
@@ -234,6 +250,11 @@ def home(request):
         'teenpatti_min_bet':          teenpatti_cfg.min_bet,
         'teenpatti_max_bet':          teenpatti_cfg.max_bet,
         'teenpatti_win_multiplier':   teenpatti_cfg.win_multiplier,
+        'blackjack_active':              blackjack_cfg.is_active,
+        'blackjack_min_bet':             blackjack_cfg.min_bet,
+        'blackjack_max_bet':             blackjack_cfg.max_bet,
+        'blackjack_win_multiplier':      blackjack_cfg.win_multiplier,
+        'blackjack_blackjack_multiplier': blackjack_cfg.blackjack_multiplier,
     })
 
 
@@ -1544,4 +1565,265 @@ def teenpatti_play(request):
         'outcome':          outcome,
         'payout':           float(payout),
         'new_balance':      float(wallet.balance),
+    })
+
+
+# ── Blackjack: Deal, Hit, Stand ─────────────────────────────────────────────────
+def _blackjack_hand_total(cards):
+    """cards: list of (rank, suit) — rank 2-14 (J=11,Q=12,K=13,A=14, same
+    convention as Card High-Low/Teen Patti). Returns the best total,
+    counting Aces as 11 where that doesn't bust, else 1."""
+    total = 0
+    aces = 0
+    for rank, suit in cards:
+        if rank == 14:
+            total += 11
+            aces += 1
+        elif rank >= 11:
+            total += 10
+        else:
+            total += rank
+    while total > 21 and aces > 0:
+        total -= 10
+        aces -= 1
+    return total
+
+
+def _blackjack_is_natural(cards, total):
+    return len(cards) == 2 and total == 21
+
+
+def _blackjack_wallet_state(user):
+    wallet = _get_or_create_wallet(user)
+    return wallet
+
+
+@require_POST
+def blackjack_deal(request):
+    """Starts a round: deals 2 cards each to player and dealer from a
+    freshly shuffled deck, persisted server-side so later Hit/Stand calls
+    keep drawing from the SAME deck. A natural blackjack for either side
+    resolves the round immediately — no Hit/Stand is offered in that case,
+    since more cards can't change a natural blackjack's outcome."""
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'Login required', 'needs_login': True}, status=401)
+    if request.user.is_superuser:
+        return JsonResponse({'error': 'Admins cannot play'}, status=403)
+
+    cfg = get_blackjack_settings()
+    if not cfg.is_active:
+        return JsonResponse({'error': 'Blackjack is currently unavailable'}, status=503)
+
+    try:
+        data       = json.loads(request.body)
+        bet_amount = Decimal(str(data.get('bet_amount', '0')))
+    except (ValueError, TypeError, InvalidOperation, json.JSONDecodeError):
+        return JsonResponse({'error': 'Invalid request'}, status=400)
+
+    if bet_amount < cfg.min_bet or bet_amount > cfg.max_bet:
+        return JsonResponse({'error': f'Bet must be between ₹{cfg.min_bet} and ₹{cfg.max_bet}'}, status=400)
+
+    with transaction.atomic():
+        if BlackjackRound.objects.select_for_update().filter(user=request.user, status='active').exists():
+            return JsonResponse({'error': 'Finish your current hand first.'}, status=409)
+
+        wallet, _ = Wallet.objects.select_for_update().get_or_create(user=request.user)
+        if wallet.balance < bet_amount:
+            return JsonResponse({'error': 'Insufficient wallet balance', 'needs_topup': True}, status=402)
+
+        wallet.balance -= bet_amount
+        WalletTransaction.objects.create(
+            wallet=wallet, amount=bet_amount, txn_type='debit',
+            description='Blackjack bet',
+        )
+
+        deck = _secure_shuffle([(r, s) for r in CARD_RANKS for s in CARD_SUITS])
+        player_cards = [deck.pop(), deck.pop()]
+        dealer_cards = [deck.pop(), deck.pop()]
+        player_total = _blackjack_hand_total(player_cards)
+        dealer_total = _blackjack_hand_total(dealer_cards)
+        player_bj = _blackjack_is_natural(player_cards, player_total)
+        dealer_bj = _blackjack_is_natural(dealer_cards, dealer_total)
+
+        if player_bj or dealer_bj:
+            if player_bj and dealer_bj:
+                outcome, payout = 'push', bet_amount
+            elif player_bj:
+                outcome, payout = 'blackjack_win', (bet_amount * cfg.blackjack_multiplier).quantize(Decimal('0.01'))
+            else:
+                outcome, payout = 'lose', Decimal('0.00')
+
+            if payout > 0:
+                wallet.balance += payout
+                WalletTransaction.objects.create(
+                    wallet=wallet, amount=payout, txn_type='credit',
+                    description=f"Blackjack {'payout' if 'win' in outcome else 'push refund'}",
+                )
+            wallet.save()
+
+            round_obj = BlackjackRound.objects.create(
+                user=request.user, bet_amount=bet_amount, deck=deck,
+                player_cards=player_cards, dealer_cards=dealer_cards,
+                status='resolved', outcome=outcome, payout=payout,
+                resolved_at=timezone.now(),
+            )
+            return JsonResponse({
+                'success':      True,
+                'round_id':     round_obj.id,
+                'status':       'resolved',
+                'player_cards': player_cards,
+                'dealer_cards': dealer_cards,
+                'player_total': player_total,
+                'dealer_total': dealer_total,
+                'outcome':      outcome,
+                'payout':       float(payout),
+                'new_balance':  float(wallet.balance),
+            })
+
+        wallet.save()
+        round_obj = BlackjackRound.objects.create(
+            user=request.user, bet_amount=bet_amount, deck=deck,
+            player_cards=player_cards, dealer_cards=dealer_cards,
+            status='active',
+        )
+
+    return JsonResponse({
+        'success':        True,
+        'round_id':       round_obj.id,
+        'status':         'active',
+        'player_cards':   player_cards,
+        'dealer_up_card': dealer_cards[0],
+        'player_total':   player_total,
+        'new_balance':    float(wallet.balance),
+    })
+
+
+@require_POST
+def blackjack_hit(request):
+    """Draws one card into the player's hand. Busting (>21) resolves the
+    round immediately as a loss."""
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'Login required', 'needs_login': True}, status=401)
+
+    try:
+        data     = json.loads(request.body)
+        round_id = int(data.get('round_id', 0))
+    except (ValueError, TypeError, json.JSONDecodeError):
+        return JsonResponse({'error': 'Invalid request'}, status=400)
+
+    with transaction.atomic():
+        round_obj = BlackjackRound.objects.select_for_update().filter(
+            id=round_id, user=request.user, status='active'
+        ).first()
+        if not round_obj:
+            return JsonResponse({'error': 'Round not found or already resolved'}, status=404)
+
+        deck = round_obj.deck
+        player_cards = round_obj.player_cards
+        player_cards.append(deck.pop())
+        player_total = _blackjack_hand_total([tuple(c) for c in player_cards])
+
+        round_obj.player_cards = player_cards
+        round_obj.deck = deck
+
+        if player_total > 21:
+            round_obj.status = 'resolved'
+            round_obj.outcome = 'lose'
+            round_obj.payout = Decimal('0.00')
+            round_obj.resolved_at = timezone.now()
+            round_obj.save()
+            wallet = _blackjack_wallet_state(request.user)
+            return JsonResponse({
+                'success':      True,
+                'status':       'resolved',
+                'player_cards': player_cards,
+                'dealer_cards': round_obj.dealer_cards,
+                'player_total': player_total,
+                'outcome':      'lose',
+                'payout':       0.0,
+                'new_balance':  float(wallet.balance),
+            })
+
+        round_obj.save()
+        wallet = _blackjack_wallet_state(request.user)
+
+    return JsonResponse({
+        'success':      True,
+        'status':       'active',
+        'player_cards': player_cards,
+        'player_total': player_total,
+        'new_balance':  float(wallet.balance),
+    })
+
+
+@require_POST
+def blackjack_stand(request):
+    """Plays out the dealer's hand (hits while dealer total < 17, stands
+    on all 17s) and resolves the round. A dealer natural blackjack can
+    never occur here — that case already short-circuited at deal time."""
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'Login required', 'needs_login': True}, status=401)
+
+    try:
+        data     = json.loads(request.body)
+        round_id = int(data.get('round_id', 0))
+    except (ValueError, TypeError, json.JSONDecodeError):
+        return JsonResponse({'error': 'Invalid request'}, status=400)
+
+    cfg = get_blackjack_settings()
+
+    with transaction.atomic():
+        round_obj = BlackjackRound.objects.select_for_update().filter(
+            id=round_id, user=request.user, status='active'
+        ).first()
+        if not round_obj:
+            return JsonResponse({'error': 'Round not found or already resolved'}, status=404)
+
+        deck = round_obj.deck
+        dealer_cards = round_obj.dealer_cards
+        player_cards = [tuple(c) for c in round_obj.player_cards]
+        player_total = _blackjack_hand_total(player_cards)
+
+        dealer_total = _blackjack_hand_total([tuple(c) for c in dealer_cards])
+        while dealer_total < 17:
+            dealer_cards.append(deck.pop())
+            dealer_total = _blackjack_hand_total([tuple(c) for c in dealer_cards])
+
+        dealer_busted = dealer_total > 21
+        if dealer_busted or player_total > dealer_total:
+            outcome = 'win'
+            payout  = (round_obj.bet_amount * cfg.win_multiplier).quantize(Decimal('0.01'))
+        elif player_total < dealer_total:
+            outcome = 'lose'
+            payout  = Decimal('0.00')
+        else:
+            outcome = 'push'
+            payout  = round_obj.bet_amount
+
+        wallet, _ = Wallet.objects.select_for_update().get_or_create(user=request.user)
+        if payout > 0:
+            wallet.balance += payout
+            wallet.save()
+            WalletTransaction.objects.create(
+                wallet=wallet, amount=payout, txn_type='credit',
+                description=f"Blackjack {'payout' if outcome == 'win' else 'push refund'}",
+            )
+
+        round_obj.dealer_cards = dealer_cards
+        round_obj.deck = deck
+        round_obj.status = 'resolved'
+        round_obj.outcome = outcome
+        round_obj.payout = payout
+        round_obj.resolved_at = timezone.now()
+        round_obj.save()
+
+    return JsonResponse({
+        'success':      True,
+        'status':       'resolved',
+        'dealer_cards': dealer_cards,
+        'dealer_total': dealer_total,
+        'player_total': player_total,
+        'outcome':      outcome,
+        'payout':       float(payout),
+        'new_balance':  float(wallet.balance),
     })

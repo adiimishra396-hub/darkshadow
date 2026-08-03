@@ -501,6 +501,73 @@ class TeenPattiBet(models.Model):
         return f"{self.user.username} | ₹{self.bet_amount} | {self.player_hand_type} vs {self.dealer_hand_type} | {self.outcome.upper()}"
 
 
+class BlackjackSettings(models.Model):
+    """
+    Singleton model (id=1). Real win/lose game — standard single-player
+    Blackjack vs a virtual dealer (dealer stands on all 17s). Natural
+    blackjack (2-card 21) pays blackjack_multiplier; a standard win pays
+    win_multiplier; equal totals push (bet refunded).
+    """
+    win_multiplier       = models.DecimalField(max_digits=4, decimal_places=2, default=Decimal('1.90'),
+        help_text='Payout multiplier on a standard win (e.g. 1.90 = 1.9x the bet back)')
+    blackjack_multiplier = models.DecimalField(max_digits=4, decimal_places=2, default=Decimal('2.35'),
+        help_text='Payout multiplier on a natural blackjack (2-card 21), standard is 3:2')
+    min_bet    = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('10.00'))
+    max_bet    = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('5000.00'))
+    is_active  = models.BooleanField(default=True, help_text='Show/hide Blackjack on the homepage')
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Blackjack Settings'
+        verbose_name_plural = 'Blackjack Settings'
+
+    def __str__(self):
+        return f'Blackjack Settings (updated {self.updated_at})'
+
+    @classmethod
+    def get_singleton(cls):
+        obj, _ = cls.objects.get_or_create(pk=1)
+        return obj
+
+
+class BlackjackRound(models.Model):
+    """
+    Records every Blackjack round. Two-phase like Card High-Low, but the
+    player can Hit an arbitrary number of times before Standing. The
+    remaining shuffled deck is persisted server-side (deck field) so hit
+    requests keep drawing from the SAME deck across separate HTTP calls
+    without risking duplicate cards.
+    """
+    STATUS_CHOICES = [
+        ('active',   'Active'),
+        ('resolved', 'Resolved'),
+    ]
+    OUTCOME_CHOICES = [
+        ('win',            'Win'),
+        ('blackjack_win',  'Blackjack Win'),
+        ('lose',           'Lose'),
+        ('push',           'Push'),
+    ]
+    user         = models.ForeignKey(User, on_delete=models.CASCADE, related_name='blackjack_rounds')
+    bet_amount   = models.DecimalField(max_digits=10, decimal_places=2)
+    deck         = models.JSONField(help_text='Remaining shuffled deck: [[rank, suit], ...]')
+    player_cards = models.JSONField()
+    dealer_cards = models.JSONField()
+    status       = models.CharField(max_length=8, choices=STATUS_CHOICES, default='active')
+    outcome      = models.CharField(max_length=13, choices=OUTCOME_CHOICES, blank=True)
+    payout       = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    created_at   = models.DateTimeField(auto_now_add=True)
+    resolved_at  = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        if self.status == 'active':
+            return f"{self.user.username} | ₹{self.bet_amount} | hand in progress"
+        return f"{self.user.username} | ₹{self.bet_amount} | {self.outcome.upper()}"
+
+
 class SpinMachineSettings(models.Model):
     """
     Singleton model (id=1). Admin sets spin pack pricing and the jackpot

@@ -54,4 +54,9 @@ urlpatterns = [
 
     # Teen Patti
     path('teenpatti/play/', views.teenpatti_play, name='teenpatti_play'),
+
+    # Blackjack
+    path('blackjack/deal/', views.blackjack_deal, name='blackjack_deal'),
+    path('blackjack/hit/', views.blackjack_hit, name='blackjack_hit'),
+    path('blackjack/stand/', views.blackjack_stand, name='blackjack_stand'),
 ]

@@ -1,0 +1,352 @@
+{% comment %}
+  Blackjack — real win/lose game, wallet-integrated. Modal + JS.
+  Single-player vs a virtual dealer (dealer stands on all 17s).
+  Requires context: wallet, blackjack_active, blackjack_min_bet, blackjack_max_bet,
+                    blackjack_win_multiplier, blackjack_blackjack_multiplier
+  Opened via openBlackjackModal() from a game-card in the All Games section.
+{% endcomment %}
+
+{% if blackjack_active %}
+<div id="blackjackModal" style="
+  display:none;position:fixed;inset:0;z-index:10009;
+  background:rgba(0,0,0,.8);backdrop-filter:blur(6px);
+  align-items:center;justify-content:center;
+  opacity:0;transition:opacity .25s ease;
+">
+  <div style="
+    background:linear-gradient(160deg,#1a1a2e 0%,#16213e 60%,#0f3460 100%);
+    border:1px solid rgba(255,210,0,.3);border-radius:20px;
+    padding:32px 30px;max-width:460px;width:92%;text-align:center;
+    box-shadow:0 0 60px rgba(255,210,0,.15);
+    position:relative;
+    transform:scale(0.92);transition:transform .25s cubic-bezier(.34,1.56,.64,1);
+    max-height:90vh;overflow-y:auto;
+  ">
+    <button onclick="closeBlackjackModal()" style="
+      position:absolute;top:14px;right:18px;
+      background:none;border:none;color:#aaa;font-size:1.4rem;cursor:pointer;
+    ">✕</button>
+
+    <h2 style="color:#ffd200;font-size:1.5rem;margin-bottom:4px;">🃏 Blackjack 21</h2>
+    <p style="color:#aaa;font-size:.85rem;margin-bottom:18px;">
+      Beat the dealer. Blackjack pays {{ blackjack_blackjack_multiplier }}x, standard win pays {{ blackjack_win_multiplier }}x.
+    </p>
+
+    {% if user.is_authenticated %}
+      <div style="
+        background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);
+        border-radius:10px;padding:12px 16px;margin-bottom:18px;
+        display:flex;align-items:center;justify-content:space-between;
+      ">
+        <span style="color:#aaa;font-size:.88rem;">💰 Wallet Balance</span>
+        <span style="color:#4ade80;font-weight:700;font-size:1rem;" id="bjWalletBalance">
+          ₹{% if wallet %}{{ wallet.balance|floatformat:2 }}{% else %}0.00{% endif %}
+        </span>
+      </div>
+
+      <!-- Dealer hand -->
+      <div style="margin-bottom:14px;">
+        <div style="color:#aaa;font-size:.78rem;margin-bottom:6px;text-transform:uppercase;letter-spacing:1px;">
+          Dealer <span id="bjDealerTotal" style="color:#ffd200;font-weight:700;"></span>
+        </div>
+        <div style="display:flex;justify-content:center;gap:8px;flex-wrap:wrap;" id="bjDealerCards"></div>
+      </div>
+
+      <div id="bjResult" style="min-height:32px;font-size:1.05rem;font-weight:700;margin:10px 0;"></div>
+
+      <!-- Player hand -->
+      <div style="margin-bottom:18px;">
+        <div style="color:#aaa;font-size:.78rem;margin-bottom:6px;text-transform:uppercase;letter-spacing:1px;">
+          You <span id="bjPlayerTotal" style="color:#ffd200;font-weight:700;"></span>
+        </div>
+        <div style="display:flex;justify-content:center;gap:8px;flex-wrap:wrap;" id="bjPlayerCards"></div>
+      </div>
+
+      <!-- Bet phase -->
+      <div id="bjBetPhase">
+        <div style="text-align:left;margin-bottom:14px;">
+          <label style="color:#aaa;font-size:.82rem;display:block;margin-bottom:6px;">
+            Bet Amount (₹{{ blackjack_min_bet }} – ₹{{ blackjack_max_bet }})
+          </label>
+          <input type="number" id="bjBetAmount" value="{{ blackjack_min_bet }}"
+            min="{{ blackjack_min_bet }}" max="{{ blackjack_max_bet }}" step="1"
+            style="width:100%;padding:12px 14px;border-radius:10px;
+              border:1px solid rgba(255,210,0,.3);background:rgba(255,255,255,.06);
+              color:#fff;font-size:1rem;box-sizing:border-box;">
+        </div>
+        <button id="bjDealBtn" onclick="dealBlackjack()" style="
+          width:100%;padding:14px;border:none;border-radius:14px;
+          background:linear-gradient(135deg,#f7971e,#ffd200);
+          color:#1a1a2e;font-size:1.1rem;font-weight:800;
+          cursor:pointer;box-shadow:0 4px 18px rgba(255,210,0,.45);
+        ">🃏 DEAL</button>
+      </div>
+
+      <!-- Action phase -->
+      <div id="bjActionPhase" style="display:none;">
+        <div style="display:flex;gap:10px;">
+          <button type="button" id="bjHitBtn" onclick="hitBlackjack()" style="
+            flex:1;padding:14px;border-radius:12px;cursor:pointer;font-weight:800;
+            border:none;background:linear-gradient(135deg,#22c55e,#4ade80);color:#0f2417;
+          ">Hit</button>
+          <button type="button" id="bjStandBtn" onclick="standBlackjack()" style="
+            flex:1;padding:14px;border-radius:12px;cursor:pointer;font-weight:800;
+            border:none;background:linear-gradient(135deg,#ef4444,#f87171);color:#2b0d0d;
+          ">Stand</button>
+        </div>
+      </div>
+
+      <!-- Play again phase -->
+      <div id="bjPlayAgainPhase" style="display:none;">
+        <button onclick="resetBlackjack()" style="
+          width:100%;padding:14px;border:none;border-radius:14px;
+          background:linear-gradient(135deg,#f7971e,#ffd200);
+          color:#1a1a2e;font-size:1.05rem;font-weight:800;cursor:pointer;
+        ">Play Again</button>
+      </div>
+    {% else %}
+      <a href="{% url 'login' %}" style="
+        display:block;width:100%;padding:14px;border:none;border-radius:12px;
+        background:linear-gradient(135deg,#f7971e,#ffd200);
+        color:#1a1a2e;font-size:1.1rem;font-weight:800;text-decoration:none;
+        box-shadow:0 4px 15px rgba(255,210,0,.4);
+      ">Login to Play 🃏</a>
+    {% endif %}
+
+    <p style="color:#666;font-size:.78rem;margin-top:16px;">18+ only · Gamble responsibly</p>
+  </div>
+</div>
+
+<script>
+let bjRoundId = null;
+
+const BJ_RANK_LABELS = {11: 'J', 12: 'Q', 13: 'K', 14: 'A'};
+const BJ_SUIT_SYMBOLS = {S: '♠', H: '♥', D: '♦', C: '♣'};
+const BJ_RED_SUITS = ['H', 'D'];
+
+function bjCardEl(rank, suit) {
+  const el = document.createElement('div');
+  const label = BJ_RANK_LABELS[rank] || String(rank);
+  el.textContent = label + BJ_SUIT_SYMBOLS[suit];
+  el.style.cssText = 'width:52px;height:72px;border-radius:8px;background:#fff;display:flex;align-items:center;justify-content:center;font-size:1.2rem;font-weight:800;color:' + (BJ_RED_SUITS.includes(suit) ? '#dc2626' : '#111');
+  return el;
+}
+function bjFaceDownEl() {
+  const el = document.createElement('div');
+  el.textContent = '?';
+  el.style.cssText = 'width:52px;height:72px;border-radius:8px;background:rgba(255,255,255,.08);border:2px dashed rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;color:#666;font-size:1.2rem;';
+  return el;
+}
+function bjRenderCards(containerId, cards) {
+  const container = document.getElementById(containerId);
+  container.innerHTML = '';
+  cards.forEach(([rank, suit]) => container.appendChild(bjCardEl(rank, suit)));
+}
+
+function bjGetCsrf() {
+  const m = document.cookie.match(/(?:^|;\s*)csrftoken=([^;]+)/);
+  return m ? m[1] : '';
+}
+function bjShowModal(el) {
+  el.style.display = 'flex';
+  requestAnimationFrame(() => { requestAnimationFrame(() => {
+    el.style.opacity = '1';
+    const inner = el.querySelector('div');
+    if (inner) inner.style.transform = 'scale(1)';
+  }); });
+}
+function bjHideModal(el) {
+  el.style.opacity = '0';
+  const inner = el.querySelector('div');
+  if (inner) inner.style.transform = 'scale(0.92)';
+  setTimeout(() => { el.style.display = 'none'; }, 260);
+}
+function openBlackjackModal() {
+  {% if not user.is_authenticated %}
+    window.location.href = '{% url "login" %}';
+    return;
+  {% endif %}
+  resetBlackjack();
+  bjShowModal(document.getElementById('blackjackModal'));
+}
+function closeBlackjackModal() {
+  bjHideModal(document.getElementById('blackjackModal'));
+}
+
+function resetBlackjack() {
+  bjRoundId = null;
+  document.getElementById('bjBetPhase').style.display = 'block';
+  document.getElementById('bjActionPhase').style.display = 'none';
+  document.getElementById('bjPlayAgainPhase').style.display = 'none';
+  document.getElementById('bjResult').textContent = '';
+  document.getElementById('bjDealerCards').innerHTML = '';
+  document.getElementById('bjPlayerCards').innerHTML = '';
+  document.getElementById('bjDealerTotal').textContent = '';
+  document.getElementById('bjPlayerTotal').textContent = '';
+  const dealBtn = document.getElementById('bjDealBtn');
+  dealBtn.disabled = false;
+  dealBtn.textContent = '🃏 DEAL';
+  document.getElementById('bjBetAmount').disabled = false;
+}
+
+function bjShowOutcome(outcome, payout, betAmount) {
+  const resultEl = document.getElementById('bjResult');
+  if (outcome === 'win' || outcome === 'blackjack_win') {
+    resultEl.style.color = '#4ade80';
+    resultEl.textContent = (outcome === 'blackjack_win' ? '🎉 Blackjack! ' : '🎉 You win! ') + `+₹${payout.toFixed(2)}`;
+  } else if (outcome === 'push') {
+    resultEl.style.color = '#ffd200';
+    resultEl.textContent = `🤝 Push — bet refunded (₹${payout.toFixed(2)})`;
+  } else {
+    resultEl.style.color = '#ef4444';
+    resultEl.textContent = `😔 Dealer wins — you lost ₹${betAmount.toFixed(2)}`;
+  }
+}
+
+async function dealBlackjack() {
+  {% if not user.is_authenticated %}
+    window.location.href = '{% url "login" %}';
+    return;
+  {% endif %}
+  const betInput = document.getElementById('bjBetAmount');
+  const dealBtn  = document.getElementById('bjDealBtn');
+  const betAmount = parseFloat(betInput.value);
+
+  if (!betAmount || betAmount <= 0) { alert('Enter a valid bet amount.'); return; }
+
+  dealBtn.disabled = true;
+  betInput.disabled = true;
+  document.getElementById('bjResult').textContent = '';
+
+  let data;
+  try {
+    const res = await fetch('{% url "blackjack_deal" %}', {
+      method: 'POST',
+      headers: { 'X-CSRFToken': bjGetCsrf(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ bet_amount: betAmount })
+    });
+    data = await res.json();
+  } catch (e) {
+    alert('Network error — your bet was not placed. Please try again.');
+    dealBtn.disabled = false; betInput.disabled = false;
+    return;
+  }
+
+  if (!data.success) {
+    if (data.needs_topup) {
+      const go = confirm('⚠️ ' + (data.error || 'Insufficient balance.') + '\n\nAdd money to your wallet now?');
+      if (go) window.location.href = '{% url "add_money" %}';
+    } else {
+      alert(data.error || 'Could not deal');
+    }
+    dealBtn.disabled = false; betInput.disabled = false;
+    return;
+  }
+
+  bjRoundId = data.round_id;
+  bjRenderCards('bjPlayerCards', data.player_cards);
+  document.getElementById('bjPlayerTotal').textContent = '(' + data.player_total + ')';
+
+  const balanceEl = document.getElementById('bjWalletBalance');
+  if (balanceEl) balanceEl.textContent = '₹' + Number(data.new_balance).toFixed(2);
+
+  if (data.status === 'resolved') {
+    bjRenderCards('bjDealerCards', data.dealer_cards);
+    document.getElementById('bjDealerTotal').textContent = '(' + data.dealer_total + ')';
+    bjShowOutcome(data.outcome, data.payout, betAmount);
+    document.getElementById('bjBetPhase').style.display = 'none';
+    document.getElementById('bjPlayAgainPhase').style.display = 'block';
+    return;
+  }
+
+  const dealerCards = document.getElementById('bjDealerCards');
+  dealerCards.innerHTML = '';
+  dealerCards.appendChild(bjCardEl(data.dealer_up_card[0], data.dealer_up_card[1]));
+  dealerCards.appendChild(bjFaceDownEl());
+
+  document.getElementById('bjBetPhase').style.display = 'none';
+  document.getElementById('bjActionPhase').style.display = 'block';
+}
+
+async function hitBlackjack() {
+  if (!bjRoundId) return;
+  const hitBtn = document.getElementById('bjHitBtn');
+  const standBtn = document.getElementById('bjStandBtn');
+  hitBtn.disabled = true; standBtn.disabled = true;
+
+  let data;
+  try {
+    const res = await fetch('{% url "blackjack_hit" %}', {
+      method: 'POST',
+      headers: { 'X-CSRFToken': bjGetCsrf(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ round_id: bjRoundId })
+    });
+    data = await res.json();
+  } catch (e) {
+    alert('Network error. Reopen this game to check your hand status.');
+    hitBtn.disabled = false; standBtn.disabled = false;
+    return;
+  }
+
+  if (!data.success) {
+    alert(data.error || 'Could not hit');
+    hitBtn.disabled = false; standBtn.disabled = false;
+    return;
+  }
+
+  bjRenderCards('bjPlayerCards', data.player_cards);
+  document.getElementById('bjPlayerTotal').textContent = '(' + data.player_total + ')';
+  const balanceEl = document.getElementById('bjWalletBalance');
+  if (balanceEl) balanceEl.textContent = '₹' + Number(data.new_balance).toFixed(2);
+
+  if (data.status === 'resolved') {
+    bjRenderCards('bjDealerCards', data.dealer_cards);
+    const betAmount = parseFloat(document.getElementById('bjBetAmount').value);
+    bjShowOutcome(data.outcome, data.payout, betAmount);
+    document.getElementById('bjActionPhase').style.display = 'none';
+    document.getElementById('bjPlayAgainPhase').style.display = 'block';
+    return;
+  }
+
+  hitBtn.disabled = false;
+  standBtn.disabled = false;
+}
+
+async function standBlackjack() {
+  if (!bjRoundId) return;
+  const hitBtn = document.getElementById('bjHitBtn');
+  const standBtn = document.getElementById('bjStandBtn');
+  hitBtn.disabled = true; standBtn.disabled = true;
+
+  let data;
+  try {
+    const res = await fetch('{% url "blackjack_stand" %}', {
+      method: 'POST',
+      headers: { 'X-CSRFToken': bjGetCsrf(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ round_id: bjRoundId })
+    });
+    data = await res.json();
+  } catch (e) {
+    alert('Network error. Reopen this game to check your hand status.');
+    hitBtn.disabled = false; standBtn.disabled = false;
+    return;
+  }
+
+  if (!data.success) {
+    alert(data.error || 'Could not stand');
+    hitBtn.disabled = false; standBtn.disabled = false;
+    return;
+  }
+
+  bjRenderCards('bjDealerCards', data.dealer_cards);
+  document.getElementById('bjDealerTotal').textContent = '(' + data.dealer_total + ')';
+  const balanceEl = document.getElementById('bjWalletBalance');
+  if (balanceEl) balanceEl.textContent = '₹' + Number(data.new_balance).toFixed(2);
+
+  const betAmount = parseFloat(document.getElementById('bjBetAmount').value);
+  bjShowOutcome(data.outcome, data.payout, betAmount);
+  document.getElementById('bjActionPhase').style.display = 'none';
+  document.getElementById('bjPlayAgainPhase').style.display = 'block';
+}
+</script>
+{% endif %}

@@ -7,6 +7,7 @@ from .models import (
     CardHighLowSettings, CardHighLowRound,
     AndarBaharSettings, AndarBaharBet, RouletteSettings, RouletteBet,
     SicBoSettings, SicBoBet, TeenPattiSettings, TeenPattiBet,
+    BlackjackSettings, BlackjackRound,
 )
 
 
@@ -205,3 +206,20 @@ class TeenPattiBetAdmin(admin.ModelAdmin):
     list_filter = ('outcome', 'player_hand_type')
     search_fields = ('user__username',)
     readonly_fields = ('created_at',)
+
+
+@admin.register(BlackjackSettings)
+class BlackjackSettingsAdmin(admin.ModelAdmin):
+    list_display = ('win_multiplier', 'blackjack_multiplier', 'min_bet', 'max_bet', 'is_active', 'updated_at')
+    readonly_fields = ('updated_at',)
+
+    def has_add_permission(self, request):
+        return not BlackjackSettings.objects.exists()
+
+
+@admin.register(BlackjackRound)
+class BlackjackRoundAdmin(admin.ModelAdmin):
+    list_display = ('user', 'bet_amount', 'status', 'outcome', 'payout', 'created_at')
+    list_filter = ('status', 'outcome')
+    search_fields = ('user__username',)
+    readonly_fields = ('created_at', 'resolved_at')
