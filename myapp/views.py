@@ -14,7 +14,7 @@ from .models import (
     CoinFlipSettings, CoinFlipBet, DiceSettings, DiceBet,
     CardHighLowSettings, CardHighLowRound,
     AndarBaharSettings, AndarBaharBet, RouletteSettings, RouletteBet,
-    SicBoSettings, SicBoBet,
+    SicBoSettings, SicBoBet, TeenPattiSettings, TeenPattiBet,
 )
 import razorpay
 import os
@@ -134,6 +134,19 @@ def get_sicbo_settings():
         return _Defaults()
 
 
+def get_teenpatti_settings():
+    """Returns the TeenPattiSettings singleton. Safe fallback if table missing."""
+    try:
+        return TeenPattiSettings.get_singleton()
+    except Exception:
+        class _Defaults:
+            win_multiplier = Decimal('1.90')
+            min_bet        = Decimal('10.00')
+            max_bet        = Decimal('5000.00')
+            is_active      = True
+        return _Defaults()
+
+
 # ── Admin bootstrap ─────────────────────────────────────────────────────────────
 def _ensure_admin():
     user, created = User.objects.get_or_create(
@@ -184,6 +197,7 @@ def home(request):
     andarbahar_cfg = get_andarbahar_settings()
     roulette_cfg   = get_roulette_settings()
     sicbo_cfg      = get_sicbo_settings()
+    teenpatti_cfg  = get_teenpatti_settings()
     return render(request, 'index.html', {
         'spin_wallet':              spin_wallet,
         'wallet':                   wallet,
@@ -216,6 +230,10 @@ def home(request):
         'sicbo_min_bet':              sicbo_cfg.min_bet,
         'sicbo_max_bet':              sicbo_cfg.max_bet,
         'sicbo_house_edge':           sicbo_cfg.house_edge_percent,
+        'teenpatti_active':           teenpatti_cfg.is_active,
+        'teenpatti_min_bet':          teenpatti_cfg.min_bet,
+        'teenpatti_max_bet':          teenpatti_cfg.max_bet,
+        'teenpatti_win_multiplier':   teenpatti_cfg.win_multiplier,
     })
 
 
@@ -1389,4 +1407,141 @@ def sicbo_play(request):
         'multiplier':  float(multiplier),
         'payout':      float(payout),
         'new_balance': float(wallet.balance),
+    })
+
+
+# ── Teen Patti: Play a Round ────────────────────────────────────────────────────
+TEENPATTI_HAND_NAMES = {
+    6: 'trail',
+    5: 'pure_sequence',
+    4: 'sequence',
+    3: 'color',
+    2: 'pair',
+    1: 'high_card',
+}
+
+
+def _secure_shuffle(deck):
+    """In-place Fisher-Yates shuffle using secrets.randbelow (CSPRNG),
+    consistent with the RNG used by every other game on the site."""
+    for i in range(len(deck) - 1, 0, -1):
+        j = secrets.randbelow(i + 1)
+        deck[i], deck[j] = deck[j], deck[i]
+    return deck
+
+
+def _teenpatti_hand_value(cards):
+    """cards: list of 3 (rank, suit) tuples, rank 2-14 (Ace=14).
+    Returns a comparable tuple — a higher tuple beats a lower one under
+    normal Python tuple comparison. Handles A-2-3 as the lowest valid
+    sequence (Ace plays low there only)."""
+    ranks = sorted((r for r, s in cards), reverse=True)
+    suits = [s for r, s in cards]
+    is_flush = len(set(suits)) == 1
+    is_trail = ranks[0] == ranks[1] == ranks[2]
+
+    distinct = sorted(set(ranks))
+    is_sequence = False
+    seq_high = None
+    if len(distinct) == 3:
+        if distinct[2] - distinct[0] == 2:
+            is_sequence = True
+            seq_high = distinct[2]
+        elif distinct == [2, 3, 14]:
+            is_sequence = True
+            seq_high = 3
+
+    if is_trail:
+        return (6, ranks[0])
+    if is_sequence and is_flush:
+        return (5, seq_high)
+    if is_sequence:
+        return (4, seq_high)
+    if is_flush:
+        return (3, ranks[0], ranks[1], ranks[2])
+    if ranks[0] == ranks[1] or ranks[1] == ranks[2]:
+        pair_rank = ranks[1]
+        kicker = ranks[2] if ranks[0] == ranks[1] else ranks[0]
+        return (2, pair_rank, kicker)
+    return (1, ranks[0], ranks[1], ranks[2])
+
+
+@require_POST
+def teenpatti_play(request):
+    """Real win/lose game. Player's 3-card hand vs a virtual dealer's
+    3-card hand, dealt from a single shuffled 52-card deck (so hands
+    never share a card) and compared with standard Teen Patti hand
+    rankings. A tie is a push — the bet is refunded, not lost."""
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'Login required', 'needs_login': True}, status=401)
+    if request.user.is_superuser:
+        return JsonResponse({'error': 'Admins cannot play'}, status=403)
+
+    cfg = get_teenpatti_settings()
+    if not cfg.is_active:
+        return JsonResponse({'error': 'Teen Patti is currently unavailable'}, status=503)
+
+    try:
+        data       = json.loads(request.body)
+        bet_amount = Decimal(str(data.get('bet_amount', '0')))
+    except (ValueError, TypeError, InvalidOperation, json.JSONDecodeError):
+        return JsonResponse({'error': 'Invalid request'}, status=400)
+
+    if bet_amount < cfg.min_bet or bet_amount > cfg.max_bet:
+        return JsonResponse({'error': f'Bet must be between ₹{cfg.min_bet} and ₹{cfg.max_bet}'}, status=400)
+
+    with transaction.atomic():
+        wallet, _ = Wallet.objects.select_for_update().get_or_create(user=request.user)
+        if wallet.balance < bet_amount:
+            return JsonResponse({'error': 'Insufficient wallet balance', 'needs_topup': True}, status=402)
+
+        wallet.balance -= bet_amount
+        WalletTransaction.objects.create(
+            wallet=wallet, amount=bet_amount, txn_type='debit',
+            description='Teen Patti bet',
+        )
+
+        deck = _secure_shuffle([(r, s) for r in CARD_RANKS for s in CARD_SUITS])
+        player_cards = deck[:3]
+        dealer_cards = deck[3:6]
+
+        player_value = _teenpatti_hand_value(player_cards)
+        dealer_value = _teenpatti_hand_value(dealer_cards)
+        player_hand_type = TEENPATTI_HAND_NAMES[player_value[0]]
+        dealer_hand_type = TEENPATTI_HAND_NAMES[dealer_value[0]]
+
+        if player_value > dealer_value:
+            outcome = 'win'
+            payout  = (bet_amount * cfg.win_multiplier).quantize(Decimal('0.01'))
+        elif player_value < dealer_value:
+            outcome = 'lose'
+            payout  = Decimal('0.00')
+        else:
+            outcome = 'push'
+            payout  = bet_amount
+
+        if payout > 0:
+            wallet.balance += payout
+            WalletTransaction.objects.create(
+                wallet=wallet, amount=payout, txn_type='credit',
+                description=f"Teen Patti {'payout' if outcome == 'win' else 'push refund'}",
+            )
+        wallet.save()
+
+        TeenPattiBet.objects.create(
+            user=request.user, bet_amount=bet_amount,
+            player_cards=player_cards, dealer_cards=dealer_cards,
+            player_hand_type=player_hand_type, dealer_hand_type=dealer_hand_type,
+            outcome=outcome, payout=payout,
+        )
+
+    return JsonResponse({
+        'success':          True,
+        'player_cards':     player_cards,
+        'dealer_cards':     dealer_cards,
+        'player_hand_type': player_hand_type,
+        'dealer_hand_type': dealer_hand_type,
+        'outcome':          outcome,
+        'payout':           float(payout),
+        'new_balance':      float(wallet.balance),
     })

@@ -449,6 +449,58 @@ class SicBoBet(models.Model):
         return f"{self.user.username} | ₹{self.bet_amount} | called {self.choice}, rolled {self.die1}-{self.die2}-{self.die3}={self.total} | {outcome}"
 
 
+class TeenPattiSettings(models.Model):
+    """
+    Singleton model (id=1). Real win/lose game — the player's 3-card hand
+    is dealt against a virtual dealer's 3-card hand from a single shuffled
+    deck (so hands never share a card) and compared with standard Teen
+    Patti hand rankings. A tie is a push — bet refunded, not a loss.
+    """
+    win_multiplier = models.DecimalField(max_digits=4, decimal_places=2, default=Decimal('1.90'),
+        help_text='Payout multiplier on a win (e.g. 1.90 = 1.9x the bet back)')
+    min_bet    = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('10.00'))
+    max_bet    = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('5000.00'))
+    is_active  = models.BooleanField(default=True, help_text='Show/hide Teen Patti on the homepage')
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Teen Patti Settings'
+        verbose_name_plural = 'Teen Patti Settings'
+
+    def __str__(self):
+        return f'Teen Patti Settings (updated {self.updated_at})'
+
+    @classmethod
+    def get_singleton(cls):
+        obj, _ = cls.objects.get_or_create(pk=1)
+        return obj
+
+
+class TeenPattiBet(models.Model):
+    """Records every Teen Patti play — player's 3-card hand vs a virtual
+    dealer's 3-card hand, dealt from a single shuffled deck."""
+    OUTCOME_CHOICES = [
+        ('win',  'Win'),
+        ('lose', 'Lose'),
+        ('push', 'Push'),
+    ]
+    user             = models.ForeignKey(User, on_delete=models.CASCADE, related_name='teenpatti_bets')
+    bet_amount       = models.DecimalField(max_digits=10, decimal_places=2)
+    player_cards     = models.JSONField(help_text='[[rank, suit], ...] x3')
+    dealer_cards     = models.JSONField(help_text='[[rank, suit], ...] x3')
+    player_hand_type = models.CharField(max_length=20)
+    dealer_hand_type = models.CharField(max_length=20)
+    outcome          = models.CharField(max_length=4, choices=OUTCOME_CHOICES)
+    payout           = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    created_at       = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.user.username} | ₹{self.bet_amount} | {self.player_hand_type} vs {self.dealer_hand_type} | {self.outcome.upper()}"
+
+
 class SpinMachineSettings(models.Model):
     """
     Singleton model (id=1). Admin sets spin pack pricing and the jackpot

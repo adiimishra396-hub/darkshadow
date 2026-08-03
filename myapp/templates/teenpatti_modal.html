@@ -1,0 +1,245 @@
+{% comment %}
+  Teen Patti — real win/lose game, wallet-integrated. Modal + JS.
+  Player's 3-card hand vs a virtual dealer, single shuffled deck.
+  Requires context: wallet, teenpatti_active, teenpatti_min_bet, teenpatti_max_bet,
+                    teenpatti_win_multiplier
+  Opened via openTeenPattiModal() from a game-card in the All Games section.
+{% endcomment %}
+
+{% if teenpatti_active %}
+<div id="teenPattiModal" style="
+  display:none;position:fixed;inset:0;z-index:10008;
+  background:rgba(0,0,0,.8);backdrop-filter:blur(6px);
+  align-items:center;justify-content:center;
+  opacity:0;transition:opacity .25s ease;
+">
+  <div style="
+    background:linear-gradient(160deg,#1a1a2e 0%,#16213e 60%,#0f3460 100%);
+    border:1px solid rgba(255,210,0,.3);border-radius:20px;
+    padding:32px 30px;max-width:460px;width:92%;text-align:center;
+    box-shadow:0 0 60px rgba(255,210,0,.15);
+    position:relative;
+    transform:scale(0.92);transition:transform .25s cubic-bezier(.34,1.56,.64,1);
+    max-height:90vh;overflow-y:auto;
+  ">
+    <button onclick="closeTeenPattiModal()" style="
+      position:absolute;top:14px;right:18px;
+      background:none;border:none;color:#aaa;font-size:1.4rem;cursor:pointer;
+    ">✕</button>
+
+    <h2 style="color:#ffd200;font-size:1.5rem;margin-bottom:4px;">🎴 Teen Patti</h2>
+    <p style="color:#aaa;font-size:.85rem;margin-bottom:18px;">
+      Your 3-card hand vs the dealer. Best hand wins {{ teenpatti_win_multiplier }}x. Ties are refunded.
+    </p>
+
+    {% if user.is_authenticated %}
+      <div style="
+        background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);
+        border-radius:10px;padding:12px 16px;margin-bottom:18px;
+        display:flex;align-items:center;justify-content:space-between;
+      ">
+        <span style="color:#aaa;font-size:.88rem;">💰 Wallet Balance</span>
+        <span style="color:#4ade80;font-weight:700;font-size:1rem;" id="tpWalletBalance">
+          ₹{% if wallet %}{{ wallet.balance|floatformat:2 }}{% else %}0.00{% endif %}
+        </span>
+      </div>
+
+      <!-- Dealer hand -->
+      <div style="margin-bottom:14px;">
+        <div style="color:#aaa;font-size:.78rem;margin-bottom:6px;text-transform:uppercase;letter-spacing:1px;">Dealer</div>
+        <div style="display:flex;justify-content:center;gap:8px;" id="tpDealerCards">
+          <div class="tp-card" style="width:56px;height:78px;border-radius:8px;background:rgba(255,255,255,.08);border:2px dashed rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;color:#666;font-size:1.3rem;">?</div>
+          <div class="tp-card" style="width:56px;height:78px;border-radius:8px;background:rgba(255,255,255,.08);border:2px dashed rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;color:#666;font-size:1.3rem;">?</div>
+          <div class="tp-card" style="width:56px;height:78px;border-radius:8px;background:rgba(255,255,255,.08);border:2px dashed rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;color:#666;font-size:1.3rem;">?</div>
+        </div>
+        <div id="tpDealerHandType" style="color:#aaa;font-size:.78rem;margin-top:4px;height:16px;"></div>
+      </div>
+
+      <div id="tpResult" style="min-height:32px;font-size:1.05rem;font-weight:700;margin:10px 0;"></div>
+
+      <!-- Player hand -->
+      <div style="margin-bottom:18px;">
+        <div style="color:#aaa;font-size:.78rem;margin-bottom:6px;text-transform:uppercase;letter-spacing:1px;">You</div>
+        <div style="display:flex;justify-content:center;gap:8px;" id="tpPlayerCards">
+          <div class="tp-card" style="width:56px;height:78px;border-radius:8px;background:rgba(255,255,255,.08);border:2px dashed rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;color:#666;font-size:1.3rem;">?</div>
+          <div class="tp-card" style="width:56px;height:78px;border-radius:8px;background:rgba(255,255,255,.08);border:2px dashed rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;color:#666;font-size:1.3rem;">?</div>
+          <div class="tp-card" style="width:56px;height:78px;border-radius:8px;background:rgba(255,255,255,.08);border:2px dashed rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;color:#666;font-size:1.3rem;">?</div>
+        </div>
+        <div id="tpPlayerHandType" style="color:#aaa;font-size:.78rem;margin-top:4px;height:16px;"></div>
+      </div>
+
+      <div style="text-align:left;margin-bottom:18px;">
+        <label style="color:#aaa;font-size:.82rem;display:block;margin-bottom:6px;">
+          Bet Amount (₹{{ teenpatti_min_bet }} – ₹{{ teenpatti_max_bet }})
+        </label>
+        <input type="number" id="tpBetAmount" value="{{ teenpatti_min_bet }}"
+          min="{{ teenpatti_min_bet }}" max="{{ teenpatti_max_bet }}" step="1"
+          style="width:100%;padding:12px 14px;border-radius:10px;
+            border:1px solid rgba(255,210,0,.3);background:rgba(255,255,255,.06);
+            color:#fff;font-size:1rem;box-sizing:border-box;">
+      </div>
+
+      <button id="tpPlayBtn" onclick="playTeenPatti()" style="
+        width:100%;padding:14px;border:none;border-radius:14px;
+        background:linear-gradient(135deg,#f7971e,#ffd200);
+        color:#1a1a2e;font-size:1.1rem;font-weight:800;
+        cursor:pointer;box-shadow:0 4px 18px rgba(255,210,0,.45);
+        transition:transform .15s;
+      " onmouseover="this.style.transform='scale(1.03)'" onmouseout="this.style.transform='scale(1)'">
+        🎴 DEAL!
+      </button>
+    {% else %}
+      <a href="{% url 'login' %}" style="
+        display:block;width:100%;padding:14px;border:none;border-radius:12px;
+        background:linear-gradient(135deg,#f7971e,#ffd200);
+        color:#1a1a2e;font-size:1.1rem;font-weight:800;text-decoration:none;
+        box-shadow:0 4px 15px rgba(255,210,0,.4);
+      ">Login to Play 🎴</a>
+    {% endif %}
+
+    <p style="color:#666;font-size:.78rem;margin-top:16px;">18+ only · Gamble responsibly</p>
+  </div>
+</div>
+
+<script>
+const TP_RANK_LABELS = {11: 'J', 12: 'Q', 13: 'K', 14: 'A'};
+const TP_SUIT_SYMBOLS = {S: '♠', H: '♥', D: '♦', C: '♣'};
+const TP_RED_SUITS = ['H', 'D'];
+const TP_HAND_LABELS = {
+  trail: 'Trail (Three of a Kind)',
+  pure_sequence: 'Pure Sequence',
+  sequence: 'Sequence',
+  color: 'Color',
+  pair: 'Pair',
+  high_card: 'High Card',
+};
+
+function tpRankLabel(rank) { return TP_RANK_LABELS[rank] || String(rank); }
+
+function tpRenderHand(containerId, cards) {
+  const container = document.getElementById(containerId);
+  const cardEls = container.querySelectorAll('.tp-card');
+  cards.forEach((card, i) => {
+    const [rank, suit] = card;
+    const el = cardEls[i];
+    el.textContent = tpRankLabel(rank) + TP_SUIT_SYMBOLS[suit];
+    el.style.background = '#fff';
+    el.style.border = 'none';
+    el.style.color = TP_RED_SUITS.includes(suit) ? '#dc2626' : '#111';
+    el.style.fontWeight = '800';
+  });
+}
+
+function tpResetHand(containerId) {
+  const container = document.getElementById(containerId);
+  container.querySelectorAll('.tp-card').forEach(el => {
+    el.textContent = '?';
+    el.style.background = 'rgba(255,255,255,.08)';
+    el.style.border = '2px dashed rgba(255,255,255,.2)';
+    el.style.color = '#666';
+  });
+}
+
+function tpGetCsrf() {
+  const m = document.cookie.match(/(?:^|;\s*)csrftoken=([^;]+)/);
+  return m ? m[1] : '';
+}
+function tpShowModal(el) {
+  el.style.display = 'flex';
+  requestAnimationFrame(() => { requestAnimationFrame(() => {
+    el.style.opacity = '1';
+    const inner = el.querySelector('div');
+    if (inner) inner.style.transform = 'scale(1)';
+  }); });
+}
+function tpHideModal(el) {
+  el.style.opacity = '0';
+  const inner = el.querySelector('div');
+  if (inner) inner.style.transform = 'scale(0.92)';
+  setTimeout(() => { el.style.display = 'none'; }, 260);
+}
+function openTeenPattiModal() {
+  {% if not user.is_authenticated %}
+    window.location.href = '{% url "login" %}';
+    return;
+  {% endif %}
+  tpResetHand('tpDealerCards');
+  tpResetHand('tpPlayerCards');
+  document.getElementById('tpDealerHandType').textContent = '';
+  document.getElementById('tpPlayerHandType').textContent = '';
+  document.getElementById('tpResult').textContent = '';
+  tpShowModal(document.getElementById('teenPattiModal'));
+}
+function closeTeenPattiModal() {
+  tpHideModal(document.getElementById('teenPattiModal'));
+}
+
+async function playTeenPatti() {
+  {% if not user.is_authenticated %}
+    window.location.href = '{% url "login" %}';
+    return;
+  {% endif %}
+  const betInput = document.getElementById('tpBetAmount');
+  const playBtn  = document.getElementById('tpPlayBtn');
+  const resultEl = document.getElementById('tpResult');
+  const betAmount = parseFloat(betInput.value);
+
+  if (!betAmount || betAmount <= 0) { alert('Enter a valid bet amount.'); return; }
+
+  playBtn.disabled = true;
+  betInput.disabled = true;
+  resultEl.textContent = '';
+  tpResetHand('tpDealerCards');
+  tpResetHand('tpPlayerCards');
+  document.getElementById('tpDealerHandType').textContent = '';
+  document.getElementById('tpPlayerHandType').textContent = '';
+
+  let data;
+  try {
+    const res = await fetch('{% url "teenpatti_play" %}', {
+      method: 'POST',
+      headers: { 'X-CSRFToken': tpGetCsrf(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ bet_amount: betAmount })
+    });
+    data = await res.json();
+  } catch (e) {
+    alert('Network error — your bet was not placed. Please try again.');
+    playBtn.disabled = false; betInput.disabled = false;
+    return;
+  }
+
+  if (!data.success) {
+    if (data.needs_topup) {
+      const go = confirm('⚠️ ' + (data.error || 'Insufficient balance.') + '\n\nAdd money to your wallet now?');
+      if (go) window.location.href = '{% url "add_money" %}';
+    } else {
+      alert(data.error || 'Could not place bet');
+    }
+    playBtn.disabled = false; betInput.disabled = false;
+    return;
+  }
+
+  tpRenderHand('tpDealerCards', data.dealer_cards);
+  tpRenderHand('tpPlayerCards', data.player_cards);
+  document.getElementById('tpDealerHandType').textContent = TP_HAND_LABELS[data.dealer_hand_type] || data.dealer_hand_type;
+  document.getElementById('tpPlayerHandType').textContent = TP_HAND_LABELS[data.player_hand_type] || data.player_hand_type;
+
+  const balanceEl = document.getElementById('tpWalletBalance');
+  if (balanceEl) balanceEl.textContent = '₹' + Number(data.new_balance).toFixed(2);
+
+  if (data.outcome === 'win') {
+    resultEl.style.color = '#4ade80';
+    resultEl.textContent = `🎉 You win! +₹${data.payout.toFixed(2)}`;
+  } else if (data.outcome === 'push') {
+    resultEl.style.color = '#ffd200';
+    resultEl.textContent = `🤝 Tie — bet refunded (₹${data.payout.toFixed(2)})`;
+  } else {
+    resultEl.style.color = '#ef4444';
+    resultEl.textContent = `😔 Dealer wins — you lost ₹${betAmount.toFixed(2)}`;
+  }
+
+  playBtn.disabled = false;
+  betInput.disabled = false;
+}
+</script>
+{% endif %}

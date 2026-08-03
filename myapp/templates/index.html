@@ -513,17 +513,19 @@
         </a>
         {% endif %}
 
-        <!-- Teen Patti -->
-        <a href="https://www.teenpatti.com/" target="_blank" rel="noopener" class="game-card" data-cat="cards">
-          <span class="g-badge live">Live</span>
+        {% if teenpatti_active %}
+        <!-- Teen Patti — in-house, real win/lose game (vs virtual dealer) -->
+        <a href="javascript:void(0)" onclick="openTeenPattiModal()" class="game-card" data-cat="cards">
+          <span class="g-badge new">Play In-House</span>
           <img class="game-card-thumb" src="https://images.unsplash.com/photo-1541278107931-e006523892df?q=80&w=600&auto=format&fit=crop" alt="Teen Patti">
           <div class="game-card-body">
             <div class="game-card-cat">Card Games</div>
             <div class="game-card-title">Teen Patti</div>
-            <div class="game-card-desc">India's most popular 3-card betting game. Blind, Seen & Sideshow rules.</div>
+            <div class="game-card-desc">Your 3-card hand vs the dealer — win {{ teenpatti_win_multiplier }}x, right here on Darkshadow.</div>
             <span class="game-card-play">Play Now</span>
           </div>
         </a>
+        {% endif %}
 
         <!-- Rummy -->
         <a href="https://www.rummycircle.com/" target="_blank" rel="noopener" class="game-card" data-cat="cards">
@@ -800,6 +802,7 @@
   {% include 'andarbahar_modal.html' %}
   {% include 'roulette_modal.html' %}
   {% include 'sicbo_modal.html' %}
+  {% include 'teenpatti_modal.html' %}
 
 <script>
   // ── Popup

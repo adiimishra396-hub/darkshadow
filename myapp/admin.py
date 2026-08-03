@@ -6,7 +6,7 @@ from .models import (
     CoinFlipSettings, CoinFlipBet, DiceSettings, DiceBet,
     CardHighLowSettings, CardHighLowRound,
     AndarBaharSettings, AndarBaharBet, RouletteSettings, RouletteBet,
-    SicBoSettings, SicBoBet,
+    SicBoSettings, SicBoBet, TeenPattiSettings, TeenPattiBet,
 )
 
 
@@ -186,5 +186,22 @@ class SicBoSettingsAdmin(admin.ModelAdmin):
 class SicBoBetAdmin(admin.ModelAdmin):
     list_display = ('user', 'bet_amount', 'choice', 'die1', 'die2', 'die3', 'total', 'won', 'multiplier', 'payout', 'created_at')
     list_filter = ('won', 'choice')
+    search_fields = ('user__username',)
+    readonly_fields = ('created_at',)
+
+
+@admin.register(TeenPattiSettings)
+class TeenPattiSettingsAdmin(admin.ModelAdmin):
+    list_display = ('win_multiplier', 'min_bet', 'max_bet', 'is_active', 'updated_at')
+    readonly_fields = ('updated_at',)
+
+    def has_add_permission(self, request):
+        return not TeenPattiSettings.objects.exists()
+
+
+@admin.register(TeenPattiBet)
+class TeenPattiBetAdmin(admin.ModelAdmin):
+    list_display = ('user', 'bet_amount', 'player_hand_type', 'dealer_hand_type', 'outcome', 'payout', 'created_at')
+    list_filter = ('outcome', 'player_hand_type')
     search_fields = ('user__username',)
     readonly_fields = ('created_at',)

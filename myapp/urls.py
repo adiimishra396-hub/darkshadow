@@ -51,4 +51,7 @@ urlpatterns = [
 
     # Sic Bo
     path('sicbo/play/', views.sicbo_play, name='sicbo_play'),
+
+    # Teen Patti
+    path('teenpatti/play/', views.teenpatti_play, name='teenpatti_play'),
 ]
