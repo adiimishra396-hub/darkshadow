@@ -1,0 +1,227 @@
+{% comment %}
+  Poker — real win/lose game, wallet-integrated. Modal + JS.
+  Simplified single-player: player's 5-card hand vs a virtual dealer,
+  single shuffled deck. NOT real Texas Hold'em (no community cards or
+  betting rounds) — an honest simplification, same spirit as Teen Patti.
+  Requires context: wallet, poker_active, poker_min_bet, poker_max_bet,
+                    poker_win_multiplier
+  Opened via openPokerModal() from a game-card in the All Games section.
+{% endcomment %}
+
+{% if poker_active %}
+<div id="pokerModal" style="
+  display:none;position:fixed;inset:0;z-index:10011;
+  background:rgba(0,0,0,.8);backdrop-filter:blur(6px);
+  align-items:center;justify-content:center;
+  opacity:0;transition:opacity .25s ease;
+">
+  <div style="
+    background:linear-gradient(160deg,#1a1a2e 0%,#16213e 60%,#0f3460 100%);
+    border:1px solid rgba(255,210,0,.3);border-radius:20px;
+    padding:32px 30px;max-width:480px;width:92%;text-align:center;
+    box-shadow:0 0 60px rgba(255,210,0,.15);
+    position:relative;
+    transform:scale(0.92);transition:transform .25s cubic-bezier(.34,1.56,.64,1);
+    max-height:90vh;overflow-y:auto;
+  ">
+    <button onclick="closePokerModal()" style="
+      position:absolute;top:14px;right:18px;
+      background:none;border:none;color:#aaa;font-size:1.4rem;cursor:pointer;
+    ">✕</button>
+
+    <h2 style="color:#ffd200;font-size:1.5rem;margin-bottom:4px;">♣ Poker</h2>
+    <p style="color:#aaa;font-size:.85rem;margin-bottom:18px;">
+      Your 5-card hand vs the dealer. Best hand wins {{ poker_win_multiplier }}x. Ties are refunded.
+    </p>
+
+    {% if user.is_authenticated %}
+      <div style="
+        background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);
+        border-radius:10px;padding:12px 16px;margin-bottom:18px;
+        display:flex;align-items:center;justify-content:space-between;
+      ">
+        <span style="color:#aaa;font-size:.88rem;">💰 Wallet Balance</span>
+        <span style="color:#4ade80;font-weight:700;font-size:1rem;" id="pkWalletBalance">
+          ₹{% if wallet %}{{ wallet.balance|floatformat:2 }}{% else %}0.00{% endif %}
+        </span>
+      </div>
+
+      <!-- Dealer hand -->
+      <div style="margin-bottom:14px;">
+        <div style="color:#aaa;font-size:.78rem;margin-bottom:6px;text-transform:uppercase;letter-spacing:1px;">Dealer</div>
+        <div style="display:flex;justify-content:center;gap:6px;flex-wrap:wrap;min-height:74px;" id="pkDealerCards"></div>
+        <div id="pkDealerHandType" style="color:#aaa;font-size:.78rem;margin-top:4px;height:16px;"></div>
+      </div>
+
+      <div id="pkResult" style="min-height:32px;font-size:1.05rem;font-weight:700;margin:10px 0;"></div>
+
+      <!-- Player hand -->
+      <div style="margin-bottom:18px;">
+        <div style="color:#aaa;font-size:.78rem;margin-bottom:6px;text-transform:uppercase;letter-spacing:1px;">You</div>
+        <div style="display:flex;justify-content:center;gap:6px;flex-wrap:wrap;min-height:74px;" id="pkPlayerCards"></div>
+        <div id="pkPlayerHandType" style="color:#aaa;font-size:.78rem;margin-top:4px;height:16px;"></div>
+      </div>
+
+      <div style="text-align:left;margin-bottom:18px;">
+        <label style="color:#aaa;font-size:.82rem;display:block;margin-bottom:6px;">
+          Bet Amount (₹{{ poker_min_bet }} – ₹{{ poker_max_bet }})
+        </label>
+        <input type="number" id="pkBetAmount" value="{{ poker_min_bet }}"
+          min="{{ poker_min_bet }}" max="{{ poker_max_bet }}" step="1"
+          style="width:100%;padding:12px 14px;border-radius:10px;
+            border:1px solid rgba(255,210,0,.3);background:rgba(255,255,255,.06);
+            color:#fff;font-size:1rem;box-sizing:border-box;">
+      </div>
+
+      <button id="pkPlayBtn" onclick="playPoker()" style="
+        width:100%;padding:14px;border:none;border-radius:14px;
+        background:linear-gradient(135deg,#f7971e,#ffd200);
+        color:#1a1a2e;font-size:1.1rem;font-weight:800;
+        cursor:pointer;box-shadow:0 4px 18px rgba(255,210,0,.45);
+      ">♣ DEAL!</button>
+    {% else %}
+      <a href="{% url 'login' %}" style="
+        display:block;width:100%;padding:14px;border:none;border-radius:12px;
+        background:linear-gradient(135deg,#f7971e,#ffd200);
+        color:#1a1a2e;font-size:1.1rem;font-weight:800;text-decoration:none;
+        box-shadow:0 4px 15px rgba(255,210,0,.4);
+      ">Login to Play ♣</a>
+    {% endif %}
+
+    <p style="color:#666;font-size:.78rem;margin-top:16px;">18+ only · Gamble responsibly</p>
+  </div>
+</div>
+
+<script>
+const PK_RANK_LABELS = {11: 'J', 12: 'Q', 13: 'K', 14: 'A'};
+const PK_SUIT_SYMBOLS = {S: '♠', H: '♥', D: '♦', C: '♣'};
+const PK_RED_SUITS = ['H', 'D'];
+const PK_HAND_LABELS = {
+  royal_flush: 'Royal Flush',
+  straight_flush: 'Straight Flush',
+  four_of_a_kind: 'Four of a Kind',
+  full_house: 'Full House',
+  flush: 'Flush',
+  straight: 'Straight',
+  three_of_a_kind: 'Three of a Kind',
+  two_pair: 'Two Pair',
+  pair: 'Pair',
+  high_card: 'High Card',
+};
+
+function pkCardEl(rank, suit) {
+  const el = document.createElement('div');
+  const label = PK_RANK_LABELS[rank] || String(rank);
+  el.textContent = label + PK_SUIT_SYMBOLS[suit];
+  el.style.cssText = 'width:46px;height:64px;border-radius:7px;background:#fff;display:flex;align-items:center;justify-content:center;font-size:1.05rem;font-weight:800;color:' + (PK_RED_SUITS.includes(suit) ? '#dc2626' : '#111');
+  return el;
+}
+function pkRenderCards(containerId, cards) {
+  const container = document.getElementById(containerId);
+  container.innerHTML = '';
+  cards.forEach(([rank, suit]) => container.appendChild(pkCardEl(rank, suit)));
+}
+
+function pkGetCsrf() {
+  const m = document.cookie.match(/(?:^|;\s*)csrftoken=([^;]+)/);
+  return m ? m[1] : '';
+}
+function pkShowModal(el) {
+  el.style.display = 'flex';
+  requestAnimationFrame(() => { requestAnimationFrame(() => {
+    el.style.opacity = '1';
+    const inner = el.querySelector('div');
+    if (inner) inner.style.transform = 'scale(1)';
+  }); });
+}
+function pkHideModal(el) {
+  el.style.opacity = '0';
+  const inner = el.querySelector('div');
+  if (inner) inner.style.transform = 'scale(0.92)';
+  setTimeout(() => { el.style.display = 'none'; }, 260);
+}
+function openPokerModal() {
+  {% if not user.is_authenticated %}
+    window.location.href = '{% url "login" %}';
+    return;
+  {% endif %}
+  document.getElementById('pkDealerCards').innerHTML = '';
+  document.getElementById('pkPlayerCards').innerHTML = '';
+  document.getElementById('pkDealerHandType').textContent = '';
+  document.getElementById('pkPlayerHandType').textContent = '';
+  document.getElementById('pkResult').textContent = '';
+  pkShowModal(document.getElementById('pokerModal'));
+}
+function closePokerModal() {
+  pkHideModal(document.getElementById('pokerModal'));
+}
+
+async function playPoker() {
+  {% if not user.is_authenticated %}
+    window.location.href = '{% url "login" %}';
+    return;
+  {% endif %}
+  const betInput = document.getElementById('pkBetAmount');
+  const playBtn  = document.getElementById('pkPlayBtn');
+  const resultEl = document.getElementById('pkResult');
+  const betAmount = parseFloat(betInput.value);
+
+  if (!betAmount || betAmount <= 0) { alert('Enter a valid bet amount.'); return; }
+
+  playBtn.disabled = true;
+  betInput.disabled = true;
+  resultEl.textContent = '';
+  document.getElementById('pkDealerCards').innerHTML = '';
+  document.getElementById('pkPlayerCards').innerHTML = '';
+  document.getElementById('pkDealerHandType').textContent = '';
+  document.getElementById('pkPlayerHandType').textContent = '';
+
+  let data;
+  try {
+    const res = await fetch('{% url "poker_play" %}', {
+      method: 'POST',
+      headers: { 'X-CSRFToken': pkGetCsrf(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ bet_amount: betAmount })
+    });
+    data = await res.json();
+  } catch (e) {
+    alert('Network error — your bet was not placed. Please try again.');
+    playBtn.disabled = false; betInput.disabled = false;
+    return;
+  }
+
+  if (!data.success) {
+    if (data.needs_topup) {
+      const go = confirm('⚠️ ' + (data.error || 'Insufficient balance.') + '\n\nAdd money to your wallet now?');
+      if (go) window.location.href = '{% url "add_money" %}';
+    } else {
+      alert(data.error || 'Could not place bet');
+    }
+    playBtn.disabled = false; betInput.disabled = false;
+    return;
+  }
+
+  pkRenderCards('pkDealerCards', data.dealer_cards);
+  pkRenderCards('pkPlayerCards', data.player_cards);
+  document.getElementById('pkDealerHandType').textContent = PK_HAND_LABELS[data.dealer_hand_type] || data.dealer_hand_type;
+  document.getElementById('pkPlayerHandType').textContent = PK_HAND_LABELS[data.player_hand_type] || data.player_hand_type;
+
+  const balanceEl = document.getElementById('pkWalletBalance');
+  if (balanceEl) balanceEl.textContent = '₹' + Number(data.new_balance).toFixed(2);
+
+  if (data.outcome === 'win') {
+    resultEl.style.color = '#4ade80';
+    resultEl.textContent = `🎉 You win! +₹${data.payout.toFixed(2)}`;
+  } else if (data.outcome === 'push') {
+    resultEl.style.color = '#ffd200';
+    resultEl.textContent = `🤝 Tie — bet refunded (₹${data.payout.toFixed(2)})`;
+  } else {
+    resultEl.style.color = '#ef4444';
+    resultEl.textContent = `😔 Dealer wins — you lost ₹${betAmount.toFixed(2)}`;
+  }
+
+  playBtn.disabled = false;
+  betInput.disabled = false;
+}
+</script>
+{% endif %}

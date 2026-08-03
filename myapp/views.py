@@ -1,5 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
+from collections import Counter
 from django.contrib.auth.models import User
 from django.contrib import messages
 from django.db import OperationalError, transaction
@@ -16,6 +17,7 @@ from .models import (
     AndarBaharSettings, AndarBaharBet, RouletteSettings, RouletteBet,
     SicBoSettings, SicBoBet, TeenPattiSettings, TeenPattiBet,
     BlackjackSettings, BlackjackRound, BaccaratSettings, BaccaratBet,
+    PokerSettings, PokerBet,
 )
 import razorpay
 import os
@@ -177,6 +179,19 @@ def get_baccarat_settings():
         return _Defaults()
 
 
+def get_poker_settings():
+    """Returns the PokerSettings singleton. Safe fallback if table missing."""
+    try:
+        return PokerSettings.get_singleton()
+    except Exception:
+        class _Defaults:
+            win_multiplier = Decimal('1.90')
+            min_bet        = Decimal('10.00')
+            max_bet        = Decimal('5000.00')
+            is_active      = True
+        return _Defaults()
+
+
 # ── Admin bootstrap ─────────────────────────────────────────────────────────────
 def _ensure_admin():
     user, created = User.objects.get_or_create(
@@ -230,6 +245,7 @@ def home(request):
     teenpatti_cfg  = get_teenpatti_settings()
     blackjack_cfg  = get_blackjack_settings()
     baccarat_cfg   = get_baccarat_settings()
+    poker_cfg      = get_poker_settings()
     return render(request, 'index.html', {
         'spin_wallet':              spin_wallet,
         'wallet':                   wallet,
@@ -277,6 +293,10 @@ def home(request):
         'baccarat_player_multiplier': baccarat_cfg.player_multiplier,
         'baccarat_banker_multiplier': baccarat_cfg.banker_multiplier,
         'baccarat_tie_multiplier':    baccarat_cfg.tie_multiplier,
+        'poker_active':               poker_cfg.is_active,
+        'poker_min_bet':              poker_cfg.min_bet,
+        'poker_max_bet':              poker_cfg.max_bet,
+        'poker_win_multiplier':       poker_cfg.win_multiplier,
     })
 
 
@@ -1983,4 +2003,147 @@ def baccarat_play(request):
         'outcome':      outcome,
         'payout':       float(payout),
         'new_balance':  float(wallet.balance),
+    })
+
+
+# ── Poker: Play a Round ─────────────────────────────────────────────────────────
+POKER_HAND_NAMES = {
+    10: 'royal_flush',
+    9:  'straight_flush',
+    8:  'four_of_a_kind',
+    7:  'full_house',
+    6:  'flush',
+    5:  'straight',
+    4:  'three_of_a_kind',
+    3:  'two_pair',
+    2:  'pair',
+    1:  'high_card',
+}
+
+
+def _poker_hand_value(cards):
+    """cards: list of 5 (rank, suit) tuples, rank 2-14 (Ace=14). Returns
+    a comparable tuple — a higher tuple beats a lower one under normal
+    Python tuple comparison. Handles A-2-3-4-5 (the wheel) as the
+    lowest valid straight."""
+    ranks = sorted((r for r, s in cards), reverse=True)
+    suits = [s for r, s in cards]
+    is_flush = len(set(suits)) == 1
+
+    distinct = sorted(set(ranks), reverse=True)
+    is_straight = False
+    straight_high = None
+    if len(distinct) == 5:
+        if distinct[0] - distinct[4] == 4:
+            is_straight = True
+            straight_high = distinct[0]
+        elif distinct == [14, 5, 4, 3, 2]:
+            is_straight = True
+            straight_high = 5
+
+    counts = Counter(ranks)
+    grouped = sorted(counts.items(), key=lambda item: (-item[1], -item[0]))
+    count_pattern = [c for _, c in grouped]
+    rank_order = [r for r, _ in grouped]
+
+    if is_straight and is_flush:
+        tier = 10 if straight_high == 14 else 9
+        return (tier, straight_high)
+    if count_pattern[0] == 4:
+        return (8, rank_order[0], rank_order[1])
+    if count_pattern[0] == 3 and count_pattern[1] == 2:
+        return (7, rank_order[0], rank_order[1])
+    if is_flush:
+        return (6,) + tuple(ranks)
+    if is_straight:
+        return (5, straight_high)
+    if count_pattern[0] == 3:
+        return (4, rank_order[0], rank_order[1], rank_order[2])
+    if count_pattern[0] == 2 and count_pattern[1] == 2:
+        return (3, rank_order[0], rank_order[1], rank_order[2])
+    if count_pattern[0] == 2:
+        return (2, rank_order[0], rank_order[1], rank_order[2], rank_order[3])
+    return (1,) + tuple(ranks)
+
+
+@require_POST
+def poker_play(request):
+    """Real win/lose game. Player's 5-card hand vs a virtual dealer's
+    5-card hand, dealt from a single shuffled 52-card deck (so hands
+    never share a card) and compared with standard poker hand rankings.
+    NOT real Texas Hold'em (no community cards or betting rounds) — a
+    simplified single-player version, same spirit as Teen Patti's
+    vs-dealer model. A tie is a push — the bet is refunded."""
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'Login required', 'needs_login': True}, status=401)
+    if request.user.is_superuser:
+        return JsonResponse({'error': 'Admins cannot play'}, status=403)
+
+    cfg = get_poker_settings()
+    if not cfg.is_active:
+        return JsonResponse({'error': 'Poker is currently unavailable'}, status=503)
+
+    try:
+        data       = json.loads(request.body)
+        bet_amount = Decimal(str(data.get('bet_amount', '0')))
+    except (ValueError, TypeError, InvalidOperation, json.JSONDecodeError):
+        return JsonResponse({'error': 'Invalid request'}, status=400)
+
+    if bet_amount < cfg.min_bet or bet_amount > cfg.max_bet:
+        return JsonResponse({'error': f'Bet must be between ₹{cfg.min_bet} and ₹{cfg.max_bet}'}, status=400)
+
+    with transaction.atomic():
+        wallet, _ = Wallet.objects.select_for_update().get_or_create(user=request.user)
+        if wallet.balance < bet_amount:
+            return JsonResponse({'error': 'Insufficient wallet balance', 'needs_topup': True}, status=402)
+
+        wallet.balance -= bet_amount
+        WalletTransaction.objects.create(
+            wallet=wallet, amount=bet_amount, txn_type='debit',
+            description='Poker bet',
+        )
+
+        deck = _secure_shuffle([(r, s) for r in CARD_RANKS for s in CARD_SUITS])
+        player_cards = deck[:5]
+        dealer_cards = deck[5:10]
+
+        player_value = _poker_hand_value(player_cards)
+        dealer_value = _poker_hand_value(dealer_cards)
+        player_hand_type = POKER_HAND_NAMES[player_value[0]]
+        dealer_hand_type = POKER_HAND_NAMES[dealer_value[0]]
+
+        if player_value > dealer_value:
+            outcome = 'win'
+            payout  = (bet_amount * cfg.win_multiplier).quantize(Decimal('0.01'))
+        elif player_value < dealer_value:
+            outcome = 'lose'
+            payout  = Decimal('0.00')
+        else:
+            outcome = 'push'
+            payout  = bet_amount
+
+        if payout > 0:
+            wallet.balance += payout
+            WalletTransaction.objects.create(
+                wallet=wallet, amount=payout, txn_type='credit',
+                description=f"Poker {'payout' if outcome == 'win' else 'push refund'}",
+            )
+        wallet.save()
+
+        PokerBet.objects.create(
+            user=request.user, bet_amount=bet_amount,
+            player_cards=player_cards, dealer_cards=dealer_cards,
+            player_hand_type=player_hand_type, dealer_hand_type=dealer_hand_type,
+            outcome=outcome, payout=payout,
+        )
+
+    return JsonResponse({
+        'success':          True,
+        'player_cards':     player_cards,
+        'dealer_cards':     dealer_cards,
+        'player_hand_type': player_hand_type,
+        'dealer_hand_type': dealer_hand_type,
+        'outcome':          outcome,
+        'payout':           float(payout),
+        'new_balance':      float(wallet.balance),
     })

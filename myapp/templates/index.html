@@ -539,16 +539,19 @@
           </div>
         </a>
 
-        <!-- Poker -->
-        <a href="https://www.pokerbaazi.com/" target="_blank" rel="noopener" class="game-card" data-cat="cards">
+        {% if poker_active %}
+        <!-- Poker — in-house, real win/lose game (5-card hand vs virtual dealer, not Hold'em) -->
+        <a href="javascript:void(0)" onclick="openPokerModal()" class="game-card" data-cat="cards">
+          <span class="g-badge new">Play In-House</span>
           <img class="game-card-thumb" src="https://images.unsplash.com/photo-1601597111158-2fceff292cdc?q=80&w=600&auto=format&fit=crop" alt="Poker">
           <div class="game-card-body">
             <div class="game-card-cat">Card Games</div>
-            <div class="game-card-title">Texas Hold'em Poker</div>
-            <div class="game-card-desc">The world's most famous poker variant. Bluff, bet and take the pot.</div>
+            <div class="game-card-title">5-Card Poker</div>
+            <div class="game-card-desc">Your 5-card hand vs the dealer — win {{ poker_win_multiplier }}x, right here on Darkshadow.</div>
             <span class="game-card-play">Play Now</span>
           </div>
         </a>
+        {% endif %}
 
         {% if andarbahar_active %}
         <!-- Andar Bahar — in-house, real win/lose game -->
@@ -811,6 +814,7 @@
   {% include 'teenpatti_modal.html' %}
   {% include 'blackjack_modal.html' %}
   {% include 'baccarat_modal.html' %}
+  {% include 'poker_modal.html' %}
 
 <script>
   // ── Popup

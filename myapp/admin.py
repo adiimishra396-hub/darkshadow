@@ -8,6 +8,7 @@ from .models import (
     AndarBaharSettings, AndarBaharBet, RouletteSettings, RouletteBet,
     SicBoSettings, SicBoBet, TeenPattiSettings, TeenPattiBet,
     BlackjackSettings, BlackjackRound, BaccaratSettings, BaccaratBet,
+    PokerSettings, PokerBet,
 )
 
 
@@ -238,5 +239,22 @@ class BaccaratSettingsAdmin(admin.ModelAdmin):
 class BaccaratBetAdmin(admin.ModelAdmin):
     list_display = ('user', 'bet_amount', 'bet_side', 'player_total', 'banker_total', 'winner', 'outcome', 'payout', 'created_at')
     list_filter = ('outcome', 'bet_side', 'winner')
+    search_fields = ('user__username',)
+    readonly_fields = ('created_at',)
+
+
+@admin.register(PokerSettings)
+class PokerSettingsAdmin(admin.ModelAdmin):
+    list_display = ('win_multiplier', 'min_bet', 'max_bet', 'is_active', 'updated_at')
+    readonly_fields = ('updated_at',)
+
+    def has_add_permission(self, request):
+        return not PokerSettings.objects.exists()
+
+
+@admin.register(PokerBet)
+class PokerBetAdmin(admin.ModelAdmin):
+    list_display = ('user', 'bet_amount', 'player_hand_type', 'dealer_hand_type', 'outcome', 'payout', 'created_at')
+    list_filter = ('outcome', 'player_hand_type')
     search_fields = ('user__username',)
     readonly_fields = ('created_at',)

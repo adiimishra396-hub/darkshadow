@@ -62,4 +62,7 @@ urlpatterns = [
 
     # Baccarat
     path('baccarat/play/', views.baccarat_play, name='baccarat_play'),
+
+    # Poker
+    path('poker/play/', views.poker_play, name='poker_play'),
 ]
