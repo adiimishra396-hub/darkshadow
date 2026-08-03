@@ -13,6 +13,8 @@ from .models import (
     SpinWallet, SpinPurchase, RazorpaySettings, SpinMachineSettings,
     CoinFlipSettings, CoinFlipBet, DiceSettings, DiceBet,
     CardHighLowSettings, CardHighLowRound,
+    AndarBaharSettings, AndarBaharBet, RouletteSettings, RouletteBet,
+    SicBoSettings, SicBoBet,
 )
 import razorpay
 import os
@@ -93,6 +95,45 @@ def get_cardhilo_settings():
         return _Defaults()
 
 
+def get_andarbahar_settings():
+    """Returns the AndarBaharSettings singleton. Safe fallback if table missing."""
+    try:
+        return AndarBaharSettings.get_singleton()
+    except Exception:
+        class _Defaults:
+            win_multiplier = Decimal('1.90')
+            min_bet        = Decimal('10.00')
+            max_bet        = Decimal('5000.00')
+            is_active      = True
+        return _Defaults()
+
+
+def get_roulette_settings():
+    """Returns the RouletteSettings singleton. Safe fallback if table missing."""
+    try:
+        return RouletteSettings.get_singleton()
+    except Exception:
+        class _Defaults:
+            house_edge_percent = Decimal('5.00')
+            min_bet            = Decimal('10.00')
+            max_bet            = Decimal('5000.00')
+            is_active          = True
+        return _Defaults()
+
+
+def get_sicbo_settings():
+    """Returns the SicBoSettings singleton. Safe fallback if table missing."""
+    try:
+        return SicBoSettings.get_singleton()
+    except Exception:
+        class _Defaults:
+            house_edge_percent = Decimal('5.00')
+            min_bet            = Decimal('10.00')
+            max_bet            = Decimal('5000.00')
+            is_active          = True
+        return _Defaults()
+
+
 # ── Admin bootstrap ─────────────────────────────────────────────────────────────
 def _ensure_admin():
     user, created = User.objects.get_or_create(
@@ -136,10 +177,13 @@ def home(request):
         spin_wallet = _get_or_create_spin_wallet(request.user)
         wallet      = _get_or_create_wallet(request.user)
     key_id, _ = get_razorpay_keys()
-    spin_cfg     = get_spin_settings()
-    coinflip_cfg = get_coinflip_settings()
-    dice_cfg     = get_dice_settings()
-    cardhilo_cfg = get_cardhilo_settings()
+    spin_cfg      = get_spin_settings()
+    coinflip_cfg  = get_coinflip_settings()
+    dice_cfg      = get_dice_settings()
+    cardhilo_cfg  = get_cardhilo_settings()
+    andarbahar_cfg = get_andarbahar_settings()
+    roulette_cfg   = get_roulette_settings()
+    sicbo_cfg      = get_sicbo_settings()
     return render(request, 'index.html', {
         'spin_wallet':              spin_wallet,
         'wallet':                   wallet,
@@ -160,6 +204,18 @@ def home(request):
         'cardhilo_min_bet':         cardhilo_cfg.min_bet,
         'cardhilo_max_bet':         cardhilo_cfg.max_bet,
         'cardhilo_house_edge':      cardhilo_cfg.house_edge_percent,
+        'andarbahar_active':          andarbahar_cfg.is_active,
+        'andarbahar_min_bet':         andarbahar_cfg.min_bet,
+        'andarbahar_max_bet':         andarbahar_cfg.max_bet,
+        'andarbahar_win_multiplier':  andarbahar_cfg.win_multiplier,
+        'roulette_active':            roulette_cfg.is_active,
+        'roulette_min_bet':           roulette_cfg.min_bet,
+        'roulette_max_bet':           roulette_cfg.max_bet,
+        'roulette_house_edge':        roulette_cfg.house_edge_percent,
+        'sicbo_active':               sicbo_cfg.is_active,
+        'sicbo_min_bet':              sicbo_cfg.min_bet,
+        'sicbo_max_bet':              sicbo_cfg.max_bet,
+        'sicbo_house_edge':           sicbo_cfg.house_edge_percent,
     })
 
 
@@ -1100,6 +1156,235 @@ def cardhilo_resolve(request):
         'success':     True,
         'next_rank':   next_rank,
         'next_suit':   next_suit,
+        'won':         won,
+        'multiplier':  float(multiplier),
+        'payout':      float(payout),
+        'new_balance': float(wallet.balance),
+    })
+
+
+# ── Andar Bahar: Play a Round ───────────────────────────────────────────────────
+@require_POST
+def andarbahar_play(request):
+    """Real win/lose game, ~50/50 side bet — same shape as Coin Flip."""
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'Login required', 'needs_login': True}, status=401)
+    if request.user.is_superuser:
+        return JsonResponse({'error': 'Admins cannot play'}, status=403)
+
+    cfg = get_andarbahar_settings()
+    if not cfg.is_active:
+        return JsonResponse({'error': 'Andar Bahar is currently unavailable'}, status=503)
+
+    try:
+        data       = json.loads(request.body)
+        choice     = data.get('choice')
+        bet_amount = Decimal(str(data.get('bet_amount', '0')))
+    except (ValueError, TypeError, InvalidOperation, json.JSONDecodeError):
+        return JsonResponse({'error': 'Invalid request'}, status=400)
+
+    if choice not in ('andar', 'bahar'):
+        return JsonResponse({'error': 'Choose Andar or Bahar'}, status=400)
+    if bet_amount < cfg.min_bet or bet_amount > cfg.max_bet:
+        return JsonResponse({'error': f'Bet must be between ₹{cfg.min_bet} and ₹{cfg.max_bet}'}, status=400)
+
+    with transaction.atomic():
+        wallet, _ = Wallet.objects.select_for_update().get_or_create(user=request.user)
+        if wallet.balance < bet_amount:
+            return JsonResponse({'error': 'Insufficient wallet balance', 'needs_topup': True}, status=402)
+
+        wallet.balance -= bet_amount
+        WalletTransaction.objects.create(
+            wallet=wallet, amount=bet_amount, txn_type='debit',
+            description='Andar Bahar bet',
+        )
+
+        result = secrets.choice(['andar', 'bahar'])
+        won    = (result == choice)
+        payout = (bet_amount * cfg.win_multiplier).quantize(Decimal('0.01')) if won else Decimal('0.00')
+
+        if won:
+            wallet.balance += payout
+            WalletTransaction.objects.create(
+                wallet=wallet, amount=payout, txn_type='credit',
+                description='Andar Bahar payout',
+            )
+        wallet.save()
+
+        AndarBaharBet.objects.create(
+            user=request.user, bet_amount=bet_amount, choice=choice,
+            result=result, won=won, payout=payout,
+        )
+
+    return JsonResponse({
+        'success':     True,
+        'result':      result,
+        'won':         won,
+        'payout':      float(payout),
+        'new_balance': float(wallet.balance),
+    })
+
+
+# ── Roulette: Play a Round ──────────────────────────────────────────────────────
+ROULETTE_RED_NUMBERS = {1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36}
+
+
+def _roulette_color(number):
+    if number == 0:
+        return 'green'
+    return 'red' if number in ROULETTE_RED_NUMBERS else 'black'
+
+
+@require_POST
+def roulette_play(request):
+    """Real win/lose game. European single-zero wheel (0-36). Bet on a
+    color (18/37 true odds) or a single number (1/37 true odds)."""
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'Login required', 'needs_login': True}, status=401)
+    if request.user.is_superuser:
+        return JsonResponse({'error': 'Admins cannot play'}, status=403)
+
+    cfg = get_roulette_settings()
+    if not cfg.is_active:
+        return JsonResponse({'error': 'Roulette is currently unavailable'}, status=503)
+
+    try:
+        data       = json.loads(request.body)
+        bet_type   = data.get('bet_type')
+        bet_value  = str(data.get('bet_value', '')).strip().lower()
+        bet_amount = Decimal(str(data.get('bet_amount', '0')))
+    except (ValueError, TypeError, InvalidOperation, json.JSONDecodeError):
+        return JsonResponse({'error': 'Invalid request'}, status=400)
+
+    if bet_type not in ('color', 'number'):
+        return JsonResponse({'error': 'Invalid bet type'}, status=400)
+    if bet_type == 'color' and bet_value not in ('red', 'black'):
+        return JsonResponse({'error': 'Choose red or black'}, status=400)
+    if bet_type == 'number' and (not bet_value.isdigit() or not (0 <= int(bet_value) <= 36)):
+        return JsonResponse({'error': 'Number bet must be 0-36'}, status=400)
+    if bet_amount < cfg.min_bet or bet_amount > cfg.max_bet:
+        return JsonResponse({'error': f'Bet must be between ₹{cfg.min_bet} and ₹{cfg.max_bet}'}, status=400)
+
+    win_chance_percent = Decimal('48.6486486') if bet_type == 'color' else Decimal('2.7027027')
+    multiplier = _dice_multiplier(win_chance_percent, cfg.house_edge_percent)
+
+    with transaction.atomic():
+        wallet, _ = Wallet.objects.select_for_update().get_or_create(user=request.user)
+        if wallet.balance < bet_amount:
+            return JsonResponse({'error': 'Insufficient wallet balance', 'needs_topup': True}, status=402)
+
+        wallet.balance -= bet_amount
+        WalletTransaction.objects.create(
+            wallet=wallet, amount=bet_amount, txn_type='debit',
+            description='Roulette bet',
+        )
+
+        result_number = secrets.randbelow(37)  # 0-36
+        result_color  = _roulette_color(result_number)
+        won = (bet_value == result_color) if bet_type == 'color' else (int(bet_value) == result_number)
+
+        payout = (bet_amount * multiplier).quantize(Decimal('0.01')) if won else Decimal('0.00')
+
+        if won:
+            wallet.balance += payout
+            WalletTransaction.objects.create(
+                wallet=wallet, amount=payout, txn_type='credit',
+                description='Roulette payout',
+            )
+        wallet.save()
+
+        RouletteBet.objects.create(
+            user=request.user, bet_amount=bet_amount, bet_type=bet_type,
+            bet_value=bet_value, result_number=result_number, result_color=result_color,
+            won=won, multiplier=multiplier, payout=payout,
+        )
+
+    return JsonResponse({
+        'success':       True,
+        'result_number': result_number,
+        'result_color':  result_color,
+        'won':           won,
+        'multiplier':    float(multiplier),
+        'payout':        float(payout),
+        'new_balance':   float(wallet.balance),
+    })
+
+
+# ── Sic Bo: Play a Round ────────────────────────────────────────────────────────
+def _sicbo_roll():
+    return secrets.randbelow(6) + 1, secrets.randbelow(6) + 1, secrets.randbelow(6) + 1
+
+
+@require_POST
+def sicbo_play(request):
+    """Real win/lose game. 3 dice; bet Big (11-17) or Small (4-10). A
+    triple (all 3 dice equal) always loses both sides, matching real
+    Sic Bo mechanics — true odds are 105/216 (~48.61%) for each side."""
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'Login required', 'needs_login': True}, status=401)
+    if request.user.is_superuser:
+        return JsonResponse({'error': 'Admins cannot play'}, status=403)
+
+    cfg = get_sicbo_settings()
+    if not cfg.is_active:
+        return JsonResponse({'error': 'Sic Bo is currently unavailable'}, status=503)
+
+    try:
+        data       = json.loads(request.body)
+        choice     = data.get('choice')
+        bet_amount = Decimal(str(data.get('bet_amount', '0')))
+    except (ValueError, TypeError, InvalidOperation, json.JSONDecodeError):
+        return JsonResponse({'error': 'Invalid request'}, status=400)
+
+    if choice not in ('big', 'small'):
+        return JsonResponse({'error': 'Choose Big or Small'}, status=400)
+    if bet_amount < cfg.min_bet or bet_amount > cfg.max_bet:
+        return JsonResponse({'error': f'Bet must be between ₹{cfg.min_bet} and ₹{cfg.max_bet}'}, status=400)
+
+    win_chance_percent = Decimal('48.6111')
+    multiplier = _dice_multiplier(win_chance_percent, cfg.house_edge_percent)
+
+    with transaction.atomic():
+        wallet, _ = Wallet.objects.select_for_update().get_or_create(user=request.user)
+        if wallet.balance < bet_amount:
+            return JsonResponse({'error': 'Insufficient wallet balance', 'needs_topup': True}, status=402)
+
+        wallet.balance -= bet_amount
+        WalletTransaction.objects.create(
+            wallet=wallet, amount=bet_amount, txn_type='debit',
+            description='Sic Bo bet',
+        )
+
+        d1, d2, d3 = _sicbo_roll()
+        total     = d1 + d2 + d3
+        is_triple = (d1 == d2 == d3)
+
+        if is_triple:
+            won = False
+        elif choice == 'big':
+            won = 11 <= total <= 17
+        else:
+            won = 4 <= total <= 10
+
+        payout = (bet_amount * multiplier).quantize(Decimal('0.01')) if won else Decimal('0.00')
+
+        if won:
+            wallet.balance += payout
+            WalletTransaction.objects.create(
+                wallet=wallet, amount=payout, txn_type='credit',
+                description='Sic Bo payout',
+            )
+        wallet.save()
+
+        SicBoBet.objects.create(
+            user=request.user, bet_amount=bet_amount, choice=choice,
+            die1=d1, die2=d2, die3=d3, total=total,
+            won=won, multiplier=multiplier, payout=payout,
+        )
+
+    return JsonResponse({
+        'success':     True,
+        'die1': d1, 'die2': d2, 'die3': d3, 'total': total,
         'won':         won,
         'multiplier':  float(multiplier),
         'payout':      float(payout),

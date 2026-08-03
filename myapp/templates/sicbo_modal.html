@@ -1,0 +1,208 @@
+{% comment %}
+  Sic Bo — real win/lose game, wallet-integrated. Modal + JS.
+  Requires context: wallet, sicbo_active, sicbo_min_bet, sicbo_max_bet, sicbo_house_edge
+  Opened via openSicBoModal() from a game-card in the All Games section.
+{% endcomment %}
+
+{% if sicbo_active %}
+<div id="sicBoModal" style="
+  display:none;position:fixed;inset:0;z-index:10007;
+  background:rgba(0,0,0,.8);backdrop-filter:blur(6px);
+  align-items:center;justify-content:center;
+  opacity:0;transition:opacity .25s ease;
+">
+  <div style="
+    background:linear-gradient(160deg,#1a1a2e 0%,#16213e 60%,#0f3460 100%);
+    border:1px solid rgba(255,210,0,.3);border-radius:20px;
+    padding:32px 30px;max-width:420px;width:92%;text-align:center;
+    box-shadow:0 0 60px rgba(255,210,0,.15);
+    position:relative;
+    transform:scale(0.92);transition:transform .25s cubic-bezier(.34,1.56,.64,1);
+  ">
+    <button onclick="closeSicBoModal()" style="
+      position:absolute;top:14px;right:18px;
+      background:none;border:none;color:#aaa;font-size:1.4rem;cursor:pointer;
+    ">✕</button>
+
+    <h2 style="color:#ffd200;font-size:1.5rem;margin-bottom:4px;">🎲🎲🎲 Sic Bo</h2>
+    <p style="color:#aaa;font-size:.85rem;margin-bottom:18px;">
+      3 dice. Bet Big (11-17) or Small (4-10). A triple loses both sides.
+    </p>
+
+    {% if user.is_authenticated %}
+      <div style="
+        background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);
+        border-radius:10px;padding:12px 16px;margin-bottom:18px;
+        display:flex;align-items:center;justify-content:space-between;
+      ">
+        <span style="color:#aaa;font-size:.88rem;">💰 Wallet Balance</span>
+        <span style="color:#4ade80;font-weight:700;font-size:1rem;" id="sbWalletBalance">
+          ₹{% if wallet %}{{ wallet.balance|floatformat:2 }}{% else %}0.00{% endif %}
+        </span>
+      </div>
+
+      <div style="display:flex;justify-content:center;gap:10px;margin-bottom:16px;">
+        <div class="sb-die" id="sbDie1" style="
+          width:54px;height:54px;border-radius:10px;background:#fff;color:#111;
+          display:flex;align-items:center;justify-content:center;font-size:1.6rem;font-weight:800;">?</div>
+        <div class="sb-die" id="sbDie2" style="
+          width:54px;height:54px;border-radius:10px;background:#fff;color:#111;
+          display:flex;align-items:center;justify-content:center;font-size:1.6rem;font-weight:800;">?</div>
+        <div class="sb-die" id="sbDie3" style="
+          width:54px;height:54px;border-radius:10px;background:#fff;color:#111;
+          display:flex;align-items:center;justify-content:center;font-size:1.6rem;font-weight:800;">?</div>
+      </div>
+
+      <div id="sbResult" style="min-height:32px;font-size:1.05rem;font-weight:700;margin-bottom:14px;"></div>
+
+      <div style="text-align:left;margin-bottom:14px;">
+        <label style="color:#aaa;font-size:.82rem;display:block;margin-bottom:6px;">
+          Bet Amount (₹{{ sicbo_min_bet }} – ₹{{ sicbo_max_bet }})
+        </label>
+        <input type="number" id="sbBetAmount" value="{{ sicbo_min_bet }}"
+          min="{{ sicbo_min_bet }}" max="{{ sicbo_max_bet }}" step="1"
+          style="width:100%;padding:12px 14px;border-radius:10px;
+            border:1px solid rgba(255,210,0,.3);background:rgba(255,255,255,.06);
+            color:#fff;font-size:1rem;box-sizing:border-box;">
+      </div>
+
+      <div style="display:flex;gap:10px;margin-bottom:20px;">
+        <button type="button" id="sbChoiceBig" onclick="selectSicBoChoice('big')" style="
+          flex:1;padding:12px;border-radius:10px;cursor:pointer;font-weight:700;
+          border:2px solid #ffd200;background:rgba(255,210,0,.15);color:#ffd200;
+        ">Big (11-17)</button>
+        <button type="button" id="sbChoiceSmall" onclick="selectSicBoChoice('small')" style="
+          flex:1;padding:12px;border-radius:10px;cursor:pointer;font-weight:700;
+          border:2px solid rgba(255,255,255,.25);background:transparent;color:#aaa;
+        ">Small (4-10)</button>
+      </div>
+
+      <button id="sbRollBtn" onclick="playSicBo()" style="
+        width:100%;padding:14px;border:none;border-radius:14px;
+        background:linear-gradient(135deg,#f7971e,#ffd200);
+        color:#1a1a2e;font-size:1.1rem;font-weight:800;
+        cursor:pointer;box-shadow:0 4px 18px rgba(255,210,0,.45);
+        transition:transform .15s;
+      " onmouseover="this.style.transform='scale(1.03)'" onmouseout="this.style.transform='scale(1)'">
+        🎲 ROLL!
+      </button>
+    {% else %}
+      <a href="{% url 'login' %}" style="
+        display:block;width:100%;padding:14px;border:none;border-radius:12px;
+        background:linear-gradient(135deg,#f7971e,#ffd200);
+        color:#1a1a2e;font-size:1.1rem;font-weight:800;text-decoration:none;
+        box-shadow:0 4px 15px rgba(255,210,0,.4);
+      ">Login to Play 🎲</a>
+    {% endif %}
+
+    <p style="color:#666;font-size:.78rem;margin-top:16px;">18+ only · Gamble responsibly</p>
+  </div>
+</div>
+
+<script>
+let sbChoice = 'big';
+
+function sbGetCsrf() {
+  const m = document.cookie.match(/(?:^|;\s*)csrftoken=([^;]+)/);
+  return m ? m[1] : '';
+}
+function sbShowModal(el) {
+  el.style.display = 'flex';
+  requestAnimationFrame(() => { requestAnimationFrame(() => {
+    el.style.opacity = '1';
+    const inner = el.querySelector('div');
+    if (inner) inner.style.transform = 'scale(1)';
+  }); });
+}
+function sbHideModal(el) {
+  el.style.opacity = '0';
+  const inner = el.querySelector('div');
+  if (inner) inner.style.transform = 'scale(0.92)';
+  setTimeout(() => { el.style.display = 'none'; }, 260);
+}
+function openSicBoModal() {
+  {% if not user.is_authenticated %}
+    window.location.href = '{% url "login" %}';
+    return;
+  {% endif %}
+  sbShowModal(document.getElementById('sicBoModal'));
+}
+function closeSicBoModal() {
+  sbHideModal(document.getElementById('sicBoModal'));
+}
+function selectSicBoChoice(choice) {
+  sbChoice = choice;
+  const bigBtn = document.getElementById('sbChoiceBig');
+  const smallBtn = document.getElementById('sbChoiceSmall');
+  const active = 'border:2px solid #ffd200;background:rgba(255,210,0,.15);color:#ffd200;';
+  const inactive = 'border:2px solid rgba(255,255,255,.25);background:transparent;color:#aaa;';
+  bigBtn.style.cssText = 'flex:1;padding:12px;border-radius:10px;cursor:pointer;font-weight:700;' + (choice === 'big' ? active : inactive);
+  smallBtn.style.cssText = 'flex:1;padding:12px;border-radius:10px;cursor:pointer;font-weight:700;' + (choice === 'small' ? active : inactive);
+}
+
+async function playSicBo() {
+  {% if not user.is_authenticated %}
+    window.location.href = '{% url "login" %}';
+    return;
+  {% endif %}
+  const betInput = document.getElementById('sbBetAmount');
+  const rollBtn  = document.getElementById('sbRollBtn');
+  const resultEl = document.getElementById('sbResult');
+  const betAmount = parseFloat(betInput.value);
+
+  if (!betAmount || betAmount <= 0) { alert('Enter a valid bet amount.'); return; }
+
+  rollBtn.disabled = true;
+  betInput.disabled = true;
+  resultEl.textContent = '';
+  ['sbDie1','sbDie2','sbDie3'].forEach(id => document.getElementById(id).textContent = '?');
+
+  let data;
+  try {
+    const res = await fetch('{% url "sicbo_play" %}', {
+      method: 'POST',
+      headers: { 'X-CSRFToken': sbGetCsrf(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ choice: sbChoice, bet_amount: betAmount })
+    });
+    data = await res.json();
+  } catch (e) {
+    alert('Network error — your bet was not placed. Please try again.');
+    rollBtn.disabled = false; betInput.disabled = false;
+    return;
+  }
+
+  if (!data.success) {
+    if (data.needs_topup) {
+      const go = confirm('⚠️ ' + (data.error || 'Insufficient balance.') + '\n\nAdd money to your wallet now?');
+      if (go) window.location.href = '{% url "add_money" %}';
+    } else {
+      alert(data.error || 'Could not place bet');
+    }
+    rollBtn.disabled = false; betInput.disabled = false;
+    return;
+  }
+
+  document.getElementById('sbDie1').textContent = data.die1;
+  document.getElementById('sbDie2').textContent = data.die2;
+  document.getElementById('sbDie3').textContent = data.die3;
+
+  const balanceEl = document.getElementById('sbWalletBalance');
+  if (balanceEl) balanceEl.textContent = '₹' + Number(data.new_balance).toFixed(2);
+
+  const isTriple = data.die1 === data.die2 && data.die2 === data.die3;
+  if (data.won) {
+    resultEl.style.color = '#4ade80';
+    resultEl.textContent = `🎉 Total ${data.total} — You won ₹${data.payout.toFixed(2)} (${data.multiplier}x)`;
+  } else if (isTriple) {
+    resultEl.style.color = '#ef4444';
+    resultEl.textContent = `😔 Triple ${data.die1}s! Total ${data.total} — you lost ₹${betAmount.toFixed(2)}`;
+  } else {
+    resultEl.style.color = '#ef4444';
+    resultEl.textContent = `😔 Total ${data.total} — you lost ₹${betAmount.toFixed(2)}`;
+  }
+
+  rollBtn.disabled = false;
+  betInput.disabled = false;
+}
+</script>
+{% endif %}

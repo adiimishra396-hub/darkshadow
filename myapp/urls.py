@@ -42,4 +42,13 @@ urlpatterns = [
     # Card High-Low
     path('cardhilo/deal/', views.cardhilo_deal, name='cardhilo_deal'),
     path('cardhilo/resolve/', views.cardhilo_resolve, name='cardhilo_resolve'),
+
+    # Andar Bahar
+    path('andarbahar/play/', views.andarbahar_play, name='andarbahar_play'),
+
+    # Roulette
+    path('roulette/play/', views.roulette_play, name='roulette_play'),
+
+    # Sic Bo
+    path('sicbo/play/', views.sicbo_play, name='sicbo_play'),
 ]

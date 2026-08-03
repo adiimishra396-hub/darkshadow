@@ -548,64 +548,47 @@
           </div>
         </a>
 
-        <!-- Andar Bahar -->
-        <a href="https://share.casinodays.com/" target="_blank" rel="noopener" class="game-card" data-cat="cards">
-          <span class="g-badge new">New</span>
+        {% if andarbahar_active %}
+        <!-- Andar Bahar — in-house, real win/lose game -->
+        <a href="javascript:void(0)" onclick="openAndarBaharModal()" class="game-card" data-cat="cards">
+          <span class="g-badge new">Play In-House</span>
           <img class="game-card-thumb" src="https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?q=80&w=600&auto=format&fit=crop" alt="Andar Bahar">
           <div class="game-card-body">
             <div class="game-card-cat">Card Games</div>
             <div class="game-card-title">Andar Bahar</div>
-            <div class="game-card-desc">Pick Andar or Bahar — a classic Indian card betting game with 50/50 odds.</div>
+            <div class="game-card-desc">Pick Andar or Bahar and win {{ andarbahar_win_multiplier }}x your bet, right here on Darkshadow.</div>
             <span class="game-card-play">Play Now</span>
           </div>
         </a>
+        {% endif %}
 
-        <!-- 8-Ball Pool -->
-        <a href="https://www.miniclip.com/games/8-ball-pool/" target="_blank" rel="noopener" class="game-card" data-cat="table">
-          <span class="g-badge">Hot</span>
-          <img class="game-card-thumb" src="https://images.unsplash.com/photo-1610375461246-83df859d849d?q=80&w=600&auto=format&fit=crop" alt="8-Ball Pool">
-          <div class="game-card-body">
-            <div class="game-card-cat">Table &amp; Board</div>
-            <div class="game-card-title">8-Ball Pool</div>
-            <div class="game-card-desc">Pot all your balls and sink the 8-ball before your opponent to win chips.</div>
-            <span class="game-card-play">Play Now</span>
-          </div>
-        </a>
-
-        <!-- Ludo -->
-        <a href="https://www.ludoking.com/" target="_blank" rel="noopener" class="game-card" data-cat="table">
-          <img class="game-card-thumb" src="https://images.unsplash.com/photo-1566150905458-1bf1fc113f0d?q=80&w=600&auto=format&fit=crop" alt="Ludo">
-          <div class="game-card-body">
-            <div class="game-card-cat">Table &amp; Board</div>
-            <div class="game-card-title">Ludo King</div>
-            <div class="game-card-desc">Roll the dice and race your tokens home in this timeless classic board game.</div>
-            <span class="game-card-play">Play Now</span>
-          </div>
-        </a>
-
-        <!-- Dice / Sic Bo -->
-        <a href="https://freegames.org/sic-bo/" target="_blank" rel="noopener" class="game-card" data-cat="table">
-          <span class="g-badge new">New</span>
-          <img class="game-card-thumb" src="https://images.unsplash.com/photo-1585504198199-20277593b94f?q=80&w=600&auto=format&fit=crop" alt="Dice Sic Bo">
+        {% if sicbo_active %}
+        <!-- Sic Bo — in-house, real win/lose game -->
+        <a href="javascript:void(0)" onclick="openSicBoModal()" class="game-card" data-cat="table">
+          <span class="g-badge new">Play In-House</span>
+          <img class="game-card-thumb" src="https://images.unsplash.com/photo-1585504198199-20277593b94f?q=80&w=600&auto=format&fit=crop" alt="Sic Bo">
           <div class="game-card-body">
             <div class="game-card-cat">Table &amp; Board</div>
             <div class="game-card-title">Sic Bo Dice</div>
-            <div class="game-card-desc">Bet on three dice outcomes. Simple rules, fast rounds, massive multipliers.</div>
+            <div class="game-card-desc">Bet Big or Small on 3 dice and win a multiplier, right here on Darkshadow.</div>
             <span class="game-card-play">Play Now</span>
           </div>
         </a>
+        {% endif %}
 
-        <!-- Slots -->
-        <a href="https://slotmachinesfree.com/" target="_blank" rel="noopener" class="game-card" data-cat="casino">
-          <span class="g-badge live">Live</span>
-          <img class="game-card-thumb" src="https://images.unsplash.com/photo-1596838132731-3301c3fd4317?q=80&w=600&auto=format&fit=crop" alt="Slots">
+        {% if spin_machine_active %}
+        <!-- Lucky Slots — repointed to the existing Spin Machine (already an in-house slot game) -->
+        <a href="javascript:void(0)" onclick="openJackpotModal()" class="game-card" data-cat="casino">
+          <span class="g-badge new">Play In-House</span>
+          <img class="game-card-thumb" src="https://images.unsplash.com/photo-1596838132731-3301c3fd4317?q=80&w=600&auto=format&fit=crop" alt="Lucky Slots">
           <div class="game-card-body">
             <div class="game-card-cat">Casino</div>
             <div class="game-card-title">Lucky Slots</div>
-            <div class="game-card-desc">Spin the reels and match symbols for jackpots. 100+ slot variants available.</div>
+            <div class="game-card-desc">Spin the jackpot reels right here on Darkshadow — pay per spin and keep the fun going.</div>
             <span class="game-card-play">Play Now</span>
           </div>
         </a>
+        {% endif %}
 
         <!-- Blackjack -->
         <a href="https://www.247blackjack.com/" target="_blank" rel="noopener" class="game-card" data-cat="casino">
@@ -618,17 +601,19 @@
           </div>
         </a>
 
-        <!-- Roulette -->
-        <a href="https://www.247roulette.org/" target="_blank" rel="noopener" class="game-card" data-cat="casino">
-          <span class="g-badge">Hot</span>
+        {% if roulette_active %}
+        <!-- Roulette — in-house, real win/lose game -->
+        <a href="javascript:void(0)" onclick="openRouletteModal()" class="game-card" data-cat="casino">
+          <span class="g-badge new">Play In-House</span>
           <img class="game-card-thumb" src="https://images.unsplash.com/photo-1606107557195-0e29a4b5b4aa?q=80&w=600&auto=format&fit=crop" alt="Roulette">
           <div class="game-card-body">
             <div class="game-card-cat">Casino</div>
             <div class="game-card-title">Roulette</div>
-            <div class="game-card-desc">Bet on red, black, numbers or columns. Watch the wheel decide your fate.</div>
+            <div class="game-card-desc">Bet on red, black, or a single number — right here on Darkshadow.</div>
             <span class="game-card-play">Play Now</span>
           </div>
         </a>
+        {% endif %}
 
         <!-- Crash Game -->
         <a href="https://bc.game/game/crash" target="_blank" rel="noopener" class="game-card" data-cat="casino">
@@ -649,53 +634,6 @@
             <div class="game-card-cat">Casino</div>
             <div class="game-card-title">Baccarat</div>
             <div class="game-card-desc">Bet on Player, Banker or Tie. A high-class casino classic with elegant odds.</div>
-            <span class="game-card-play">Play Now</span>
-          </div>
-        </a>
-
-        <!-- Cricket Betting -->
-        <a href="https://www.betway.com/en/sports/cricket" target="_blank" rel="noopener" class="game-card" data-cat="sports">
-          <span class="g-badge live">Live</span>
-          <img class="game-card-thumb" src="https://images.unsplash.com/photo-1531415074968-036ba1b575da?q=80&w=600&auto=format&fit=crop" alt="Cricket Betting">
-          <div class="game-card-body">
-            <div class="game-card-cat">Sports Betting</div>
-            <div class="game-card-title">Cricket Betting</div>
-            <div class="game-card-desc">Live IPL, T20, ODI & Test match odds. Bet on runs, wickets & more.</div>
-            <span class="game-card-play">Bet Now</span>
-          </div>
-        </a>
-
-        <!-- Football Betting -->
-        <a href="https://www.betway.com/en/sports/football" target="_blank" rel="noopener" class="game-card" data-cat="sports">
-          <span class="g-badge">Hot</span>
-          <img class="game-card-thumb" src="https://images.unsplash.com/photo-1431324155629-1a6deb1dec8d?q=80&w=600&auto=format&fit=crop" alt="Football Betting">
-          <div class="game-card-body">
-            <div class="game-card-cat">Sports Betting</div>
-            <div class="game-card-title">Football Betting</div>
-            <div class="game-card-desc">Premier League, La Liga, Champions League — live match betting with best odds.</div>
-            <span class="game-card-play">Bet Now</span>
-          </div>
-        </a>
-
-        <!-- Kabaddi -->
-        <a href="https://www.dream11.com/" target="_blank" rel="noopener" class="game-card" data-cat="sports">
-          <span class="g-badge new">New</span>
-          <img class="game-card-thumb" src="https://images.unsplash.com/photo-1567593810070-7a3d471af022?q=80&w=600&auto=format&fit=crop" alt="Kabaddi">
-          <div class="game-card-body">
-            <div class="game-card-cat">Sports Betting</div>
-            <div class="game-card-title">Kabaddi &amp; More</div>
-            <div class="game-card-desc">Pro Kabaddi, Hockey, Basketball — bet on India's favourite sports.</div>
-            <span class="game-card-play">Bet Now</span>
-          </div>
-        </a>
-
-        <!-- 29 Card Game -->
-        <a href="https://www.29cardgame.com/" target="_blank" rel="noopener" class="game-card" data-cat="cards">
-          <img class="game-card-thumb" src="https://images.unsplash.com/photo-1596456964908-0a3d9adec05f?q=80&w=600&auto=format&fit=crop" alt="29 Card Game">
-          <div class="game-card-body">
-            <div class="game-card-cat">Card Games</div>
-            <div class="game-card-title">29 Card Game</div>
-            <div class="game-card-desc">Popular South Asian trick-taking card game. Bid, play & outsmart your team.</div>
             <span class="game-card-play">Play Now</span>
           </div>
         </a>
@@ -859,6 +797,9 @@
   {% include 'coinflip_modal.html' %}
   {% include 'dice_modal.html' %}
   {% include 'cardhilo_modal.html' %}
+  {% include 'andarbahar_modal.html' %}
+  {% include 'roulette_modal.html' %}
+  {% include 'sicbo_modal.html' %}
 
 <script>
   // ── Popup

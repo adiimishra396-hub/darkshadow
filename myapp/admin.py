@@ -5,6 +5,8 @@ from .models import (
     SpinWallet, SpinPurchase, RazorpaySettings, SpinMachineSettings,
     CoinFlipSettings, CoinFlipBet, DiceSettings, DiceBet,
     CardHighLowSettings, CardHighLowRound,
+    AndarBaharSettings, AndarBaharBet, RouletteSettings, RouletteBet,
+    SicBoSettings, SicBoBet,
 )
 
 
@@ -135,3 +137,54 @@ class CardHighLowRoundAdmin(admin.ModelAdmin):
     list_filter = ('status', 'won', 'choice')
     search_fields = ('user__username',)
     readonly_fields = ('created_at', 'resolved_at')
+
+
+@admin.register(AndarBaharSettings)
+class AndarBaharSettingsAdmin(admin.ModelAdmin):
+    list_display = ('win_multiplier', 'min_bet', 'max_bet', 'is_active', 'updated_at')
+    readonly_fields = ('updated_at',)
+
+    def has_add_permission(self, request):
+        return not AndarBaharSettings.objects.exists()
+
+
+@admin.register(AndarBaharBet)
+class AndarBaharBetAdmin(admin.ModelAdmin):
+    list_display = ('user', 'bet_amount', 'choice', 'result', 'won', 'payout', 'created_at')
+    list_filter = ('won', 'choice')
+    search_fields = ('user__username',)
+    readonly_fields = ('created_at',)
+
+
+@admin.register(RouletteSettings)
+class RouletteSettingsAdmin(admin.ModelAdmin):
+    list_display = ('house_edge_percent', 'min_bet', 'max_bet', 'is_active', 'updated_at')
+    readonly_fields = ('updated_at',)
+
+    def has_add_permission(self, request):
+        return not RouletteSettings.objects.exists()
+
+
+@admin.register(RouletteBet)
+class RouletteBetAdmin(admin.ModelAdmin):
+    list_display = ('user', 'bet_amount', 'bet_type', 'bet_value', 'result_number', 'result_color', 'won', 'multiplier', 'payout', 'created_at')
+    list_filter = ('won', 'bet_type')
+    search_fields = ('user__username',)
+    readonly_fields = ('created_at',)
+
+
+@admin.register(SicBoSettings)
+class SicBoSettingsAdmin(admin.ModelAdmin):
+    list_display = ('house_edge_percent', 'min_bet', 'max_bet', 'is_active', 'updated_at')
+    readonly_fields = ('updated_at',)
+
+    def has_add_permission(self, request):
+        return not SicBoSettings.objects.exists()
+
+
+@admin.register(SicBoBet)
+class SicBoBetAdmin(admin.ModelAdmin):
+    list_display = ('user', 'bet_amount', 'choice', 'die1', 'die2', 'die3', 'total', 'won', 'multiplier', 'payout', 'created_at')
+    list_filter = ('won', 'choice')
+    search_fields = ('user__username',)
+    readonly_fields = ('created_at',)
