@@ -32,4 +32,7 @@ urlpatterns = [
     path('jackpot/verify-payment/', views.jackpot_verify_payment, name='jackpot_verify_payment'),
     path('jackpot/use-spin/', views.jackpot_use_spin, name='jackpot_use_spin'),
     path('jackpot/claim-win/', views.jackpot_claim_win, name='jackpot_claim_win'),
+
+    # Coin Flip
+    path('coinflip/play/', views.coinflip_play, name='coinflip_play'),
 ]

@@ -471,6 +471,20 @@
       </div>
       <div class="games-grid" id="gamesGrid">
 
+        {% if coinflip_active %}
+        <!-- Coin Flip — in-house, real win/lose game -->
+        <a href="javascript:void(0)" onclick="openCoinFlipModal()" class="game-card" data-cat="casino">
+          <span class="g-badge new">Play In-House</span>
+          <img class="game-card-thumb" src="https://images.unsplash.com/photo-1621761191319-c6fb62004040?q=80&w=600&auto=format&fit=crop" alt="Coin Flip">
+          <div class="game-card-body">
+            <div class="game-card-cat">Casino</div>
+            <div class="game-card-title">Coin Flip</div>
+            <div class="game-card-desc">Call heads or tails and win {{ coinflip_win_multiplier }}x your bet, right here on Darkshadow.</div>
+            <span class="game-card-play">Play Now</span>
+          </div>
+        </a>
+        {% endif %}
+
         <!-- Teen Patti -->
         <a href="https://www.teenpatti.com/" target="_blank" rel="noopener" class="game-card" data-cat="cards">
           <span class="g-badge live">Live</span>
@@ -814,6 +828,7 @@
   </footer>
 
   {% include 'jackpot_modal.html' %}
+  {% include 'coinflip_modal.html' %}
 
 <script>
   // ── Popup

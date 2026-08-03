@@ -3,6 +3,7 @@ from django.contrib import admin
 from .models import (
     UserProfile, Wallet, WalletTransaction, Payment,
     SpinWallet, SpinPurchase, RazorpaySettings, SpinMachineSettings,
+    CoinFlipSettings, CoinFlipBet,
 )
 
 
@@ -79,3 +80,21 @@ class SpinMachineSettingsAdmin(admin.ModelAdmin):
     def has_add_permission(self, request):
         # Singleton row (pk=1) — created lazily via get_singleton().
         return not SpinMachineSettings.objects.exists()
+
+
+@admin.register(CoinFlipSettings)
+class CoinFlipSettingsAdmin(admin.ModelAdmin):
+    list_display = ('win_multiplier', 'min_bet', 'max_bet', 'is_active', 'updated_at')
+    readonly_fields = ('updated_at',)
+
+    def has_add_permission(self, request):
+        # Singleton row (pk=1) — created lazily via get_singleton().
+        return not CoinFlipSettings.objects.exists()
+
+
+@admin.register(CoinFlipBet)
+class CoinFlipBetAdmin(admin.ModelAdmin):
+    list_display = ('user', 'bet_amount', 'choice', 'result', 'won', 'payout', 'created_at')
+    list_filter = ('won', 'choice')
+    search_fields = ('user__username',)
+    readonly_fields = ('created_at',)

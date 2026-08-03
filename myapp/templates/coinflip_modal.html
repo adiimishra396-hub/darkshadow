@@ -1,0 +1,243 @@
+{% comment %}
+  Coin Flip — real win/lose game, wallet-integrated. Modal + JS.
+  Requires context: wallet, coinflip_active, coinflip_min_bet, coinflip_max_bet,
+                    coinflip_win_multiplier
+  Opened via openCoinFlipModal() from a game-card in the All Games section.
+{% endcomment %}
+
+{% if coinflip_active %}
+<div id="coinFlipModal" style="
+  display:none;position:fixed;inset:0;z-index:10002;
+  background:rgba(0,0,0,.8);backdrop-filter:blur(6px);
+  align-items:center;justify-content:center;
+  opacity:0;transition:opacity .25s ease;
+">
+  <div style="
+    background:linear-gradient(160deg,#1a1a2e 0%,#16213e 60%,#0f3460 100%);
+    border:1px solid rgba(255,210,0,.3);border-radius:20px;
+    padding:32px 30px;max-width:420px;width:92%;text-align:center;
+    box-shadow:0 0 60px rgba(255,210,0,.15);
+    position:relative;
+    transform:scale(0.92);transition:transform .25s cubic-bezier(.34,1.56,.64,1);
+  ">
+    <button onclick="closeCoinFlipModal()" style="
+      position:absolute;top:14px;right:18px;
+      background:none;border:none;color:#aaa;font-size:1.4rem;cursor:pointer;
+    ">✕</button>
+
+    <h2 style="color:#ffd200;font-size:1.5rem;margin-bottom:4px;">🪙 Coin Flip</h2>
+    <p style="color:#aaa;font-size:.85rem;margin-bottom:18px;">
+      Call it right, win {{ coinflip_win_multiplier }}x your bet.
+    </p>
+
+    {% if user.is_authenticated %}
+      <!-- Wallet balance -->
+      <div style="
+        background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);
+        border-radius:10px;padding:12px 16px;margin-bottom:18px;
+        display:flex;align-items:center;justify-content:space-between;
+      ">
+        <span style="color:#aaa;font-size:.88rem;">💰 Wallet Balance</span>
+        <span style="color:#4ade80;font-weight:700;font-size:1rem;" id="cfWalletBalance">
+          ₹{% if wallet %}{{ wallet.balance|floatformat:2 }}{% else %}0.00{% endif %}
+        </span>
+      </div>
+
+      <!-- Coin -->
+      <div style="display:flex;justify-content:center;margin-bottom:20px;perspective:600px;">
+        <div id="coinFace" style="
+          width:110px;height:110px;border-radius:50%;
+          background:linear-gradient(135deg,#f7971e,#ffd200);
+          display:flex;align-items:center;justify-content:center;
+          font-size:2.6rem;font-weight:800;color:#1a1a2e;
+          box-shadow:0 6px 24px rgba(255,210,0,.4);
+          transition:transform .05s linear;
+        ">🪙</div>
+      </div>
+
+      <div id="cfResult" style="
+        min-height:32px;font-size:1.1rem;font-weight:700;margin-bottom:16px;
+      "></div>
+
+      <!-- Bet amount -->
+      <div style="text-align:left;margin-bottom:14px;">
+        <label style="color:#aaa;font-size:.82rem;display:block;margin-bottom:6px;">
+          Bet Amount (₹{{ coinflip_min_bet }} – ₹{{ coinflip_max_bet }})
+        </label>
+        <input type="number" id="cfBetAmount" value="{{ coinflip_min_bet }}"
+          min="{{ coinflip_min_bet }}" max="{{ coinflip_max_bet }}" step="1"
+          style="
+            width:100%;padding:12px 14px;border-radius:10px;
+            border:1px solid rgba(255,210,0,.3);background:rgba(255,255,255,.06);
+            color:#fff;font-size:1rem;box-sizing:border-box;
+          ">
+      </div>
+
+      <!-- Heads / Tails choice -->
+      <div style="display:flex;gap:10px;margin-bottom:20px;">
+        <button type="button" id="cfChoiceHeads" onclick="selectCoinChoice('heads')" style="
+          flex:1;padding:12px;border-radius:10px;cursor:pointer;font-weight:700;
+          border:2px solid #ffd200;background:rgba(255,210,0,.15);color:#ffd200;
+        ">Heads</button>
+        <button type="button" id="cfChoiceTails" onclick="selectCoinChoice('tails')" style="
+          flex:1;padding:12px;border-radius:10px;cursor:pointer;font-weight:700;
+          border:2px solid rgba(255,255,255,.25);background:transparent;color:#aaa;
+        ">Tails</button>
+      </div>
+
+      <button id="cfFlipBtn" onclick="playCoinFlip()" style="
+        width:100%;padding:14px;border:none;border-radius:14px;
+        background:linear-gradient(135deg,#f7971e,#ffd200);
+        color:#1a1a2e;font-size:1.1rem;font-weight:800;
+        cursor:pointer;box-shadow:0 4px 18px rgba(255,210,0,.45);
+        transition:transform .15s;
+      " onmouseover="this.style.transform='scale(1.03)'" onmouseout="this.style.transform='scale(1)'">
+        🪙 FLIP!
+      </button>
+    {% else %}
+      <a href="{% url 'login' %}" style="
+        display:block;width:100%;padding:14px;border:none;border-radius:12px;
+        background:linear-gradient(135deg,#f7971e,#ffd200);
+        color:#1a1a2e;font-size:1.1rem;font-weight:800;text-decoration:none;
+        box-shadow:0 4px 15px rgba(255,210,0,.4);
+      ">Login to Play 🪙</a>
+    {% endif %}
+
+    <p style="color:#666;font-size:.78rem;margin-top:16px;">18+ only · Gamble responsibly</p>
+  </div>
+</div>
+
+<script>
+let cfChoice = 'heads';
+
+function cfGetCsrf() {
+  const m = document.cookie.match(/(?:^|;\s*)csrftoken=([^;]+)/);
+  return m ? m[1] : '';
+}
+
+function cfShowModal(el) {
+  el.style.display = 'flex';
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      el.style.opacity = '1';
+      const inner = el.querySelector('div');
+      if (inner) inner.style.transform = 'scale(1)';
+    });
+  });
+}
+function cfHideModal(el) {
+  el.style.opacity = '0';
+  const inner = el.querySelector('div');
+  if (inner) inner.style.transform = 'scale(0.92)';
+  setTimeout(() => { el.style.display = 'none'; }, 260);
+}
+
+function openCoinFlipModal() {
+  {% if not user.is_authenticated %}
+    window.location.href = '{% url "login" %}';
+    return;
+  {% endif %}
+  cfShowModal(document.getElementById('coinFlipModal'));
+}
+
+function closeCoinFlipModal() {
+  cfHideModal(document.getElementById('coinFlipModal'));
+}
+
+function selectCoinChoice(choice) {
+  cfChoice = choice;
+  const headsBtn = document.getElementById('cfChoiceHeads');
+  const tailsBtn = document.getElementById('cfChoiceTails');
+  const active = 'border:2px solid #ffd200;background:rgba(255,210,0,.15);color:#ffd200;';
+  const inactive = 'border:2px solid rgba(255,255,255,.25);background:transparent;color:#aaa;';
+  headsBtn.style.cssText = 'flex:1;padding:12px;border-radius:10px;cursor:pointer;font-weight:700;' + (choice === 'heads' ? active : inactive);
+  tailsBtn.style.cssText = 'flex:1;padding:12px;border-radius:10px;cursor:pointer;font-weight:700;' + (choice === 'tails' ? active : inactive);
+}
+
+function cfSpinCoin(durationMs, onDone) {
+  const coin = document.getElementById('coinFace');
+  let rotation = 0;
+  const start = performance.now();
+  function tick(now) {
+    const elapsed = now - start;
+    rotation += 30;
+    coin.style.transform = 'rotateY(' + rotation + 'deg)';
+    if (elapsed < durationMs) {
+      requestAnimationFrame(tick);
+    } else {
+      coin.style.transform = 'rotateY(0deg)';
+      onDone && onDone();
+    }
+  }
+  requestAnimationFrame(tick);
+}
+
+async function playCoinFlip() {
+  {% if not user.is_authenticated %}
+    window.location.href = '{% url "login" %}';
+    return;
+  {% endif %}
+  const betInput = document.getElementById('cfBetAmount');
+  const flipBtn  = document.getElementById('cfFlipBtn');
+  const resultEl = document.getElementById('cfResult');
+  const betAmount = parseFloat(betInput.value);
+
+  if (!betAmount || betAmount <= 0) {
+    alert('Enter a valid bet amount.');
+    return;
+  }
+
+  flipBtn.disabled = true;
+  betInput.disabled = true;
+  resultEl.textContent = '';
+  resultEl.style.color = '#ffd200';
+  document.getElementById('coinFace').textContent = '🪙';
+
+  let data;
+  try {
+    const res = await fetch('{% url "coinflip_play" %}', {
+      method: 'POST',
+      headers: { 'X-CSRFToken': cfGetCsrf(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ choice: cfChoice, bet_amount: betAmount })
+    });
+    data = await res.json();
+  } catch (e) {
+    alert('Network error — your bet was not placed. Please try again.');
+    flipBtn.disabled = false;
+    betInput.disabled = false;
+    return;
+  }
+
+  if (!data.success) {
+    if (data.needs_topup) {
+      const go = confirm('⚠️ ' + (data.error || 'Insufficient balance.') + '\n\nAdd money to your wallet now?');
+      if (go) window.location.href = '{% url "add_money" %}';
+    } else {
+      alert(data.error || 'Could not place bet');
+    }
+    flipBtn.disabled = false;
+    betInput.disabled = false;
+    return;
+  }
+
+  cfSpinCoin(900, () => {
+    const coin = document.getElementById('coinFace');
+    coin.textContent = data.result === 'heads' ? 'H' : 'T';
+
+    const balanceEl = document.getElementById('cfWalletBalance');
+    if (balanceEl) balanceEl.textContent = '₹' + Number(data.new_balance).toFixed(2);
+
+    if (data.won) {
+      resultEl.style.color = '#4ade80';
+      resultEl.textContent = `🎉 ${data.result.toUpperCase()}! You won ₹${data.payout.toFixed(2)}`;
+    } else {
+      resultEl.style.color = '#ef4444';
+      resultEl.textContent = `😔 ${data.result.toUpperCase()} — you lost ₹${betAmount.toFixed(2)}`;
+    }
+
+    flipBtn.disabled = false;
+    betInput.disabled = false;
+  });
+}
+</script>
+{% endif %}

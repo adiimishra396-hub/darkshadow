@@ -128,6 +128,56 @@ class RazorpaySettings(models.Model):
         return obj
 
 
+class CoinFlipSettings(models.Model):
+    """
+    Singleton model (id=1). Admin sets Coin Flip odds & bet limits here.
+    Real win/lose game — a win pays out bet_amount * win_multiplier.
+    """
+    win_multiplier = models.DecimalField(max_digits=4, decimal_places=2, default='1.90',
+        help_text='Payout multiplier on a win (e.g. 1.90 = 1.9x the bet back, ~5% house edge)')
+    min_bet    = models.DecimalField(max_digits=10, decimal_places=2, default='10.00',
+        help_text='Minimum bet amount (INR)')
+    max_bet    = models.DecimalField(max_digits=10, decimal_places=2, default='5000.00',
+        help_text='Maximum bet amount (INR)')
+    is_active  = models.BooleanField(default=True,
+        help_text='Show/hide Coin Flip on the homepage')
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Coin Flip Settings'
+        verbose_name_plural = 'Coin Flip Settings'
+
+    def __str__(self):
+        return f'Coin Flip Settings (updated {self.updated_at})'
+
+    @classmethod
+    def get_singleton(cls):
+        obj, _ = cls.objects.get_or_create(pk=1)
+        return obj
+
+
+class CoinFlipBet(models.Model):
+    """Records every Coin Flip play (audit trail for a real win/lose game)."""
+    CHOICE_CHOICES = [
+        ('heads', 'Heads'),
+        ('tails', 'Tails'),
+    ]
+    user       = models.ForeignKey(User, on_delete=models.CASCADE, related_name='coinflip_bets')
+    bet_amount = models.DecimalField(max_digits=10, decimal_places=2)
+    choice     = models.CharField(max_length=5, choices=CHOICE_CHOICES)
+    result     = models.CharField(max_length=5, choices=CHOICE_CHOICES)
+    won        = models.BooleanField(default=False)
+    payout     = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        outcome = 'WON' if self.won else 'LOST'
+        return f"{self.user.username} | ₹{self.bet_amount} | called {self.choice}, got {self.result} | {outcome}"
+
+
 class SpinMachineSettings(models.Model):
     """
     Singleton model (id=1). Admin sets spin pack pricing and the jackpot

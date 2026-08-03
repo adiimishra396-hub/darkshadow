@@ -6,16 +6,18 @@ from django.db import OperationalError, transaction
 from django.db.models import Sum, Count
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from .models import (
     UserProfile, Payment, Wallet, WalletTransaction,
-    SpinWallet, SpinPurchase, RazorpaySettings, SpinMachineSettings
+    SpinWallet, SpinPurchase, RazorpaySettings, SpinMachineSettings,
+    CoinFlipSettings, CoinFlipBet,
 )
 import razorpay
 import os
 import json
 import hmac
 import hashlib
+import secrets
 
 ADMIN_USERNAME = 'admin'
 ADMIN_EMAIL    = 'admin@gmail.com'
@@ -47,6 +49,19 @@ def get_spin_settings():
             spin_pack_amount         = Decimal('10.00')
             homepage_jackpot_display = '84,52,910'
             is_active                = True
+        return _Defaults()
+
+
+def get_coinflip_settings():
+    """Returns the CoinFlipSettings singleton. Safe fallback if table missing."""
+    try:
+        return CoinFlipSettings.get_singleton()
+    except Exception:
+        class _Defaults:
+            win_multiplier = Decimal('1.90')
+            min_bet        = Decimal('10.00')
+            max_bet        = Decimal('5000.00')
+            is_active      = True
         return _Defaults()
 
 
@@ -93,7 +108,8 @@ def home(request):
         spin_wallet = _get_or_create_spin_wallet(request.user)
         wallet      = _get_or_create_wallet(request.user)
     key_id, _ = get_razorpay_keys()
-    spin_cfg   = get_spin_settings()
+    spin_cfg     = get_spin_settings()
+    coinflip_cfg = get_coinflip_settings()
     return render(request, 'index.html', {
         'spin_wallet':              spin_wallet,
         'wallet':                   wallet,
@@ -102,6 +118,10 @@ def home(request):
         'spin_pack_spins':          spin_cfg.spin_pack_spins,
         'spin_machine_active':      spin_cfg.is_active,
         'homepage_jackpot_display': spin_cfg.homepage_jackpot_display,
+        'coinflip_active':          coinflip_cfg.is_active,
+        'coinflip_min_bet':         coinflip_cfg.min_bet,
+        'coinflip_max_bet':         coinflip_cfg.max_bet,
+        'coinflip_win_multiplier':  coinflip_cfg.win_multiplier,
     })
 
 
@@ -760,3 +780,67 @@ def jackpot_claim_win(request):
     if not request.user.is_authenticated:
         return JsonResponse({'error': 'Login required'}, status=401)
     return JsonResponse({'success': False, 'error': 'No prizes available on this machine.'}, status=200)
+
+
+# ── Coin Flip: Play a Round ─────────────────────────────────────────────────────
+@require_POST
+def coinflip_play(request):
+    """Real win/lose game. Bet is debited immediately; a win credits
+    bet_amount * win_multiplier back to the wallet. Outcome is decided
+    server-side with a CSPRNG — never trust a client-supplied result."""
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'Login required', 'needs_login': True}, status=401)
+    if request.user.is_superuser:
+        return JsonResponse({'error': 'Admins cannot play'}, status=403)
+
+    cfg = get_coinflip_settings()
+    if not cfg.is_active:
+        return JsonResponse({'error': 'Coin Flip is currently unavailable'}, status=503)
+
+    try:
+        data   = json.loads(request.body)
+        choice = data.get('choice')
+        bet_amount = Decimal(str(data.get('bet_amount', '0')))
+    except (ValueError, TypeError, InvalidOperation, json.JSONDecodeError):
+        return JsonResponse({'error': 'Invalid request'}, status=400)
+
+    if choice not in ('heads', 'tails'):
+        return JsonResponse({'error': 'Choose heads or tails'}, status=400)
+    if bet_amount < cfg.min_bet or bet_amount > cfg.max_bet:
+        return JsonResponse({'error': f'Bet must be between ₹{cfg.min_bet} and ₹{cfg.max_bet}'}, status=400)
+
+    with transaction.atomic():
+        wallet, _ = Wallet.objects.select_for_update().get_or_create(user=request.user)
+        if wallet.balance < bet_amount:
+            return JsonResponse({'error': 'Insufficient wallet balance', 'needs_topup': True}, status=402)
+
+        wallet.balance -= bet_amount
+        WalletTransaction.objects.create(
+            wallet=wallet, amount=bet_amount, txn_type='debit',
+            description='Coin Flip bet',
+        )
+
+        result = secrets.choice(['heads', 'tails'])
+        won    = (result == choice)
+        payout = (bet_amount * cfg.win_multiplier).quantize(Decimal('0.01')) if won else Decimal('0.00')
+
+        if won:
+            wallet.balance += payout
+            WalletTransaction.objects.create(
+                wallet=wallet, amount=payout, txn_type='credit',
+                description='Coin Flip payout',
+            )
+        wallet.save()
+
+        CoinFlipBet.objects.create(
+            user=request.user, bet_amount=bet_amount, choice=choice,
+            result=result, won=won, payout=payout,
+        )
+
+    return JsonResponse({
+        'success':     True,
+        'result':      result,
+        'won':         won,
+        'payout':      float(payout),
+        'new_balance': float(wallet.balance),
+    })
