@@ -100,16 +100,6 @@
         🎰 Current Spins: <strong id="currentSpinCount">{% if spin_wallet %}{{ spin_wallet.spins }}{% else %}0{% endif %}</strong>
       </div>
 
-      <!-- Insufficient balance warning (hidden by default, shown by JS) -->
-      <div id="insufficientBalanceMsg" style="
-        display:none;background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.3);
-        border-radius:10px;padding:12px 16px;margin-bottom:14px;
-        color:#fca5a5;font-size:.88rem;text-align:center;
-      ">
-        ⚠️ Insufficient balance. Please add funds to your wallet first.
-        <br><a href="{% url 'add_money' %}" style="color:#ffd200;font-weight:700;text-decoration:underline;margin-top:6px;display:inline-block;">Add Money →</a>
-      </div>
-
       <button id="buySpinsBtn" onclick="initiateSpinPurchase()" style="
         width:100%;padding:14px;border:none;border-radius:12px;
         background:linear-gradient(135deg,#f7971e,#ffd200);
@@ -262,7 +252,6 @@
 <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 <script>
 const JACKPOT_SYMBOLS = ['🍒','🍋','🍊','🍇','💎','7️⃣','🔔','⭐','🃏'];
-const SPIN_PACK_AMOUNT = {{ spin_pack_amount|default:10 }};
 
 let currentSpins = parseInt(document.getElementById('currentSpinCount')?.textContent || '0');
 
@@ -295,29 +284,7 @@ function openJackpotModal() {
     window.location.href = '{% url "login" %}';
     return;
   {% endif %}
-  checkBalanceAndOpen();
-}
-
-async function checkBalanceAndOpen() {
   showModal(document.getElementById('jackpotModal'));
-  const balanceEl = document.getElementById('walletBalanceDisplay');
-  const warningEl = document.getElementById('insufficientBalanceMsg');
-  const buyBtn    = document.getElementById('buySpinsBtn');
-  if (!balanceEl || !warningEl || !buyBtn) return;
-  const rawBalance = parseFloat(
-    balanceEl.textContent.replace(/[₹,\s]/g, '')
-  ) || 0;
-  if (rawBalance < SPIN_PACK_AMOUNT) {
-    warningEl.style.display = 'block';
-    buyBtn.disabled = true;
-    buyBtn.style.opacity = '0.5';
-    buyBtn.style.cursor = 'not-allowed';
-  } else {
-    warningEl.style.display = 'none';
-    buyBtn.disabled = false;
-    buyBtn.style.opacity = '1';
-    buyBtn.style.cursor = 'pointer';
-  }
 }
 
 function closeJackpotModal() {
@@ -367,12 +334,7 @@ async function initiateSpinPurchase() {
     });
     const data = await res.json();
     if (!res.ok || data.error) {
-      if (data.needs_topup) {
-        const go = confirm('⚠️ ' + data.error + '\n\nWould you like to add money to your wallet now?');
-        if (go) window.location.href = '{% url "add_money" %}';
-      } else {
-        alert('Error: ' + (data.error || 'Could not create order'));
-      }
+      alert('Error: ' + (data.error || 'Could not create order'));
       btn.disabled = false;
       btn.textContent = 'Spin & Try Your Luck — ₹{{ spin_pack_amount }}';
       return;
@@ -509,17 +471,24 @@ async function doSpin() {
   // Rebuild strips for a fresh animation
   ['strip1','strip2','strip3'].forEach(id => buildReelStrip(id));
 
-  const res = await fetch('{% url "jackpot_use_spin" %}', {
-    method: 'POST',
-    headers: { 'X-CSRFToken': getCsrf(), 'Content-Type': 'application/json' },
-    body: JSON.stringify({})
-  });
-  const data = await res.json();
+  let data;
+  try {
+    const res = await fetch('{% url "jackpot_use_spin" %}', {
+      method: 'POST',
+      headers: { 'X-CSRFToken': getCsrf(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({})
+    });
+    data = await res.json();
+  } catch (e) {
+    alert('Network error — your spin was not used. Please try again.');
+    spinBtn.disabled = false;
+    return;
+  }
 
   if (!data.success) {
     if (data.needs_topup) {
-      const go = confirm('⚠️ ' + (data.error || 'Insufficient balance.') + '\n\nWould you like to add money now?');
-      if (go) window.location.href = '{% url "add_money" %}';
+      const go = confirm('⚠️ ' + (data.error || 'No spins available.') + '\n\nBuy more spins now?');
+      if (go) { closeSpinMachine(); openJackpotModal(); }
     } else {
       alert(data.error || 'Spin failed');
     }

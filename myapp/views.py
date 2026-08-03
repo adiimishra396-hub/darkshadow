@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
 from django.contrib.auth.models import User
 from django.contrib import messages
-from django.db import OperationalError
+from django.db import OperationalError, transaction
 from django.db.models import Sum, Count
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
@@ -621,16 +621,9 @@ def jackpot_create_order(request):
     key_id, key_secret = get_razorpay_keys()
     if not key_id or not key_secret:
         return JsonResponse({'error': 'Payment gateway not configured. Please contact admin.'}, status=503)
-    # Check user wallet balance
     spin_cfg = get_spin_settings()
     spin_pack_amount = spin_cfg.spin_pack_amount
-    wallet = _get_or_create_wallet(request.user)
-    if wallet.balance < spin_pack_amount:
-        return JsonResponse({
-            'error': f'Insufficient balance. Please add at least ₹{spin_pack_amount} to your wallet first.',
-            'needs_topup': True,
-        }, status=402)
-    spin_pack_spins = spin_cfg.spin_pack_spins
+    spin_pack_spins  = spin_cfg.spin_pack_spins
     try:
         client = razorpay.Client(auth=(key_id, key_secret))
         amount_paise = int(spin_pack_amount * 100)
@@ -680,17 +673,18 @@ def jackpot_verify_payment(request):
         expected = hmac.new(key_secret.encode(), msg.encode(), hashlib.sha256).hexdigest()
         if not hmac.compare_digest(expected, razorpay_signature):
             return JsonResponse({'success': False, 'error': 'Invalid payment signature'}, status=400)
-        purchase = SpinPurchase.objects.filter(
-            user=request.user, razorpay_order_id=razorpay_order_id, status='pending'
-        ).first()
-        if not purchase:
-            return JsonResponse({'success': False, 'error': 'Purchase record not found'}, status=404)
-        purchase.razorpay_payment_id = razorpay_payment_id
-        purchase.status = 'success'
-        purchase.save()
-        spin_wallet = _get_or_create_spin_wallet(request.user)
-        spin_wallet.spins += purchase.spins_purchased
-        spin_wallet.save()
+        with transaction.atomic():
+            purchase = SpinPurchase.objects.select_for_update().filter(
+                user=request.user, razorpay_order_id=razorpay_order_id, status='pending'
+            ).first()
+            if not purchase:
+                return JsonResponse({'success': False, 'error': 'Purchase record not found'}, status=404)
+            purchase.razorpay_payment_id = razorpay_payment_id
+            purchase.status = 'success'
+            purchase.save()
+            spin_wallet, _ = SpinWallet.objects.select_for_update().get_or_create(user=request.user)
+            spin_wallet.spins += purchase.spins_purchased
+            spin_wallet.save()
         return JsonResponse({
             'success': True,
             'spins_credited': purchase.spins_purchased,
@@ -704,34 +698,17 @@ def jackpot_verify_payment(request):
 # ── Jackpot: Use a Spin ─────────────────────────────────────────────────────────
 @require_POST
 def jackpot_use_spin(request):
-    """Deducts one spin from the user's spin wallet. No winning logic — every spin is a loss."""
+    """Deducts one spin from the user's spin wallet. Spins are prepaid when the pack
+    is purchased via Razorpay, so using one never touches wallet balance.
+    No winning logic — every spin is a loss."""
     if not request.user.is_authenticated:
         return JsonResponse({'error': 'Login required', 'needs_login': True}, status=401)
-    # Check wallet balance — user must have enough balance to spin
-    spin_cfg   = get_spin_settings()
-    wallet     = _get_or_create_wallet(request.user)
-    spin_wallet = _get_or_create_spin_wallet(request.user)
-    if spin_wallet.spins < 1:
-        return JsonResponse({'success': False, 'error': 'No spins available. Please buy more spins.', 'needs_topup': True}, status=400)
-    if wallet.balance < spin_cfg.spin_pack_amount:
-        return JsonResponse({
-            'success': False,
-            'error': f'Insufficient wallet balance. Please add at least ₹{spin_cfg.spin_pack_amount} to spin.',
-            'needs_topup': True,
-        }, status=402)
-    # Deduct one spin
-    spin_wallet.spins -= 1
-    spin_wallet.save()
-    # Deduct spin cost from wallet
-    spin_cost = spin_cfg.spin_pack_amount / spin_cfg.spin_pack_spins
-    wallet.balance -= spin_cost
-    wallet.save()
-    WalletTransaction.objects.create(
-        wallet=wallet,
-        amount=spin_cost,
-        txn_type='debit',
-        description='Jackpot spin played',
-    )
+    with transaction.atomic():
+        spin_wallet, _ = SpinWallet.objects.select_for_update().get_or_create(user=request.user)
+        if spin_wallet.spins < 1:
+            return JsonResponse({'success': False, 'error': 'No spins available. Please buy more spins.', 'needs_topup': True}, status=400)
+        spin_wallet.spins -= 1
+        spin_wallet.save()
     return JsonResponse({'success': True, 'remaining_spins': spin_wallet.spins})
 
 
