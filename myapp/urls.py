@@ -38,4 +38,8 @@ urlpatterns = [
 
     # Dice Roll
     path('dice/play/', views.dice_play, name='dice_play'),
+
+    # Card High-Low
+    path('cardhilo/deal/', views.cardhilo_deal, name='cardhilo_deal'),
+    path('cardhilo/resolve/', views.cardhilo_resolve, name='cardhilo_resolve'),
 ]

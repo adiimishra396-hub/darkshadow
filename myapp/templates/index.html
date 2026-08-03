@@ -499,6 +499,20 @@
         </a>
         {% endif %}
 
+        {% if cardhilo_active %}
+        <!-- Card High-Low — in-house, real win/lose game -->
+        <a href="javascript:void(0)" onclick="openCardHiLoModal()" class="game-card" data-cat="cards">
+          <span class="g-badge new">Play In-House</span>
+          <img class="game-card-thumb" src="https://images.unsplash.com/photo-1541278107931-e006523892df?q=80&w=600&auto=format&fit=crop" alt="Card High-Low">
+          <div class="game-card-body">
+            <div class="game-card-cat">Card Games</div>
+            <div class="game-card-title">Card High-Low</div>
+            <div class="game-card-desc">A card is dealt — call Higher or Lower on the next one and win a multiplier, right here on Darkshadow.</div>
+            <span class="game-card-play">Play Now</span>
+          </div>
+        </a>
+        {% endif %}
+
         <!-- Teen Patti -->
         <a href="https://www.teenpatti.com/" target="_blank" rel="noopener" class="game-card" data-cat="cards">
           <span class="g-badge live">Live</span>
@@ -844,6 +858,7 @@
   {% include 'jackpot_modal.html' %}
   {% include 'coinflip_modal.html' %}
   {% include 'dice_modal.html' %}
+  {% include 'cardhilo_modal.html' %}
 
 <script>
   // ── Popup

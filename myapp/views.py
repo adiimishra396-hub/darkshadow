@@ -6,11 +6,13 @@ from django.db import OperationalError, transaction
 from django.db.models import Sum, Count
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
+from django.utils import timezone
 from decimal import Decimal, InvalidOperation
 from .models import (
     UserProfile, Payment, Wallet, WalletTransaction,
     SpinWallet, SpinPurchase, RazorpaySettings, SpinMachineSettings,
     CoinFlipSettings, CoinFlipBet, DiceSettings, DiceBet,
+    CardHighLowSettings, CardHighLowRound,
 )
 import razorpay
 import os
@@ -78,6 +80,19 @@ def get_dice_settings():
         return _Defaults()
 
 
+def get_cardhilo_settings():
+    """Returns the CardHighLowSettings singleton. Safe fallback if table missing."""
+    try:
+        return CardHighLowSettings.get_singleton()
+    except Exception:
+        class _Defaults:
+            house_edge_percent = Decimal('5.00')
+            min_bet            = Decimal('10.00')
+            max_bet            = Decimal('5000.00')
+            is_active          = True
+        return _Defaults()
+
+
 # ── Admin bootstrap ─────────────────────────────────────────────────────────────
 def _ensure_admin():
     user, created = User.objects.get_or_create(
@@ -124,6 +139,7 @@ def home(request):
     spin_cfg     = get_spin_settings()
     coinflip_cfg = get_coinflip_settings()
     dice_cfg     = get_dice_settings()
+    cardhilo_cfg = get_cardhilo_settings()
     return render(request, 'index.html', {
         'spin_wallet':              spin_wallet,
         'wallet':                   wallet,
@@ -140,6 +156,10 @@ def home(request):
         'dice_min_bet':             dice_cfg.min_bet,
         'dice_max_bet':             dice_cfg.max_bet,
         'dice_house_edge':          dice_cfg.house_edge_percent,
+        'cardhilo_active':          cardhilo_cfg.is_active,
+        'cardhilo_min_bet':         cardhilo_cfg.min_bet,
+        'cardhilo_max_bet':         cardhilo_cfg.max_bet,
+        'cardhilo_house_edge':      cardhilo_cfg.house_edge_percent,
     })
 
 
@@ -936,6 +956,150 @@ def dice_play(request):
     return JsonResponse({
         'success':     True,
         'roll':        roll,
+        'won':         won,
+        'multiplier':  float(multiplier),
+        'payout':      float(payout),
+        'new_balance': float(wallet.balance),
+    })
+
+
+# ── Card High-Low: Deal & Resolve ───────────────────────────────────────────────
+CARD_RANKS = list(range(2, 15))  # 2..14, Ace = 14 (high)
+CARD_SUITS = ['S', 'H', 'D', 'C']
+
+
+def _draw_card():
+    return secrets.choice(CARD_RANKS), secrets.choice(CARD_SUITS)
+
+
+def _hilo_win_chance_percent(rank, choice):
+    """Odds are computed against a fresh 51-card remainder (4 of each rank,
+    minus the dealt card) — each round is an independent fresh deck, not a
+    depleting shoe across rounds."""
+    count = 4 * (14 - rank) if choice == 'higher' else 4 * (rank - 2)
+    return Decimal(count) / Decimal(51) * Decimal(100)
+
+
+@require_POST
+def cardhilo_deal(request):
+    """Phase 1: take the bet, draw & persist the current card server-side.
+    The card must live in the DB (not be trusted from the client on resolve)
+    or a client could fake a guaranteed-win 'current card' on the next call."""
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'Login required', 'needs_login': True}, status=401)
+    if request.user.is_superuser:
+        return JsonResponse({'error': 'Admins cannot play'}, status=403)
+
+    cfg = get_cardhilo_settings()
+    if not cfg.is_active:
+        return JsonResponse({'error': 'Card High-Low is currently unavailable'}, status=503)
+
+    try:
+        data = json.loads(request.body)
+        bet_amount = Decimal(str(data.get('bet_amount', '0')))
+    except (ValueError, TypeError, InvalidOperation, json.JSONDecodeError):
+        return JsonResponse({'error': 'Invalid request'}, status=400)
+
+    if bet_amount < cfg.min_bet or bet_amount > cfg.max_bet:
+        return JsonResponse({'error': f'Bet must be between ₹{cfg.min_bet} and ₹{cfg.max_bet}'}, status=400)
+
+    with transaction.atomic():
+        if CardHighLowRound.objects.select_for_update().filter(user=request.user, status='dealt').exists():
+            return JsonResponse({'error': 'Finish your current round first — choose Higher or Lower.'}, status=409)
+
+        wallet, _ = Wallet.objects.select_for_update().get_or_create(user=request.user)
+        if wallet.balance < bet_amount:
+            return JsonResponse({'error': 'Insufficient wallet balance', 'needs_topup': True}, status=402)
+
+        wallet.balance -= bet_amount
+        wallet.save()
+        WalletTransaction.objects.create(
+            wallet=wallet, amount=bet_amount, txn_type='debit',
+            description='Card High-Low bet',
+        )
+
+        rank, suit = _draw_card()
+        round_obj = CardHighLowRound.objects.create(
+            user=request.user, bet_amount=bet_amount,
+            current_rank=rank, current_suit=suit,
+        )
+
+    return JsonResponse({
+        'success':     True,
+        'round_id':    round_obj.id,
+        'rank':        rank,
+        'suit':        suit,
+        'can_higher':  rank < 14,
+        'can_lower':   rank > 2,
+        'new_balance': float(wallet.balance),
+    })
+
+
+@require_POST
+def cardhilo_resolve(request):
+    """Phase 2: player calls Higher/Lower against the previously dealt card."""
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'Login required', 'needs_login': True}, status=401)
+
+    cfg = get_cardhilo_settings()
+
+    try:
+        data     = json.loads(request.body)
+        round_id = int(data.get('round_id', 0))
+        choice   = data.get('choice')
+    except (ValueError, TypeError, json.JSONDecodeError):
+        return JsonResponse({'error': 'Invalid request'}, status=400)
+
+    if choice not in ('higher', 'lower'):
+        return JsonResponse({'error': 'Choose Higher or Lower'}, status=400)
+
+    with transaction.atomic():
+        round_obj = CardHighLowRound.objects.select_for_update().filter(
+            id=round_id, user=request.user, status='dealt'
+        ).first()
+        if not round_obj:
+            return JsonResponse({'error': 'Round not found or already resolved'}, status=404)
+
+        if choice == 'higher' and round_obj.current_rank >= 14:
+            return JsonResponse({'error': 'Cannot call Higher on an Ace'}, status=400)
+        if choice == 'lower' and round_obj.current_rank <= 2:
+            return JsonResponse({'error': 'Cannot call Lower on a 2'}, status=400)
+
+        win_chance_percent = _hilo_win_chance_percent(round_obj.current_rank, choice)
+        multiplier = _dice_multiplier(win_chance_percent, cfg.house_edge_percent)
+
+        next_rank, next_suit = _draw_card()
+        if choice == 'higher':
+            won = next_rank > round_obj.current_rank
+        else:
+            won = next_rank < round_obj.current_rank
+        # a tie (next_rank == current_rank) is not a win either way
+
+        payout = (round_obj.bet_amount * multiplier).quantize(Decimal('0.01')) if won else Decimal('0.00')
+
+        wallet, _ = Wallet.objects.select_for_update().get_or_create(user=request.user)
+        if won:
+            wallet.balance += payout
+            wallet.save()
+            WalletTransaction.objects.create(
+                wallet=wallet, amount=payout, txn_type='credit',
+                description='Card High-Low payout',
+            )
+
+        round_obj.next_rank   = next_rank
+        round_obj.next_suit   = next_suit
+        round_obj.choice      = choice
+        round_obj.status      = 'resolved'
+        round_obj.won         = won
+        round_obj.multiplier  = multiplier
+        round_obj.payout      = payout
+        round_obj.resolved_at = timezone.now()
+        round_obj.save()
+
+    return JsonResponse({
+        'success':     True,
+        'next_rank':   next_rank,
+        'next_suit':   next_suit,
         'won':         won,
         'multiplier':  float(multiplier),
         'payout':      float(payout),

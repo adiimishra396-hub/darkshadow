@@ -1,0 +1,307 @@
+{% comment %}
+  Card High-Low — real win/lose game, wallet-integrated. Modal + JS.
+  Requires context: wallet, cardhilo_active, cardhilo_min_bet, cardhilo_max_bet,
+                    cardhilo_house_edge
+  Opened via openCardHiLoModal() from a game-card in the All Games section.
+  Two-phase flow: deal (bet taken, current card shown) -> call Higher/Lower
+  (next card drawn, round resolved).
+{% endcomment %}
+
+{% if cardhilo_active %}
+<div id="cardHiLoModal" style="
+  display:none;position:fixed;inset:0;z-index:10004;
+  background:rgba(0,0,0,.8);backdrop-filter:blur(6px);
+  align-items:center;justify-content:center;
+  opacity:0;transition:opacity .25s ease;
+">
+  <div style="
+    background:linear-gradient(160deg,#1a1a2e 0%,#16213e 60%,#0f3460 100%);
+    border:1px solid rgba(255,210,0,.3);border-radius:20px;
+    padding:32px 30px;max-width:420px;width:92%;text-align:center;
+    box-shadow:0 0 60px rgba(255,210,0,.15);
+    position:relative;
+    transform:scale(0.92);transition:transform .25s cubic-bezier(.34,1.56,.64,1);
+  ">
+    <button onclick="closeCardHiLoModal()" style="
+      position:absolute;top:14px;right:18px;
+      background:none;border:none;color:#aaa;font-size:1.4rem;cursor:pointer;
+    ">✕</button>
+
+    <h2 style="color:#ffd200;font-size:1.5rem;margin-bottom:4px;">🃏 Card High-Low</h2>
+    <p style="color:#aaa;font-size:.85rem;margin-bottom:18px;">
+      A card is dealt. Call whether the next one is Higher or Lower.
+    </p>
+
+    {% if user.is_authenticated %}
+      <!-- Wallet balance -->
+      <div style="
+        background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);
+        border-radius:10px;padding:12px 16px;margin-bottom:18px;
+        display:flex;align-items:center;justify-content:space-between;
+      ">
+        <span style="color:#aaa;font-size:.88rem;">💰 Wallet Balance</span>
+        <span style="color:#4ade80;font-weight:700;font-size:1rem;" id="chWalletBalance">
+          ₹{% if wallet %}{{ wallet.balance|floatformat:2 }}{% else %}0.00{% endif %}
+        </span>
+      </div>
+
+      <!-- Card display -->
+      <div style="display:flex;justify-content:center;gap:16px;margin-bottom:16px;">
+        <div id="chCurrentCard" style="
+          width:80px;height:110px;border-radius:10px;background:#fff;
+          display:flex;align-items:center;justify-content:center;
+          font-size:1.8rem;font-weight:800;box-shadow:0 6px 20px rgba(0,0,0,.4);
+        ">🂠</div>
+        <div id="chNextCard" style="
+          width:80px;height:110px;border-radius:10px;
+          background:rgba(255,255,255,.08);border:2px dashed rgba(255,255,255,.2);
+          display:flex;align-items:center;justify-content:center;
+          font-size:1.8rem;font-weight:800;color:#666;
+        ">?</div>
+      </div>
+
+      <div id="chResult" style="min-height:32px;font-size:1.05rem;font-weight:700;margin-bottom:14px;"></div>
+
+      <!-- Phase 1: bet entry -->
+      <div id="chBetPhase">
+        <div style="text-align:left;margin-bottom:16px;">
+          <label style="color:#aaa;font-size:.82rem;display:block;margin-bottom:6px;">
+            Bet Amount (₹{{ cardhilo_min_bet }} – ₹{{ cardhilo_max_bet }})
+          </label>
+          <input type="number" id="chBetAmount" value="{{ cardhilo_min_bet }}"
+            min="{{ cardhilo_min_bet }}" max="{{ cardhilo_max_bet }}" step="1"
+            style="
+              width:100%;padding:12px 14px;border-radius:10px;
+              border:1px solid rgba(255,210,0,.3);background:rgba(255,255,255,.06);
+              color:#fff;font-size:1rem;box-sizing:border-box;
+            ">
+        </div>
+        <button id="chDealBtn" onclick="dealCardHiLo()" style="
+          width:100%;padding:14px;border:none;border-radius:14px;
+          background:linear-gradient(135deg,#f7971e,#ffd200);
+          color:#1a1a2e;font-size:1.1rem;font-weight:800;
+          cursor:pointer;box-shadow:0 4px 18px rgba(255,210,0,.45);
+          transition:transform .15s;
+        " onmouseover="this.style.transform='scale(1.03)'" onmouseout="this.style.transform='scale(1)'">
+          🃏 DEAL
+        </button>
+      </div>
+
+      <!-- Phase 2: call higher/lower -->
+      <div id="chCallPhase" style="display:none;">
+        <div style="display:flex;gap:10px;margin-bottom:10px;">
+          <button type="button" id="chHigherBtn" onclick="callCardHiLo('higher')" style="
+            flex:1;padding:14px;border-radius:12px;cursor:pointer;font-weight:800;
+            border:none;background:linear-gradient(135deg,#22c55e,#4ade80);color:#0f2417;
+          ">▲ Higher</button>
+          <button type="button" id="chLowerBtn" onclick="callCardHiLo('lower')" style="
+            flex:1;padding:14px;border-radius:12px;cursor:pointer;font-weight:800;
+            border:none;background:linear-gradient(135deg,#ef4444,#f87171);color:#2b0d0d;
+          ">▼ Lower</button>
+        </div>
+      </div>
+
+      <!-- Phase 3: round finished -->
+      <div id="chPlayAgainPhase" style="display:none;">
+        <button onclick="resetCardHiLo()" style="
+          width:100%;padding:14px;border:none;border-radius:14px;
+          background:linear-gradient(135deg,#f7971e,#ffd200);
+          color:#1a1a2e;font-size:1.05rem;font-weight:800;cursor:pointer;
+        ">Play Again</button>
+      </div>
+    {% else %}
+      <a href="{% url 'login' %}" style="
+        display:block;width:100%;padding:14px;border:none;border-radius:12px;
+        background:linear-gradient(135deg,#f7971e,#ffd200);
+        color:#1a1a2e;font-size:1.1rem;font-weight:800;text-decoration:none;
+        box-shadow:0 4px 15px rgba(255,210,0,.4);
+      ">Login to Play 🃏</a>
+    {% endif %}
+
+    <p style="color:#666;font-size:.78rem;margin-top:16px;">18+ only · Gamble responsibly</p>
+  </div>
+</div>
+
+<script>
+let chRoundId = null;
+let chBetAmountPlaced = 0;
+
+const CH_RANK_LABELS = {11: 'J', 12: 'Q', 13: 'K', 14: 'A'};
+const CH_SUIT_SYMBOLS = {S: '♠', H: '♥', D: '♦', C: '♣'};
+const CH_RED_SUITS = ['H', 'D'];
+
+function chRankLabel(rank) {
+  return CH_RANK_LABELS[rank] || String(rank);
+}
+function chRenderCard(el, rank, suit) {
+  el.textContent = chRankLabel(rank) + CH_SUIT_SYMBOLS[suit];
+  el.style.color = CH_RED_SUITS.includes(suit) ? '#dc2626' : '#111';
+  el.style.background = '#fff';
+  el.style.border = 'none';
+}
+
+function chGetCsrf() {
+  const m = document.cookie.match(/(?:^|;\s*)csrftoken=([^;]+)/);
+  return m ? m[1] : '';
+}
+
+function chShowModal(el) {
+  el.style.display = 'flex';
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      el.style.opacity = '1';
+      const inner = el.querySelector('div');
+      if (inner) inner.style.transform = 'scale(1)';
+    });
+  });
+}
+function chHideModal(el) {
+  el.style.opacity = '0';
+  const inner = el.querySelector('div');
+  if (inner) inner.style.transform = 'scale(0.92)';
+  setTimeout(() => { el.style.display = 'none'; }, 260);
+}
+
+function openCardHiLoModal() {
+  {% if not user.is_authenticated %}
+    window.location.href = '{% url "login" %}';
+    return;
+  {% endif %}
+  resetCardHiLo();
+  chShowModal(document.getElementById('cardHiLoModal'));
+}
+
+function closeCardHiLoModal() {
+  chHideModal(document.getElementById('cardHiLoModal'));
+}
+
+function resetCardHiLo() {
+  chRoundId = null;
+  chBetAmountPlaced = 0;
+  document.getElementById('chBetPhase').style.display = 'block';
+  document.getElementById('chCallPhase').style.display = 'none';
+  document.getElementById('chPlayAgainPhase').style.display = 'none';
+  document.getElementById('chResult').textContent = '';
+  const cur = document.getElementById('chCurrentCard');
+  cur.textContent = '🂠';
+  cur.style.color = '';
+  cur.style.background = 'rgba(255,255,255,.08)';
+  const next = document.getElementById('chNextCard');
+  next.textContent = '?';
+  next.style.color = '#666';
+  next.style.background = 'rgba(255,255,255,.08)';
+  const betInput = document.getElementById('chBetAmount');
+  betInput.disabled = false;
+  const dealBtn = document.getElementById('chDealBtn');
+  dealBtn.disabled = false;
+  dealBtn.textContent = '🃏 DEAL';
+}
+
+async function dealCardHiLo() {
+  const betInput = document.getElementById('chBetAmount');
+  const dealBtn  = document.getElementById('chDealBtn');
+  const betAmount = parseFloat(betInput.value);
+
+  if (!betAmount || betAmount <= 0) {
+    alert('Enter a valid bet amount.');
+    return;
+  }
+
+  dealBtn.disabled = true;
+  dealBtn.textContent = 'Dealing…';
+
+  let data;
+  try {
+    const res = await fetch('{% url "cardhilo_deal" %}', {
+      method: 'POST',
+      headers: { 'X-CSRFToken': chGetCsrf(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ bet_amount: betAmount })
+    });
+    data = await res.json();
+  } catch (e) {
+    alert('Network error — your bet was not placed. Please try again.');
+    dealBtn.disabled = false;
+    dealBtn.textContent = '🃏 DEAL';
+    return;
+  }
+
+  if (!data.success) {
+    if (data.needs_topup) {
+      const go = confirm('⚠️ ' + (data.error || 'Insufficient balance.') + '\n\nAdd money to your wallet now?');
+      if (go) window.location.href = '{% url "add_money" %}';
+    } else {
+      alert(data.error || 'Could not deal');
+    }
+    dealBtn.disabled = false;
+    dealBtn.textContent = '🃏 DEAL';
+    return;
+  }
+
+  chRoundId = data.round_id;
+  chBetAmountPlaced = betAmount;
+
+  chRenderCard(document.getElementById('chCurrentCard'), data.rank, data.suit);
+  const balanceEl = document.getElementById('chWalletBalance');
+  if (balanceEl) balanceEl.textContent = '₹' + Number(data.new_balance).toFixed(2);
+
+  betInput.disabled = true;
+  document.getElementById('chBetPhase').style.display = 'none';
+  document.getElementById('chCallPhase').style.display = 'block';
+
+  const higherBtn = document.getElementById('chHigherBtn');
+  const lowerBtn  = document.getElementById('chLowerBtn');
+  higherBtn.disabled = !data.can_higher;
+  higherBtn.style.opacity = data.can_higher ? '1' : '0.4';
+  higherBtn.style.cursor = data.can_higher ? 'pointer' : 'not-allowed';
+  lowerBtn.disabled = !data.can_lower;
+  lowerBtn.style.opacity = data.can_lower ? '1' : '0.4';
+  lowerBtn.style.cursor = data.can_lower ? 'pointer' : 'not-allowed';
+}
+
+async function callCardHiLo(choice) {
+  if (!chRoundId) return;
+  const higherBtn = document.getElementById('chHigherBtn');
+  const lowerBtn  = document.getElementById('chLowerBtn');
+  higherBtn.disabled = true;
+  lowerBtn.disabled = true;
+
+  let data;
+  try {
+    const res = await fetch('{% url "cardhilo_resolve" %}', {
+      method: 'POST',
+      headers: { 'X-CSRFToken': chGetCsrf(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ round_id: chRoundId, choice: choice })
+    });
+    data = await res.json();
+  } catch (e) {
+    alert('Network error. If your round did not resolve, reopen this game to check.');
+    higherBtn.disabled = false;
+    lowerBtn.disabled = false;
+    return;
+  }
+
+  if (!data.success) {
+    alert(data.error || 'Could not resolve round');
+    higherBtn.disabled = false;
+    lowerBtn.disabled = false;
+    return;
+  }
+
+  chRenderCard(document.getElementById('chNextCard'), data.next_rank, data.next_suit);
+  const balanceEl = document.getElementById('chWalletBalance');
+  if (balanceEl) balanceEl.textContent = '₹' + Number(data.new_balance).toFixed(2);
+
+  const resultEl = document.getElementById('chResult');
+  if (data.won) {
+    resultEl.style.color = '#4ade80';
+    resultEl.textContent = `🎉 You won ₹${data.payout.toFixed(2)} (${data.multiplier}x)`;
+  } else {
+    resultEl.style.color = '#ef4444';
+    resultEl.textContent = `😔 You lost ₹${chBetAmountPlaced.toFixed(2)}`;
+  }
+
+  document.getElementById('chCallPhase').style.display = 'none';
+  document.getElementById('chPlayAgainPhase').style.display = 'block';
+}
+</script>
+{% endif %}

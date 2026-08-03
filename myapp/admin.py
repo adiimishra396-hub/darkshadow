@@ -4,6 +4,7 @@ from .models import (
     UserProfile, Wallet, WalletTransaction, Payment,
     SpinWallet, SpinPurchase, RazorpaySettings, SpinMachineSettings,
     CoinFlipSettings, CoinFlipBet, DiceSettings, DiceBet,
+    CardHighLowSettings, CardHighLowRound,
 )
 
 
@@ -116,3 +117,21 @@ class DiceBetAdmin(admin.ModelAdmin):
     list_filter = ('won', 'direction')
     search_fields = ('user__username',)
     readonly_fields = ('created_at',)
+
+
+@admin.register(CardHighLowSettings)
+class CardHighLowSettingsAdmin(admin.ModelAdmin):
+    list_display = ('house_edge_percent', 'min_bet', 'max_bet', 'is_active', 'updated_at')
+    readonly_fields = ('updated_at',)
+
+    def has_add_permission(self, request):
+        # Singleton row (pk=1) — created lazily via get_singleton().
+        return not CardHighLowSettings.objects.exists()
+
+
+@admin.register(CardHighLowRound)
+class CardHighLowRoundAdmin(admin.ModelAdmin):
+    list_display = ('user', 'bet_amount', 'current_rank', 'current_suit', 'status', 'choice', 'next_rank', 'won', 'payout', 'created_at')
+    list_filter = ('status', 'won', 'choice')
+    search_fields = ('user__username',)
+    readonly_fields = ('created_at', 'resolved_at')

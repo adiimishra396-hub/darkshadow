@@ -232,6 +232,84 @@ class DiceBet(models.Model):
         return f"{self.user.username} | ₹{self.bet_amount} | {self.direction} {self.target}, rolled {self.roll} | {outcome}"
 
 
+class CardHighLowSettings(models.Model):
+    """
+    Singleton model (id=1). Admin sets Card High-Low house edge & bet limits.
+    Real win/lose game — a card is dealt, the player calls whether the next
+    card will be Higher or Lower; payout multiplier is derived from the
+    actual card-count odds for the dealt rank & house edge.
+    """
+    house_edge_percent = models.DecimalField(max_digits=4, decimal_places=2, default='5.00',
+        help_text='House edge as a percentage (e.g. 5.00 = 5%). Lower = better payouts for players.')
+    min_bet    = models.DecimalField(max_digits=10, decimal_places=2, default='10.00',
+        help_text='Minimum bet amount (INR)')
+    max_bet    = models.DecimalField(max_digits=10, decimal_places=2, default='5000.00',
+        help_text='Maximum bet amount (INR)')
+    is_active  = models.BooleanField(default=True,
+        help_text='Show/hide Card High-Low on the homepage')
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Card High-Low Settings'
+        verbose_name_plural = 'Card High-Low Settings'
+
+    def __str__(self):
+        return f'Card High-Low Settings (updated {self.updated_at})'
+
+    @classmethod
+    def get_singleton(cls):
+        obj, _ = cls.objects.get_or_create(pk=1)
+        return obj
+
+
+class CardHighLowRound(models.Model):
+    """
+    Records every Card High-Low round. Two-phase: a round is created as
+    'dealt' when the current card is drawn & the bet is taken, then becomes
+    'resolved' once the player calls Higher/Lower and the next card is drawn.
+    Server-side state is required here (unlike Coin Flip/Dice) because the
+    player must see the dealt card before choosing — trusting a client-sent
+    "current card" would let a client fake a guaranteed win.
+    """
+    CHOICE_CHOICES = [
+        ('higher', 'Higher'),
+        ('lower',  'Lower'),
+    ]
+    STATUS_CHOICES = [
+        ('dealt',    'Dealt'),
+        ('resolved', 'Resolved'),
+    ]
+    SUIT_CHOICES = [
+        ('S', 'Spades'),
+        ('H', 'Hearts'),
+        ('D', 'Diamonds'),
+        ('C', 'Clubs'),
+    ]
+
+    user         = models.ForeignKey(User, on_delete=models.CASCADE, related_name='cardhilo_rounds')
+    bet_amount   = models.DecimalField(max_digits=10, decimal_places=2)
+    current_rank = models.PositiveSmallIntegerField(help_text='2-14 (Ace = 14)')
+    current_suit = models.CharField(max_length=1, choices=SUIT_CHOICES)
+    next_rank    = models.PositiveSmallIntegerField(null=True, blank=True)
+    next_suit    = models.CharField(max_length=1, choices=SUIT_CHOICES, blank=True)
+    choice       = models.CharField(max_length=6, choices=CHOICE_CHOICES, blank=True)
+    status       = models.CharField(max_length=8, choices=STATUS_CHOICES, default='dealt')
+    won          = models.BooleanField(null=True)
+    multiplier   = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
+    payout       = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    created_at   = models.DateTimeField(auto_now_add=True)
+    resolved_at  = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        if self.status == 'dealt':
+            return f"{self.user.username} | ₹{self.bet_amount} | dealt {self.current_rank}{self.current_suit} | awaiting call"
+        outcome = 'WON' if self.won else 'LOST'
+        return f"{self.user.username} | ₹{self.bet_amount} | {self.current_rank}{self.current_suit} → called {self.choice}, got {self.next_rank}{self.next_suit} | {outcome}"
+
+
 class SpinMachineSettings(models.Model):
     """
     Singleton model (id=1). Admin sets spin pack pricing and the jackpot
