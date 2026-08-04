@@ -147,10 +147,6 @@ function bcHideModal(el) {
   setTimeout(() => { el.style.display = 'none'; }, 260);
 }
 function openBaccaratModal() {
-  {% if not user.is_authenticated %}
-    window.location.href = '{% url "login" %}';
-    return;
-  {% endif %}
   document.getElementById('bcResult').textContent = '';
   document.getElementById('bcBankerCards').innerHTML = '';
   document.getElementById('bcPlayerCards').innerHTML = '';

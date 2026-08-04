@@ -396,6 +396,9 @@
       <a href="#" id="tab-spin-link" onclick="switchTab('spin',this);return false;">
         <span class="icon">&#127920;</span><span>Spin Machine</span>
       </a>
+      <a href="#" id="tab-earnings-link" onclick="switchTab('earnings',this);return false;">
+        <span class="icon">&#128176;</span><span>Earnings</span>
+      </a>
       <a href="#" id="tab-settings-link" onclick="switchTab('settings',this);return false;">
         <span class="icon">&#9881;</span><span>Settings</span>
       </a>
@@ -586,38 +589,6 @@
         </div>
       </div>
 
-      <!-- Current Prize Overview -->
-      <div class="section-head" style="margin-bottom:12px;">
-        <h2>&#127920; Current Prize Table</h2>
-        {% if spin_cfg.is_active %}
-        <span class="s-status-badge live"><span class="sdot"></span> Machine Live</span>
-        {% else %}
-        <span class="s-status-badge off"><span class="sdot"></span> Machine Off</span>
-        {% endif %}
-      </div>
-      <div class="spin-prize-grid" style="margin-bottom:32px;">
-        <div class="prize-card">
-          <div class="p-icon">&#128142;</div>
-          <div class="p-name">3x Diamonds</div>
-          <div class="p-val">&#8377;{{ spin_cfg.prize_diamonds }}</div>
-        </div>
-        <div class="prize-card">
-          <div class="p-icon">7&#65039;&#8419;</div>
-          <div class="p-name">3x Lucky 7s</div>
-          <div class="p-val">&#8377;{{ spin_cfg.prize_sevens }}</div>
-        </div>
-        <div class="prize-card">
-          <div class="p-icon">&#127826;</div>
-          <div class="p-name">3x Cherries</div>
-          <div class="p-val">&#8377;{{ spin_cfg.prize_cherries }}</div>
-        </div>
-        <div class="prize-card">
-          <div class="p-icon">&#127922;</div>
-          <div class="p-name">Any 2-of-a-Kind</div>
-          <div class="p-val">&#8377;{{ spin_cfg.prize_two_of_kind }}</div>
-        </div>
-      </div>
-
       <!-- Pricing Settings Form -->
       <div class="settings-card spin-settings-card">
         <div class="settings-header">
@@ -630,15 +601,12 @@
           {% endif %}
         </div>
         <p class="s-desc">
-          Set the spin pack pricing (how many spins users get and at what price) and configure the winning prize amounts that get credited to the user's wallet. Changes take effect immediately on the homepage.
+          Set the spin pack pricing &mdash; how many spins users get per purchase and at what price. Changes take effect immediately on the homepage.
         </p>
 
         <form method="post" action="/admin-panel/save-spin-settings/">
           {% csrf_token %}
-
-          <!-- Pack Pricing -->
-          <div style="font-family:'Rajdhani',sans-serif;font-weight:700;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);margin-bottom:12px;">&#127981; Spin Pack Pricing</div>
-          <div class="s-form-grid" style="margin-bottom:24px;">
+          <div class="s-form-grid" style="margin-bottom:20px;">
             <div class="s-field">
               <label>Spins Per Pack</label>
               <input type="number" name="spin_pack_spins" min="1" max="100"
@@ -651,49 +619,6 @@
                      value="{{ spin_cfg.spin_pack_amount }}" placeholder="10">
               <span class="field-hint">Amount user pays per spin pack (Razorpay)</span>
             </div>
-          </div>
-
-          <!-- Prize Amounts -->
-          <div style="font-family:'Rajdhani',sans-serif;font-weight:700;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);margin-bottom:12px;">&#127942; Winning Prize Amounts (Wallet Credit)</div>
-          <div class="s-form-grid-3" style="margin-bottom:24px;">
-            <div class="s-field">
-              <label>&#128142; 3x Diamonds (&#8377;)</label>
-              <input type="number" name="prize_diamonds" min="0" step="0.01"
-                     value="{{ spin_cfg.prize_diamonds }}" placeholder="500">
-              <span class="field-hint">Top jackpot &mdash; credited to wallet</span>
-            </div>
-            <div class="s-field">
-              <label>7&#65039;&#8419; 3x Lucky 7s (&#8377;)</label>
-              <input type="number" name="prize_sevens" min="0" step="0.01"
-                     value="{{ spin_cfg.prize_sevens }}" placeholder="300">
-              <span class="field-hint">Second prize &mdash; credited to wallet</span>
-            </div>
-            <div class="s-field">
-              <label>&#127826; 3x Cherries (&#8377;)</label>
-              <input type="number" name="prize_cherries" min="0" step="0.01"
-                     value="{{ spin_cfg.prize_cherries }}" placeholder="100">
-              <span class="field-hint">Third prize &mdash; credited to wallet</span>
-            </div>
-          </div>
-          <div class="s-form-grid" style="margin-bottom:20px;">
-            <div class="s-field">
-              <label>&#127922; Any 2-of-a-Kind (&#8377;)</label>
-              <input type="number" name="prize_two_of_kind" min="0" step="0.01"
-                     value="{{ spin_cfg.prize_two_of_kind }}" placeholder="20">
-              <span class="field-hint">Consolation prize for partial matches</span>
-            </div>
-          </div>
-
-          <!-- Active Toggle -->
-          <div class="toggle-row">
-            <label>Show Spin Machine on Homepage</label>
-            <label class="toggle-switch">
-              <input type="checkbox" name="is_active" {% if spin_cfg.is_active %}checked{% endif %}>
-              <span class="toggle-slider"></span>
-            </label>
-            <span class="toggle-desc">
-              {% if spin_cfg.is_active %}Spin machine is <strong style="color:#86efac;">visible</strong> on the homepage{% else %}Spin machine is <strong style="color:#fdba74;">hidden</strong> from homepage{% endif %}
-            </span>
           </div>
 
           <div class="s-actions" style="margin-top:20px;">
@@ -733,6 +658,71 @@
       </div>
 
     </div><!-- /spin -->
+
+    <!-- ══ EARNINGS TAB ══════════════════════════════════════════════════════ -->
+    <div id="tab-earnings" class="tab-content">
+
+      <div class="stats-row">
+        <div class="stat-card gold">
+          <div class="sc-label">Total Platform Earnings</div>
+          <div class="sc-val">&#8377;{{ total_platform_earnings|floatformat:2 }}</div>
+          <div class="sc-sub">Deposit fees + net game profit</div>
+        </div>
+        <div class="stat-card green-card">
+          <div class="sc-label">Deposit Fees Collected</div>
+          <div class="sc-val">&#8377;{{ deposit_fee_total|floatformat:2 }}</div>
+          <div class="sc-sub">{{ site_cfg.deposit_fee_percent }}% per deposit</div>
+        </div>
+        <div class="stat-card">
+          <div class="sc-label">Net Game House Profit</div>
+          <div class="sc-val">&#8377;{{ game_house_profit|floatformat:2 }}</div>
+          <div class="sc-sub">Bets minus payouts, all games</div>
+        </div>
+        <div class="stat-card">
+          <div class="sc-label">Total Wagered</div>
+          <div class="sc-val">&#8377;{{ game_bet_total|floatformat:2 }}</div>
+          <div class="sc-sub">&#8377;{{ game_payout_total|floatformat:2 }} paid out to players</div>
+        </div>
+      </div>
+
+      <div class="settings-card" style="margin-bottom:28px;">
+        <div class="settings-header">
+          <div class="s-icon">&#128176;</div>
+          <h2>How This Is Calculated</h2>
+        </div>
+        <p class="s-desc">
+          <strong>Deposit fees</strong> are the {{ site_cfg.deposit_fee_percent }}% held back from every wallet
+          top-up (configurable in Settings). <strong>Net game house profit</strong> is computed from every
+          bet placed and every payout credited across all 12 in-house games and wallet-paid spin packs &mdash;
+          this money was never a separate transfer, it's simply the platform's share of gameplay, reported
+          here for visibility. No real money moves anywhere by viewing this tab.
+        </p>
+      </div>
+
+      <div class="section-head">
+        <h2>&#128179; Recent Deposit Fee Entries</h2>
+        <span class="badge">Last 15</span>
+      </div>
+      <div class="table-wrap">
+        {% if recent_earnings %}
+          <div class="tbl-head-spin" style="grid-template-columns:40px 1.4fr 1fr 2fr 1fr;">
+            <div>#</div><div>User</div><div>Amount</div><div>Description</div><div>Date</div>
+          </div>
+          {% for e in recent_earnings %}
+          <div class="tbl-row-spin" style="grid-template-columns:40px 1.4fr 1fr 2fr 1fr;">
+            <div class="idx">{{ forloop.counter }}</div>
+            <div>{% if e.user %}{{ e.user.first_name|default:e.user.username }}{% else %}&mdash;{% endif %}</div>
+            <div style="font-family:'Rajdhani',sans-serif;font-weight:700;color:var(--gold);">&#8377;{{ e.amount }}</div>
+            <div style="font-size:12px;color:var(--grey);">{{ e.description }}</div>
+            <div style="font-size:12px;color:var(--grey);">{{ e.created_at|date:"d M Y, H:i" }}</div>
+          </div>
+          {% endfor %}
+        {% else %}
+          <div class="empty-state"><div class="empty-icon">&#128176;</div>No deposit fees collected yet.</div>
+        {% endif %}
+      </div>
+
+    </div><!-- /earnings -->
 
     <!-- ══ SETTINGS TAB ══════════════════════════════════════════════════════ -->
     <div id="tab-settings" class="tab-content">
@@ -811,6 +801,119 @@
           <span class="warn-icon">&#9888;</span>
           <p>Use <strong>rzp_live_</strong> keys for real money. Use <strong>rzp_test_</strong> keys for testing. Never use live keys in test mode &mdash; transactions will fail. The secret key is stored encrypted in the DB and never exposed to the frontend.</p>
         </div>
+      </div>
+
+      <!-- SMTP / Email Settings Card -->
+      <div class="settings-card" style="margin-top:24px;">
+        <div class="settings-header">
+          <div class="s-icon">&#128231;</div>
+          <h2>SMTP / Email Settings</h2>
+          {% if smtp_cfg and smtp_cfg.is_configured %}
+          <span class="s-status-badge live" style="margin-left:auto;"><span class="sdot"></span> Configured</span>
+          {% else %}
+          <span class="s-status-badge not-set" style="margin-left:auto;"><span class="sdot"></span> Not Configured</span>
+          {% endif %}
+        </div>
+        <p class="s-desc">
+          Configure an SMTP account to send email notifications whenever someone submits the Contact Us form. Choose which inbox those notifications land in below.
+        </p>
+        <form method="post" action="{% url 'save_smtp_settings' %}">
+          {% csrf_token %}
+          <div class="s-form-grid">
+            <div class="s-field">
+              <label for="smtp_host">SMTP Host</label>
+              <div class="input-wrap">
+                <input type="text" id="smtp_host" name="smtp_host"
+                       placeholder="smtp.gmail.com"
+                       value="{% if smtp_cfg %}{{ smtp_cfg.host }}{% endif %}"
+                       autocomplete="off" spellcheck="false">
+              </div>
+            </div>
+            <div class="s-field">
+              <label for="smtp_port">SMTP Port</label>
+              <div class="input-wrap">
+                <input type="number" id="smtp_port" name="smtp_port"
+                       placeholder="587"
+                       value="{% if smtp_cfg %}{{ smtp_cfg.port }}{% else %}587{% endif %}"
+                       autocomplete="off">
+              </div>
+            </div>
+            <div class="s-field">
+              <label for="smtp_username">SMTP Username</label>
+              <div class="input-wrap">
+                <input type="text" id="smtp_username" name="smtp_username"
+                       placeholder="you@gmail.com"
+                       value="{% if smtp_cfg %}{{ smtp_cfg.username }}{% endif %}"
+                       autocomplete="off" spellcheck="false">
+              </div>
+            </div>
+            <div class="s-field">
+              <label for="smtp_password">SMTP Password</label>
+              <div class="input-wrap">
+                <input type="password" id="smtp_password" name="smtp_password"
+                       placeholder="App password"
+                       value="{% if smtp_cfg %}{{ smtp_cfg.password }}{% endif %}"
+                       autocomplete="new-password" spellcheck="false">
+                <button type="button" class="toggle-secret" onclick="toggleSecret('smtp_password')" title="Show/Hide password">&#128065;</button>
+              </div>
+              <span class="field-hint">For Gmail, use an App Password, not your account password.</span>
+            </div>
+            <div class="s-field">
+              <label for="smtp_from_email">From Email</label>
+              <div class="input-wrap">
+                <input type="email" id="smtp_from_email" name="smtp_from_email"
+                       placeholder="no-reply@darkshadow.com"
+                       value="{% if smtp_cfg %}{{ smtp_cfg.from_email }}{% endif %}"
+                       autocomplete="off">
+              </div>
+            </div>
+            <div class="s-field">
+              <label for="smtp_notify_email">Send Contact Us Emails To</label>
+              <div class="input-wrap">
+                <input type="email" id="smtp_notify_email" name="smtp_notify_email"
+                       placeholder="admin@darkshadow.com"
+                       value="{% if smtp_cfg %}{{ smtp_cfg.notify_email }}{% endif %}"
+                       autocomplete="off">
+              </div>
+            </div>
+          </div>
+          <div style="margin:14px 0;">
+            <label style="display:flex;align-items:center;gap:8px;color:#9FB0D8;font-family:'Rajdhani',sans-serif;font-size:13px;cursor:pointer;">
+              <input type="checkbox" id="smtp_use_tls" name="smtp_use_tls" {% if not smtp_cfg or smtp_cfg.use_tls %}checked{% endif %}>
+              Use TLS
+            </label>
+          </div>
+          <div class="s-actions">
+            <button type="submit" class="btn-save">&#10003; Save Email Settings</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Site Control Card -->
+      <div class="settings-card" style="margin-top:24px;">
+        <div class="settings-header">
+          <div class="s-icon">&#9888;</div>
+          <h2>Site Control</h2>
+          {% if site_cfg.site_disabled %}
+          <span class="s-status-badge not-set" style="margin-left:auto;background:rgba(239,68,68,.15);color:#f87171;"><span class="sdot" style="background:#f87171;"></span> Site Disabled</span>
+          {% else %}
+          <span class="s-status-badge live" style="margin-left:auto;"><span class="sdot"></span> Site Online</span>
+          {% endif %}
+        </div>
+        <p class="s-desc">
+          Disabling the site shows every visitor an error page. Your admin panel and login stay reachable, so you can always turn it back on.
+        </p>
+        <form method="post" action="{% url 'toggle_site_disabled' %}"
+              onsubmit="return confirm('{% if site_cfg.site_disabled %}Bring the site back online for all visitors?{% else %}Disable the site? All visitors will see an error page until you re-enable it.{% endif %}');">
+          {% csrf_token %}
+          <div class="s-actions">
+            {% if site_cfg.site_disabled %}
+            <button type="submit" class="btn-save" style="background:linear-gradient(135deg,#22c55e,#4ade80);">&#10003; Re-enable Site</button>
+            {% else %}
+            <button type="submit" class="btn-save" style="background:linear-gradient(135deg,#ef4444,#f87171);">&#9888; Disable Site</button>
+            {% endif %}
+          </div>
+        </form>
       </div>
 
     </div><!-- /settings -->
@@ -893,8 +996,8 @@
   function closeDeleteModal(){document.getElementById('deleteModal').classList.remove('show');}
   document.getElementById('deleteModal').addEventListener('click',function(e){if(e.target===this)closeDeleteModal();});
 
-  function toggleSecret(){
-    var inp=document.getElementById('rzp_key_secret');
+  function toggleSecret(fieldId){
+    var inp=document.getElementById(fieldId||'rzp_key_secret');
     inp.type=inp.type==='password'?'text':'password';
   }
 
@@ -902,7 +1005,7 @@
   (function(){
     {% if messages %}
     {% for message in messages %}
-    {% if 'Razorpay' in message.message %}
+    {% if 'Razorpay' in message.message or 'SMTP' in message.message or 'Site is now' in message.message or 'back ONLINE' in message.message %}
     var link=document.getElementById('tab-settings-link');
     if(link)switchTab('settings',link);
     {% endif %}

@@ -162,10 +162,6 @@ function bjHideModal(el) {
   setTimeout(() => { el.style.display = 'none'; }, 260);
 }
 function openBlackjackModal() {
-  {% if not user.is_authenticated %}
-    window.location.href = '{% url "login" %}';
-    return;
-  {% endif %}
   resetBlackjack();
   bjShowModal(document.getElementById('blackjackModal'));
 }

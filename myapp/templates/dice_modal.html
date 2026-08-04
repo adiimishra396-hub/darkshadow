@@ -152,10 +152,6 @@ function dcHideModal(el) {
 }
 
 function openDiceModal() {
-  {% if not user.is_authenticated %}
-    window.location.href = '{% url "login" %}';
-    return;
-  {% endif %}
   dcShowModal(document.getElementById('diceModal'));
   updateDiceOdds();
 }

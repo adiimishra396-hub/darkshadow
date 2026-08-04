@@ -10,6 +10,7 @@ from .models import (
     BlackjackSettings, BlackjackRound, BaccaratSettings, BaccaratBet,
     PokerSettings, PokerBet, RummySettings, RummyBet,
     CrashSettings, CrashRound, ContactMessage,
+    SiteSettings, PlatformEarning, SMTPSettings,
 )
 
 
@@ -302,3 +303,39 @@ class ContactMessageAdmin(admin.ModelAdmin):
     search_fields = ('name', 'email', 'subject', 'message')
     readonly_fields = ('created_at',)
     list_editable = ('resolved',)
+
+
+@admin.register(SiteSettings)
+class SiteSettingsAdmin(admin.ModelAdmin):
+    list_display = ('deposit_fee_percent', 'site_disabled', 'updated_at')
+    readonly_fields = ('updated_at',)
+
+    def has_add_permission(self, request):
+        return not SiteSettings.objects.exists()
+
+
+@admin.register(PlatformEarning)
+class PlatformEarningAdmin(admin.ModelAdmin):
+    list_display = ('source', 'amount', 'user', 'created_at')
+    list_filter = ('source',)
+    search_fields = ('user__username', 'description')
+    readonly_fields = ('created_at',)
+
+
+class SMTPSettingsForm(forms.ModelForm):
+    class Meta:
+        model = SMTPSettings
+        fields = '__all__'
+        widgets = {
+            'password': forms.PasswordInput(render_value=True),
+        }
+
+
+@admin.register(SMTPSettings)
+class SMTPSettingsAdmin(admin.ModelAdmin):
+    form = SMTPSettingsForm
+    list_display = ('host', 'port', 'notify_email', 'updated_at')
+    readonly_fields = ('updated_at',)
+
+    def has_add_permission(self, request):
+        return not SMTPSettings.objects.exists()

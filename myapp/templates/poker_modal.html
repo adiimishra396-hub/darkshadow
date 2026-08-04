@@ -141,10 +141,6 @@ function pkHideModal(el) {
   setTimeout(() => { el.style.display = 'none'; }, 260);
 }
 function openPokerModal() {
-  {% if not user.is_authenticated %}
-    window.location.href = '{% url "login" %}';
-    return;
-  {% endif %}
   document.getElementById('pkDealerCards').innerHTML = '';
   document.getElementById('pkPlayerCards').innerHTML = '';
   document.getElementById('pkDealerHandType').textContent = '';

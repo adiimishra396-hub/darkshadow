@@ -121,10 +121,6 @@ function sbHideModal(el) {
   setTimeout(() => { el.style.display = 'none'; }, 260);
 }
 function openSicBoModal() {
-  {% if not user.is_authenticated %}
-    window.location.href = '{% url "login" %}';
-    return;
-  {% endif %}
   sbShowModal(document.getElementById('sicBoModal'));
 }
 function closeSicBoModal() {

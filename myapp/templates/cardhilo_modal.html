@@ -163,10 +163,6 @@ function chHideModal(el) {
 }
 
 function openCardHiLoModal() {
-  {% if not user.is_authenticated %}
-    window.location.href = '{% url "login" %}';
-    return;
-  {% endif %}
   resetCardHiLo();
   chShowModal(document.getElementById('cardHiLoModal'));
 }

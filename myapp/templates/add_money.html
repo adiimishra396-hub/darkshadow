@@ -166,7 +166,10 @@
     <div class="field">
       <label for="amount">Or Enter Custom Amount (&#8377;)</label>
       <input type="number" id="amount" name="amount" min="1" max="100000"
-             placeholder="e.g. 500" oninput="clearQuickBtns()">
+             placeholder="e.g. 500" oninput="clearQuickBtns();updateFeePreview();">
+      {% if deposit_fee_percent > 0 %}
+      <div id="feePreview" style="font-size:12px;color:#8C99C2;margin-top:6px;"></div>
+      {% endif %}
     </div>
 
     <!-- Step 3: Payment method selector -->
@@ -206,11 +209,24 @@
   const USER_NAME    = '{{ user.first_name|default:user.username }}';
   const USER_EMAIL   = '{{ user.email }}';
 
+  const DEPOSIT_FEE_PERCENT = {{ deposit_fee_percent|default:0 }};
+
+  function updateFeePreview() {
+    const el = document.getElementById('feePreview');
+    if (!el) return;
+    const amt = parseFloat(document.getElementById('amount').value);
+    if (!amt || amt <= 0) { el.textContent = ''; return; }
+    const fee = Math.round(amt * DEPOSIT_FEE_PERCENT) / 100;
+    const credited = (amt - fee).toFixed(2);
+    el.textContent = `₹${fee.toFixed(2)} platform fee (${DEPOSIT_FEE_PERCENT}%) — ₹${credited} will be credited to your wallet.`;
+  }
+
   function setAmt(v, btn) {
     document.getElementById('amount').value = v;
     // Highlight active quick btn
     document.querySelectorAll('.quick-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
+    updateFeePreview();
   }
 
   function clearQuickBtns() {
@@ -358,5 +374,6 @@
     }
   }
 </script>
+{% include 'chatbot_widget.html' %}
 </body>
 </html>

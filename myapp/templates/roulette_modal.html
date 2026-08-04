@@ -148,10 +148,6 @@ function rlHideModal(el) {
   setTimeout(() => { el.style.display = 'none'; }, 260);
 }
 function openRouletteModal() {
-  {% if not user.is_authenticated %}
-    window.location.href = '{% url "login" %}';
-    return;
-  {% endif %}
   rlShowModal(document.getElementById('rouletteModal'));
   rlUpdateMultiplierPreview();
 }

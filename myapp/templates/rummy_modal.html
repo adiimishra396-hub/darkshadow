@@ -151,10 +151,6 @@ function rmHideModal(el) {
   setTimeout(() => { el.style.display = 'none'; }, 260);
 }
 function openRummyModal() {
-  {% if not user.is_authenticated %}
-    window.location.href = '{% url "login" %}';
-    return;
-  {% endif %}
   rmResetGroups();
   document.getElementById('rmResult').textContent = '';
   rmShowModal(document.getElementById('rummyModal'));

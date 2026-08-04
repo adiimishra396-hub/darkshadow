@@ -188,6 +188,7 @@
   .popup-close:hover{background:rgba(255,255,255,0.18);color:#fff;}
   .popup-gift{font-size:48px;margin-bottom:16px;display:block;animation:gift-bounce 1.5s ease-in-out infinite;}
   @keyframes gift-bounce{0%,100%{transform:translateY(0);}50%{transform:translateY(-8px);}}
+  @keyframes contactSpin{to{transform:rotate(360deg);}}
   .popup-eyebrow{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:11px;letter-spacing:2.5px;text-transform:uppercase;color:var(--gold);margin-bottom:10px;}
   .popup-box h2{font-family:'Orbitron',sans-serif;font-weight:900;font-size:22px;color:var(--white);letter-spacing:1px;margin-bottom:10px;line-height:1.2;}
   .popup-box h2 span{color:var(--gold);}
@@ -768,7 +769,7 @@
         <p>Questions, issues with a deposit or withdrawal, or anything else — send us a message and we'll get back to you.</p>
       </div>
       <div class="reveal" style="max-width:640px;margin:0 auto;background:var(--navy);border-radius:20px;padding:40px 36px;">
-        <form method="post" action="{% url 'contact_submit' %}">
+        <form method="post" action="{% url 'contact_submit' %}" id="contactForm" onsubmit="return handleContactSubmit()">
           {% csrf_token %}
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
             <div>
@@ -794,7 +795,10 @@
             <textarea id="contactMessage" name="message" rows="5" required
               style="width:100%;padding:12px 14px;border-radius:10px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.06);color:#fff;font-size:14px;box-sizing:border-box;resize:vertical;font-family:inherit;"></textarea>
           </div>
-          <button type="submit" class="btn btn-gold" style="width:100%;">Send Message</button>
+          <button type="submit" class="btn btn-gold" id="contactSubmitBtn" style="width:100%;display:flex;align-items:center;justify-content:center;gap:10px;">
+            <span id="contactSubmitLabel">Send Message</span>
+            <span id="contactSubmitSpinner" style="display:none;width:16px;height:16px;border:2.5px solid rgba(26,26,46,.35);border-top-color:#1a1a2e;border-radius:50%;animation:contactSpin .7s linear infinite;"></span>
+          </button>
         </form>
       </div>
     </div>
@@ -876,6 +880,7 @@
   {% include 'poker_modal.html' %}
   {% include 'rummy_modal.html' %}
   {% include 'crash_modal.html' %}
+  {% include 'chatbot_widget.html' %}
 
 <script>
   // ── Popup
@@ -888,6 +893,20 @@
   function closePopup(){
     var pop = document.getElementById('welcomePopup');
     if(pop) pop.classList.remove('active');
+  }
+
+  // ── Contact form: show loader on submit
+  function handleContactSubmit(){
+    var btn = document.getElementById('contactSubmitBtn');
+    var label = document.getElementById('contactSubmitLabel');
+    var spinner = document.getElementById('contactSubmitSpinner');
+    if(btn){
+      btn.disabled = true;
+      btn.style.opacity = '0.75';
+      label.textContent = 'Sending...';
+      spinner.style.display = 'inline-block';
+    }
+    return true;
   }
 
   // ── User Dropdown

@@ -133,10 +133,6 @@ function cfHideModal(el) {
 }
 
 function openCoinFlipModal() {
-  {% if not user.is_authenticated %}
-    window.location.href = '{% url "login" %}';
-    return;
-  {% endif %}
   cfShowModal(document.getElementById('coinFlipModal'));
 }
 

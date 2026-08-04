@@ -1,0 +1,168 @@
+{% comment %}
+  Simple FAQ chatbot widget — client-side only, no backend calls.
+  A floating button opens a panel of pre-loaded questions; clicking one
+  appends a canned bot reply to the chat log. Included on every page
+  that needs it via {% include 'chatbot_widget.html' %}.
+{% endcomment %}
+<div id="cbWidget">
+  <button id="cbLauncher" onclick="cbToggle()" aria-label="Chat with us">
+    <span id="cbLauncherIcon">&#128172;</span>
+  </button>
+
+  <div id="cbPanel">
+    <div id="cbHeader">
+      <div>
+        <div id="cbHeaderTitle">Darkshadow Help Bot</div>
+        <div id="cbHeaderSub">&#9679; Usually replies instantly</div>
+      </div>
+      <button id="cbCloseBtn" onclick="cbToggle()" aria-label="Close chat">&#10005;</button>
+    </div>
+
+    <div id="cbLog">
+      <div class="cb-msg cb-bot">
+        Hey! &#128075; I'm the Darkshadow help bot. Pick a question below, or head to our
+        <a href="{% url 'home' %}#contact" onclick="cbToggle()">Contact Us</a> form for anything else.
+      </div>
+    </div>
+
+    <div id="cbQuestions">
+      <div id="cbQuestionsLabel">Frequently asked</div>
+      <div id="cbChips"></div>
+    </div>
+  </div>
+</div>
+
+<style>
+  #cbWidget{position:fixed;right:22px;bottom:22px;z-index:10050;font-family:'Rajdhani',sans-serif;}
+  #cbLauncher{
+    width:58px;height:58px;border-radius:50%;border:none;cursor:pointer;
+    background:linear-gradient(135deg,#f7971e,#ffd200);
+    box-shadow:0 6px 20px rgba(255,210,0,.45);
+    font-size:1.6rem;display:flex;align-items:center;justify-content:center;
+    transition:transform .2s ease;
+  }
+  #cbLauncher:hover{transform:scale(1.06);}
+  #cbPanel{
+    position:absolute;right:0;bottom:74px;width:320px;max-width:88vw;
+    background:linear-gradient(160deg,#1a1a2e 0%,#16213e 60%,#0f3460 100%);
+    border:1px solid rgba(255,210,0,.25);border-radius:16px;
+    box-shadow:0 12px 40px rgba(0,0,0,.45);
+    display:none;flex-direction:column;overflow:hidden;
+    opacity:0;transform:translateY(12px) scale(.97);
+    transition:opacity .2s ease,transform .2s ease;
+    max-height:70vh;
+  }
+  #cbPanel.open{display:flex;}
+  #cbPanel.show{opacity:1;transform:translateY(0) scale(1);}
+  #cbHeader{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:14px 16px;background:rgba(255,255,255,.05);
+    border-bottom:1px solid rgba(255,255,255,.08);
+  }
+  #cbHeaderTitle{color:#ffd200;font-weight:800;font-size:15px;}
+  #cbHeaderSub{color:#4ade80;font-size:11px;margin-top:2px;}
+  #cbCloseBtn{background:none;border:none;color:#aaa;font-size:1rem;cursor:pointer;}
+  #cbLog{padding:14px 16px;overflow-y:auto;flex:1;min-height:80px;max-height:260px;}
+  .cb-msg{
+    color:#e5e7eb;font-size:13.5px;line-height:1.5;margin-bottom:12px;
+    background:rgba(255,255,255,.06);border-radius:10px;padding:10px 12px;
+  }
+  .cb-msg a{color:#ffd200;text-decoration:underline;}
+  .cb-msg.cb-user{
+    background:linear-gradient(135deg,#f7971e,#ffd200);color:#1a1a2e;font-weight:600;
+    margin-left:24px;
+  }
+  #cbQuestions{padding:10px 16px 16px;border-top:1px solid rgba(255,255,255,.08);}
+  #cbQuestionsLabel{color:#9ca3af;font-size:10.5px;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;}
+  #cbChips{display:flex;flex-direction:column;gap:6px;max-height:150px;overflow-y:auto;}
+  .cb-chip{
+    text-align:left;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);
+    color:#e5e7eb;border-radius:8px;padding:8px 10px;font-size:12.5px;cursor:pointer;
+    font-family:inherit;transition:background .15s;
+  }
+  .cb-chip:hover{background:rgba(255,210,0,.15);border-color:rgba(255,210,0,.35);}
+  @media (max-width:480px){
+    #cbWidget{right:14px;bottom:14px;}
+    #cbPanel{right:-6px;width:92vw;}
+  }
+</style>
+
+<script>
+  const CB_FAQ = [
+    {
+      q: "How do I get started?",
+      a: "Sign up for a free account, add money to your wallet, and you're ready to play! Browse the All Games section on the homepage to pick a game."
+    },
+    {
+      q: "How do I create an account?",
+      a: "Click \"Sign Up\" in the top navigation, fill in your name, email and phone number, and set a password. It takes less than a minute."
+    },
+    {
+      q: "How do I add money to my wallet?",
+      a: "Log in, then go to \"Add Money\" from your account menu. Enter an amount and pay securely via Razorpay (UPI, cards, netbanking all supported)."
+    },
+    {
+      q: "Is there a fee when I deposit?",
+      a: "A small platform fee may apply to deposits and is shown to you before you confirm — the rest is credited to your wallet instantly."
+    },
+    {
+      q: "How do I play a game?",
+      a: "Click any game card in the All Games section. You'll need to be logged in — if you're not, we'll prompt you to log in first."
+    },
+    {
+      q: "I forgot my password, what do I do?",
+      a: "On the Login page, use the \"Forgot password\" option, or reach out via our Contact Us form and our team will help you regain access."
+    },
+    {
+      q: "Is Darkshadow safe to play on?",
+      a: "Yes — all our games use cryptographically secure randomness, your wallet balance is protected, and we're 18+ only with responsible gaming guidelines."
+    },
+    {
+      q: "Still need help?",
+      a: "No problem — scroll down to the Contact Us section and send us a message. We'll get back to you as soon as we can."
+    }
+  ];
+
+  function cbToggle(){
+    const panel = document.getElementById('cbPanel');
+    const icon = document.getElementById('cbLauncherIcon');
+    if(panel.classList.contains('open')){
+      panel.classList.remove('show');
+      setTimeout(()=>panel.classList.remove('open'), 180);
+      icon.innerHTML = '&#128172;';
+    } else {
+      panel.classList.add('open');
+      requestAnimationFrame(()=>panel.classList.add('show'));
+      icon.innerHTML = '&#10005;';
+    }
+  }
+
+  function cbAsk(index){
+    const item = CB_FAQ[index];
+    if(!item) return;
+    const log = document.getElementById('cbLog');
+    const userMsg = document.createElement('div');
+    userMsg.className = 'cb-msg cb-user';
+    userMsg.textContent = item.q;
+    log.appendChild(userMsg);
+
+    const botMsg = document.createElement('div');
+    botMsg.className = 'cb-msg cb-bot';
+    botMsg.innerHTML = item.a;
+    log.appendChild(botMsg);
+
+    log.scrollTop = log.scrollHeight;
+  }
+
+  (function cbInit(){
+    const chips = document.getElementById('cbChips');
+    CB_FAQ.forEach((item, i) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'cb-chip';
+      btn.textContent = item.q;
+      btn.onclick = () => cbAsk(i);
+      chips.appendChild(btn);
+    });
+  })();
+</script>

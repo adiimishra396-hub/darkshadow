@@ -129,10 +129,6 @@ function crHideModal(el) {
   setTimeout(() => { el.style.display = 'none'; }, 260);
 }
 function openCrashModal() {
-  {% if not user.is_authenticated %}
-    window.location.href = '{% url "login" %}';
-    return;
-  {% endif %}
   resetCrash();
   crShowModal(document.getElementById('crashModal'));
 }

@@ -159,10 +159,6 @@ function tpHideModal(el) {
   setTimeout(() => { el.style.display = 'none'; }, 260);
 }
 function openTeenPattiModal() {
-  {% if not user.is_authenticated %}
-    window.location.href = '{% url "login" %}';
-    return;
-  {% endif %}
   tpResetHand('tpDealerCards');
   tpResetHand('tpPlayerCards');
   document.getElementById('tpDealerHandType').textContent = '';

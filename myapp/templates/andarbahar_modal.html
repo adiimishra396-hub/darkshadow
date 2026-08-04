@@ -118,10 +118,6 @@ function abHideModal(el) {
   setTimeout(() => { el.style.display = 'none'; }, 260);
 }
 function openAndarBaharModal() {
-  {% if not user.is_authenticated %}
-    window.location.href = '{% url "login" %}';
-    return;
-  {% endif %}
   abShowModal(document.getElementById('andarBaharModal'));
 }
 function closeAndarBaharModal() {

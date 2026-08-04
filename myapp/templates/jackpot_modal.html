@@ -309,10 +309,6 @@ function hideModal(el) {
 }
 
 function openJackpotModal() {
-  {% if not user.is_authenticated %}
-    window.location.href = '{% url "login" %}';
-    return;
-  {% endif %}
   showModal(document.getElementById('jackpotModal'));
 }
 

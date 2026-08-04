@@ -847,3 +847,80 @@ class ContactMessage(models.Model):
 
     def __str__(self):
         return f"{self.name} <{self.email}> — {self.subject or 'No subject'} ({'resolved' if self.resolved else 'open'})"
+
+
+class SiteSettings(models.Model):
+    """
+    Singleton model (id=1). Global site controls: the deposit fee
+    percentage and the site-wide kill switch. site_disabled only affects
+    public pages — the admin panel and login stay reachable so the site
+    can always be turned back on.
+    """
+    deposit_fee_percent = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal('1.00'),
+        help_text='Percentage fee deducted from every wallet deposit before crediting (e.g. 1.00 = 1%). Goes to platform earnings.')
+    site_disabled = models.BooleanField(default=False,
+        help_text='When ON, all public pages show an error page. Admin panel and login stay reachable.')
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Site Settings'
+        verbose_name_plural = 'Site Settings'
+
+    def __str__(self):
+        return f'Site Settings (updated {self.updated_at})'
+
+    @classmethod
+    def get_singleton(cls):
+        obj, _ = cls.objects.get_or_create(pk=1)
+        return obj
+
+
+class PlatformEarning(models.Model):
+    """Ledger of platform revenue events not already visible elsewhere
+    (deposit fees). Game house profit is computed separately by
+    aggregating existing WalletTransaction records, not logged here."""
+    SOURCE_CHOICES = [
+        ('deposit_fee', 'Deposit Fee'),
+    ]
+    source      = models.CharField(max_length=20, choices=SOURCE_CHOICES)
+    amount      = models.DecimalField(max_digits=10, decimal_places=2)
+    user        = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='platform_earnings')
+    description = models.CharField(max_length=255, blank=True)
+    created_at  = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        who = self.user.username if self.user else 'system'
+        return f"{self.get_source_display()} | ₹{self.amount} | {who}"
+
+
+class SMTPSettings(models.Model):
+    """Singleton model (id=1). SMTP configuration used to email
+    notifications for new Contact Us submissions."""
+    host         = models.CharField(max_length=255, blank=True, default='')
+    port         = models.PositiveIntegerField(default=587)
+    username     = models.CharField(max_length=255, blank=True, default='')
+    password     = models.CharField(max_length=255, blank=True, default='')
+    use_tls      = models.BooleanField(default=True)
+    from_email   = models.EmailField(blank=True, default='')
+    notify_email = models.EmailField(blank=True, default='',
+        help_text='Contact Us submissions are emailed to this address')
+    updated_at   = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'SMTP / Email Settings'
+        verbose_name_plural = 'SMTP / Email Settings'
+
+    def __str__(self):
+        return f'SMTP Settings (updated {self.updated_at})'
+
+    @classmethod
+    def get_singleton(cls):
+        obj, _ = cls.objects.get_or_create(pk=1)
+        return obj
+
+    @property
+    def is_configured(self):
+        return bool(self.host and self.username and self.password and self.notify_email)

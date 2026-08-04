@@ -8,8 +8,9 @@ import math
 from django.contrib.auth.models import User
 from django.contrib import messages
 from django.db import OperationalError, transaction
-from django.db.models import Sum, Count
+from django.db.models import Sum, Count, Q
 from django.http import JsonResponse
+from django.core.mail import get_connection, EmailMessage
 from django.views.decorators.http import require_POST
 from django.utils import timezone
 from decimal import Decimal, InvalidOperation
@@ -23,6 +24,7 @@ from .models import (
     BlackjackSettings, BlackjackRound, BaccaratSettings, BaccaratBet,
     PokerSettings, PokerBet, RummySettings, RummyBet,
     CrashSettings, CrashRound, ContactMessage,
+    SiteSettings, PlatformEarning, SMTPSettings,
 )
 import razorpay
 import os
@@ -223,6 +225,62 @@ def get_crash_settings():
             max_bet            = Decimal('5000.00')
             is_active          = True
         return _Defaults()
+
+
+def get_site_settings():
+    """Returns the SiteSettings singleton. Safe fallback if table missing."""
+    try:
+        return SiteSettings.get_singleton()
+    except Exception:
+        class _Defaults:
+            deposit_fee_percent = Decimal('1.00')
+            site_disabled       = False
+        return _Defaults()
+
+
+def get_smtp_settings():
+    """Returns the SMTPSettings singleton. Safe fallback if table missing."""
+    try:
+        return SMTPSettings.get_singleton()
+    except Exception:
+        return None
+
+
+def _send_contact_notification_email(contact_msg):
+    """Emails the admin-configured notify address about a new Contact Us
+    submission, using the admin-configured SMTP settings. Silently no-ops
+    if SMTP isn't configured — the message is always saved to the DB
+    either way, so nothing is lost."""
+    smtp_cfg = get_smtp_settings()
+    if not smtp_cfg or not smtp_cfg.is_configured:
+        return
+    try:
+        connection = get_connection(
+            backend='django.core.mail.backends.smtp.EmailBackend',
+            host=smtp_cfg.host,
+            port=smtp_cfg.port,
+            username=smtp_cfg.username,
+            password=smtp_cfg.password,
+            use_tls=smtp_cfg.use_tls,
+            fail_silently=False,
+        )
+        subject = f'New Contact Us message: {contact_msg.subject or "(no subject)"}'
+        body = (
+            f'From: {contact_msg.name} <{contact_msg.email}>\n'
+            f'Subject: {contact_msg.subject or "(no subject)"}\n\n'
+            f'{contact_msg.message}'
+        )
+        email = EmailMessage(
+            subject=subject,
+            body=body,
+            from_email=smtp_cfg.from_email or smtp_cfg.username,
+            to=[smtp_cfg.notify_email],
+            reply_to=[contact_msg.email],
+            connection=connection,
+        )
+        email.send(fail_silently=False)
+    except Exception:
+        pass
 
 
 # ── Admin bootstrap ─────────────────────────────────────────────────────────────
@@ -459,10 +517,11 @@ def contact_submit(request):
         messages.error(request, 'Please fill in your name, email, and message.')
         return redirect(f"{reverse('home')}#contact")
 
-    ContactMessage.objects.create(
+    contact_msg = ContactMessage.objects.create(
         name=name, email=email, subject=subject, message=message,
         user=request.user if request.user.is_authenticated else None,
     )
+    _send_contact_notification_email(contact_msg)
     messages.success(request, "Thanks for reaching out! We've received your message and will get back to you soon.")
     return redirect(f"{reverse('home')}#contact")
 
@@ -484,11 +543,13 @@ def add_money_view(request):
         return redirect('admin_panel')
     wallet = _get_or_create_wallet(request.user)
     key_id, _ = get_razorpay_keys()
+    site_cfg = get_site_settings()
     return render(request, 'add_money.html', {
         'wallet': wallet,
         'razorpay_key_id': key_id,
         'razorpay_configured': bool(key_id),
         'user': request.user,
+        'deposit_fee_percent': site_cfg.deposit_fee_percent,
     })
 
 
@@ -563,25 +624,44 @@ def wallet_verify_payment(request):
         expected = hmac.new(key_secret.encode(), msg.encode(), hashlib.sha256).hexdigest()
         if not hmac.compare_digest(expected, razorpay_signature):
             return JsonResponse({'success': False, 'error': 'Invalid payment signature'}, status=400)
-        payment = Payment.objects.filter(
-            user=request.user, transaction_id=razorpay_order_id, status='pending'
-        ).first()
-        if not payment:
-            return JsonResponse({'success': False, 'error': 'Payment record not found'}, status=404)
-        payment.status = 'success'
-        payment.save()
-        wallet = _get_or_create_wallet(request.user)
-        wallet.balance += payment.amount
-        wallet.save()
-        WalletTransaction.objects.create(
-            wallet=wallet, amount=payment.amount, txn_type='credit',
-            description=f'Added via {payment.method.upper()} (Razorpay • {razorpay_payment_id})',
-        )
+        site_cfg = get_site_settings()
+        fee_percent = site_cfg.deposit_fee_percent
+
+        with transaction.atomic():
+            payment = Payment.objects.select_for_update().filter(
+                user=request.user, transaction_id=razorpay_order_id, status='pending'
+            ).first()
+            if not payment:
+                return JsonResponse({'success': False, 'error': 'Payment record not found'}, status=404)
+            payment.status = 'success'
+            payment.save()
+
+            fee = (payment.amount * fee_percent / Decimal('100')).quantize(Decimal('0.01'))
+            credited_amount = payment.amount - fee
+
+            wallet, _ = Wallet.objects.select_for_update().get_or_create(user=request.user)
+            wallet.balance += credited_amount
+            wallet.save()
+            WalletTransaction.objects.create(
+                wallet=wallet, amount=credited_amount, txn_type='credit',
+                description=f'Added via {payment.method.upper()} (Razorpay • {razorpay_payment_id})',
+            )
+            if fee > 0:
+                PlatformEarning.objects.create(
+                    source='deposit_fee', amount=fee, user=request.user,
+                    description=f'{fee_percent}% fee on ₹{payment.amount} deposit',
+                )
+
+        message = f'🎉 ₹{credited_amount} added to your wallet successfully!'
+        if fee > 0:
+            message = f'🎉 ₹{credited_amount} added to your wallet (₹{fee} platform fee applied on your ₹{payment.amount} deposit).'
+
         return JsonResponse({
             'success':         True,
-            'amount_credited': float(payment.amount),
+            'amount_credited': float(credited_amount),
+            'fee_charged':     float(fee),
             'new_balance':     float(wallet.balance),
-            'message':         f'🎉 ₹{payment.amount} added to your wallet successfully!',
+            'message':         message,
         })
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
@@ -677,6 +757,24 @@ def change_password_view(request):
 
 
 # ── Admin Panel ────────────────────────────────────────────────────────────────
+def _compute_game_house_profit():
+    """Aggregates existing WalletTransaction records to compute net house
+    profit from gameplay across all 12 games + spin-pack wallet purchases,
+    without needing to touch any individual game view. Every game's bet
+    debit description ends with ' bet' (and wallet-paid spin packs end
+    with '(wallet purchase)'); every payout/refund credit contains
+    'payout', 'push refund', or 'cashout'. Net profit = bets - payouts."""
+    bet_total = WalletTransaction.objects.filter(txn_type='debit').filter(
+        Q(description__endswith=' bet') | Q(description__endswith='(wallet purchase)')
+    ).aggregate(s=Sum('amount'))['s'] or Decimal('0.00')
+
+    payout_total = WalletTransaction.objects.filter(txn_type='credit').filter(
+        Q(description__icontains='payout') | Q(description__icontains='push refund') | Q(description__icontains='cashout')
+    ).aggregate(s=Sum('amount'))['s'] or Decimal('0.00')
+
+    return bet_total - payout_total, bet_total, payout_total
+
+
 def admin_panel_view(request):
     if not request.user.is_authenticated or not request.user.is_superuser:
         messages.error(request, 'Access denied. Admins only.')
@@ -729,6 +827,19 @@ def admin_panel_view(request):
     # Spin machine settings
     spin_cfg = get_spin_settings()
 
+    # Earnings
+    try:
+        game_house_profit, game_bet_total, game_payout_total = _compute_game_house_profit()
+        deposit_fee_total = PlatformEarning.objects.filter(source='deposit_fee').aggregate(s=Sum('amount'))['s'] or Decimal('0.00')
+        total_platform_earnings = game_house_profit + deposit_fee_total
+        recent_earnings = list(PlatformEarning.objects.select_related('user').order_by('-created_at')[:15])
+    except OperationalError:
+        game_house_profit = game_bet_total = game_payout_total = Decimal('0.00')
+        deposit_fee_total = total_platform_earnings = Decimal('0.00')
+        recent_earnings = []
+    site_cfg = get_site_settings()
+    smtp_cfg = get_smtp_settings()
+
     return render(request, 'admin_panel.html', {
         'user_data':             user_data,
         'total_users':           len(user_data),
@@ -749,6 +860,15 @@ def admin_panel_view(request):
         'spin_unique_buyers':    spin_unique_buyers,
         'spin_purchases_count':  spin_purchases_count,
         'spin_recent':           spin_recent,
+        # Earnings
+        'game_house_profit':      game_house_profit,
+        'game_bet_total':         game_bet_total,
+        'game_payout_total':      game_payout_total,
+        'deposit_fee_total':      deposit_fee_total,
+        'total_platform_earnings': total_platform_earnings,
+        'recent_earnings':        recent_earnings,
+        'site_cfg':               site_cfg,
+        'smtp_cfg':               smtp_cfg,
     })
 
 
@@ -781,8 +901,9 @@ def save_spin_settings(request):
         cfg = SpinMachineSettings.get_singleton()
         cfg.spin_pack_spins  = int(request.POST.get('spin_pack_spins', 3))
         cfg.spin_pack_amount = Decimal(request.POST.get('spin_pack_amount', '10.00'))
-        cfg.homepage_jackpot_display = request.POST.get('homepage_jackpot_display', '84,52,910').strip()
-        cfg.is_active        = request.POST.get('is_active') == 'on'
+        # homepage_jackpot_display and is_active are intentionally not
+        # touched here — this form only edits spins/price. Those two
+        # fields are still editable via Django admin at /welcomernt/.
         if cfg.spin_pack_spins < 1:
             raise ValueError('Spins per pack must be at least 1')
         if cfg.spin_pack_amount <= 0:
@@ -791,6 +912,44 @@ def save_spin_settings(request):
         messages.success(request, '✅ Spin machine settings saved! Frontend is now live with new values.')
     except Exception as e:
         messages.error(request, f'Error saving spin settings: {e}')
+    return redirect('admin_panel')
+
+
+# ── Admin: Save SMTP / Email Settings ──────────────────────────────────────────
+@require_POST
+def save_smtp_settings(request):
+    if not request.user.is_authenticated or not request.user.is_superuser:
+        messages.error(request, 'Access denied.')
+        return redirect('login')
+    try:
+        cfg = SMTPSettings.get_singleton()
+        cfg.host         = request.POST.get('smtp_host', '').strip()
+        cfg.port         = int(request.POST.get('smtp_port', 587) or 587)
+        cfg.username     = request.POST.get('smtp_username', '').strip()
+        cfg.password     = request.POST.get('smtp_password', '')
+        cfg.use_tls      = bool(request.POST.get('smtp_use_tls'))
+        cfg.from_email   = request.POST.get('smtp_from_email', '').strip()
+        cfg.notify_email = request.POST.get('smtp_notify_email', '').strip()
+        cfg.save()
+        messages.success(request, '✅ SMTP settings saved! Contact Us submissions will now be emailed to the configured address.')
+    except Exception as e:
+        messages.error(request, f'Error saving SMTP settings: {e}')
+    return redirect('admin_panel')
+
+
+# ── Admin: Toggle Site Disabled (kill-switch) ──────────────────────────────────
+@require_POST
+def toggle_site_disabled(request):
+    if not request.user.is_authenticated or not request.user.is_superuser:
+        messages.error(request, 'Access denied.')
+        return redirect('login')
+    cfg = SiteSettings.get_singleton()
+    cfg.site_disabled = not cfg.site_disabled
+    cfg.save()
+    if cfg.site_disabled:
+        messages.success(request, '🔴 Site is now DISABLED. Visitors will see an error page. The admin panel and login stay reachable.')
+    else:
+        messages.success(request, '🟢 Site is back ONLINE for all visitors.')
     return redirect('admin_panel')
 
 
