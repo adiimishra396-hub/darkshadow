@@ -625,17 +625,19 @@
         </a>
         {% endif %}
 
-        <!-- Crash Game -->
-        <a href="https://bc.game/game/crash" target="_blank" rel="noopener" class="game-card" data-cat="casino">
-          <span class="g-badge live">Live</span>
+        {% if crash_active %}
+        <!-- Crash Game — in-house, real win/lose game -->
+        <a href="javascript:void(0)" onclick="openCrashModal()" class="game-card" data-cat="casino">
+          <span class="g-badge new">Play In-House</span>
           <img class="game-card-thumb" src="https://images.unsplash.com/photo-1611532736597-de2d4265fba3?q=80&w=600&auto=format&fit=crop" alt="Crash Game">
           <div class="game-card-body">
             <div class="game-card-cat">Casino</div>
             <div class="game-card-title">Crash Game</div>
-            <div class="game-card-desc">Watch the multiplier rise and cash out before it crashes. Nerve-wracking thrills.</div>
+            <div class="game-card-desc">Watch the multiplier rise and cash out before it crashes, right here on Darkshadow.</div>
             <span class="game-card-play">Play Now</span>
           </div>
         </a>
+        {% endif %}
 
         {% if baccarat_active %}
         <!-- Baccarat — in-house, real win/lose game, standard drawing rules -->
@@ -818,6 +820,7 @@
   {% include 'baccarat_modal.html' %}
   {% include 'poker_modal.html' %}
   {% include 'rummy_modal.html' %}
+  {% include 'crash_modal.html' %}
 
 <script>
   // ── Popup

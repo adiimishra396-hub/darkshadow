@@ -1,0 +1,302 @@
+{% comment %}
+  Crash — real win/lose game, wallet-integrated. Modal + JS.
+  A rising multiplier that can crash at any moment; cash out before it
+  crashes to win at the current multiplier. The crash point is hidden
+  server-side and revealed only when the round resolves. The client
+  polls /crash/status/ for the server-authoritative current multiplier
+  — it never decides the outcome locally.
+  Requires context: wallet, crash_active, crash_min_bet, crash_max_bet
+  Opened via openCrashModal() from a game-card in the All Games section.
+{% endcomment %}
+
+{% if crash_active %}
+<div id="crashModal" style="
+  display:none;position:fixed;inset:0;z-index:10013;
+  background:rgba(0,0,0,.8);backdrop-filter:blur(6px);
+  align-items:center;justify-content:center;
+  opacity:0;transition:opacity .25s ease;
+">
+  <div style="
+    background:linear-gradient(160deg,#1a1a2e 0%,#16213e 60%,#0f3460 100%);
+    border:1px solid rgba(255,210,0,.3);border-radius:20px;
+    padding:32px 30px;max-width:440px;width:92%;text-align:center;
+    box-shadow:0 0 60px rgba(255,210,0,.15);
+    position:relative;
+    transform:scale(0.92);transition:transform .25s cubic-bezier(.34,1.56,.64,1);
+    max-height:90vh;overflow-y:auto;
+  ">
+    <button onclick="closeCrashModal()" style="
+      position:absolute;top:14px;right:18px;
+      background:none;border:none;color:#aaa;font-size:1.4rem;cursor:pointer;
+    ">✕</button>
+
+    <h2 style="color:#ffd200;font-size:1.5rem;margin-bottom:4px;">🚀 Crash</h2>
+    <p style="color:#aaa;font-size:.85rem;margin-bottom:18px;">
+      Cash out before it crashes — the multiplier can drop to zero any moment.
+    </p>
+
+    {% if user.is_authenticated %}
+      <div style="
+        background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);
+        border-radius:10px;padding:12px 16px;margin-bottom:18px;
+        display:flex;align-items:center;justify-content:space-between;
+      ">
+        <span style="color:#aaa;font-size:.88rem;">💰 Wallet Balance</span>
+        <span style="color:#4ade80;font-weight:700;font-size:1rem;" id="crWalletBalance">
+          ₹{% if wallet %}{{ wallet.balance|floatformat:2 }}{% else %}0.00{% endif %}
+        </span>
+      </div>
+
+      <div id="crMultiplierDisplay" style="
+        font-size:3rem;font-weight:800;margin:20px 0;color:#ffd200;
+        transition:color .2s;
+      ">1.00x</div>
+
+      <div id="crResult" style="min-height:32px;font-size:1.05rem;font-weight:700;margin-bottom:14px;"></div>
+
+      <!-- Bet phase -->
+      <div id="crBetPhase">
+        <div style="text-align:left;margin-bottom:14px;">
+          <label style="color:#aaa;font-size:.82rem;display:block;margin-bottom:6px;">
+            Bet Amount (₹{{ crash_min_bet }} – ₹{{ crash_max_bet }})
+          </label>
+          <input type="number" id="crBetAmount" value="{{ crash_min_bet }}"
+            min="{{ crash_min_bet }}" max="{{ crash_max_bet }}" step="1"
+            style="width:100%;padding:12px 14px;border-radius:10px;
+              border:1px solid rgba(255,210,0,.3);background:rgba(255,255,255,.06);
+              color:#fff;font-size:1rem;box-sizing:border-box;">
+        </div>
+        <button id="crBetBtn" onclick="startCrash()" style="
+          width:100%;padding:14px;border:none;border-radius:14px;
+          background:linear-gradient(135deg,#f7971e,#ffd200);
+          color:#1a1a2e;font-size:1.1rem;font-weight:800;
+          cursor:pointer;box-shadow:0 4px 18px rgba(255,210,0,.45);
+        ">🚀 PLACE BET</button>
+      </div>
+
+      <!-- Active round phase -->
+      <div id="crActivePhase" style="display:none;">
+        <button id="crCashoutBtn" onclick="cashoutCrash()" style="
+          width:100%;padding:16px;border:none;border-radius:14px;
+          background:linear-gradient(135deg,#22c55e,#4ade80);
+          color:#0f2417;font-size:1.15rem;font-weight:800;cursor:pointer;
+          box-shadow:0 4px 18px rgba(74,222,128,.45);
+        ">💸 CASH OUT</button>
+      </div>
+
+      <!-- Play again phase -->
+      <div id="crPlayAgainPhase" style="display:none;">
+        <button onclick="resetCrash()" style="
+          width:100%;padding:14px;border:none;border-radius:14px;
+          background:linear-gradient(135deg,#f7971e,#ffd200);
+          color:#1a1a2e;font-size:1.05rem;font-weight:800;cursor:pointer;
+        ">Play Again</button>
+      </div>
+    {% else %}
+      <a href="{% url 'login' %}" style="
+        display:block;width:100%;padding:14px;border:none;border-radius:12px;
+        background:linear-gradient(135deg,#f7971e,#ffd200);
+        color:#1a1a2e;font-size:1.1rem;font-weight:800;text-decoration:none;
+        box-shadow:0 4px 15px rgba(255,210,0,.4);
+      ">Login to Play 🚀</a>
+    {% endif %}
+
+    <p style="color:#666;font-size:.78rem;margin-top:16px;">18+ only · Gamble responsibly</p>
+  </div>
+</div>
+
+<script>
+let crRoundId = null;
+let crPollTimer = null;
+let crBetAmountPlaced = 0;
+
+function crGetCsrf() {
+  const m = document.cookie.match(/(?:^|;\s*)csrftoken=([^;]+)/);
+  return m ? m[1] : '';
+}
+function crShowModal(el) {
+  el.style.display = 'flex';
+  requestAnimationFrame(() => { requestAnimationFrame(() => {
+    el.style.opacity = '1';
+    const inner = el.querySelector('div');
+    if (inner) inner.style.transform = 'scale(1)';
+  }); });
+}
+function crHideModal(el) {
+  el.style.opacity = '0';
+  const inner = el.querySelector('div');
+  if (inner) inner.style.transform = 'scale(0.92)';
+  setTimeout(() => { el.style.display = 'none'; }, 260);
+}
+function openCrashModal() {
+  {% if not user.is_authenticated %}
+    window.location.href = '{% url "login" %}';
+    return;
+  {% endif %}
+  resetCrash();
+  crShowModal(document.getElementById('crashModal'));
+}
+function closeCrashModal() {
+  crStopPolling();
+  crHideModal(document.getElementById('crashModal'));
+}
+
+function crStopPolling() {
+  if (crPollTimer) { clearInterval(crPollTimer); crPollTimer = null; }
+}
+
+function resetCrash() {
+  crStopPolling();
+  crRoundId = null;
+  crBetAmountPlaced = 0;
+  document.getElementById('crBetPhase').style.display = 'block';
+  document.getElementById('crActivePhase').style.display = 'none';
+  document.getElementById('crPlayAgainPhase').style.display = 'none';
+  document.getElementById('crResult').textContent = '';
+  const display = document.getElementById('crMultiplierDisplay');
+  display.textContent = '1.00x';
+  display.style.color = '#ffd200';
+  document.getElementById('crBetAmount').disabled = false;
+  const betBtn = document.getElementById('crBetBtn');
+  betBtn.disabled = false;
+  betBtn.textContent = '🚀 PLACE BET';
+}
+
+async function startCrash() {
+  {% if not user.is_authenticated %}
+    window.location.href = '{% url "login" %}';
+    return;
+  {% endif %}
+  const betInput = document.getElementById('crBetAmount');
+  const betBtn   = document.getElementById('crBetBtn');
+  const betAmount = parseFloat(betInput.value);
+
+  if (!betAmount || betAmount <= 0) { alert('Enter a valid bet amount.'); return; }
+
+  betBtn.disabled = true;
+  betInput.disabled = true;
+
+  let data;
+  try {
+    const res = await fetch('{% url "crash_bet" %}', {
+      method: 'POST',
+      headers: { 'X-CSRFToken': crGetCsrf(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ bet_amount: betAmount })
+    });
+    data = await res.json();
+  } catch (e) {
+    alert('Network error — your bet was not placed. Please try again.');
+    betBtn.disabled = false; betInput.disabled = false;
+    return;
+  }
+
+  if (!data.success) {
+    if (data.needs_topup) {
+      const go = confirm('⚠️ ' + (data.error || 'Insufficient balance.') + '\n\nAdd money to your wallet now?');
+      if (go) window.location.href = '{% url "add_money" %}';
+    } else {
+      alert(data.error || 'Could not place bet');
+    }
+    betBtn.disabled = false; betInput.disabled = false;
+    return;
+  }
+
+  crRoundId = data.round_id;
+  crBetAmountPlaced = betAmount;
+
+  const balanceEl = document.getElementById('crWalletBalance');
+  if (balanceEl) balanceEl.textContent = '₹' + Number(data.new_balance).toFixed(2);
+
+  document.getElementById('crBetPhase').style.display = 'none';
+  document.getElementById('crActivePhase').style.display = 'block';
+
+  crPollTimer = setInterval(crPollStatus, 200);
+  crPollStatus();
+}
+
+async function crPollStatus() {
+  if (!crRoundId) return;
+  let data;
+  try {
+    const res = await fetch('{% url "crash_status" %}', {
+      method: 'POST',
+      headers: { 'X-CSRFToken': crGetCsrf(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ round_id: crRoundId })
+    });
+    data = await res.json();
+  } catch (e) {
+    return; // transient network hiccup — next poll tick will retry
+  }
+
+  if (!data.crashed) {
+    const display = document.getElementById('crMultiplierDisplay');
+    display.textContent = Number(data.current_multiplier).toFixed(2) + 'x';
+    display.style.color = data.current_multiplier >= 2 ? '#4ade80' : '#ffd200';
+    return;
+  }
+
+  // crashed — round already resolved server-side as a loss
+  crStopPolling();
+  const display = document.getElementById('crMultiplierDisplay');
+  display.textContent = Number(data.crash_multiplier).toFixed(2) + 'x';
+  display.style.color = '#ef4444';
+
+  const resultEl = document.getElementById('crResult');
+  resultEl.style.color = '#ef4444';
+  resultEl.textContent = `💥 Crashed at ${Number(data.crash_multiplier).toFixed(2)}x — you lost ₹${crBetAmountPlaced.toFixed(2)}`;
+
+  document.getElementById('crActivePhase').style.display = 'none';
+  document.getElementById('crPlayAgainPhase').style.display = 'block';
+  crRoundId = null;
+}
+
+async function cashoutCrash() {
+  if (!crRoundId) return;
+  const cashoutBtn = document.getElementById('crCashoutBtn');
+  cashoutBtn.disabled = true;
+  crStopPolling();
+
+  let data;
+  try {
+    const res = await fetch('{% url "crash_cashout" %}', {
+      method: 'POST',
+      headers: { 'X-CSRFToken': crGetCsrf(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ round_id: crRoundId })
+    });
+    data = await res.json();
+  } catch (e) {
+    alert('Network error. Reopen this game to check your round status.');
+    cashoutBtn.disabled = false;
+    return;
+  }
+
+  if (!data.success) {
+    alert(data.error || 'Could not cash out');
+    cashoutBtn.disabled = false;
+    return;
+  }
+
+  const balanceEl = document.getElementById('crWalletBalance');
+  if (balanceEl) balanceEl.textContent = '₹' + Number(data.new_balance).toFixed(2);
+
+  const display = document.getElementById('crMultiplierDisplay');
+  const resultEl = document.getElementById('crResult');
+
+  if (data.outcome === 'win') {
+    display.textContent = Number(data.cashout_multiplier).toFixed(2) + 'x';
+    display.style.color = '#4ade80';
+    resultEl.style.color = '#4ade80';
+    resultEl.textContent = `🎉 Cashed out at ${Number(data.cashout_multiplier).toFixed(2)}x — you won ₹${data.payout.toFixed(2)}`;
+  } else {
+    display.textContent = Number(data.crash_multiplier).toFixed(2) + 'x';
+    display.style.color = '#ef4444';
+    resultEl.style.color = '#ef4444';
+    resultEl.textContent = `💥 Too late — crashed at ${Number(data.crash_multiplier).toFixed(2)}x. Lost ₹${crBetAmountPlaced.toFixed(2)}`;
+  }
+
+  document.getElementById('crActivePhase').style.display = 'none';
+  document.getElementById('crPlayAgainPhase').style.display = 'block';
+  crRoundId = null;
+}
+</script>
+{% endif %}

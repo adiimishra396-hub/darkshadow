@@ -744,6 +744,65 @@ class RummyBet(models.Model):
         return f"{self.user.username} | ₹{self.bet_amount} | {self.valid_group_count}/3 valid groups | {self.outcome.upper()}"
 
 
+class CrashSettings(models.Model):
+    """
+    Singleton model (id=1). Real win/lose game — a rising multiplier
+    that can crash at any moment; cash out before it crashes to win at
+    the current multiplier. The crash point is drawn server-side at bet
+    time and never revealed to the client until the round resolves —
+    revealing it early would let a client "look ahead" and cash out at
+    the last possible instant with zero risk.
+    """
+    house_edge_percent = models.DecimalField(max_digits=4, decimal_places=2, default=Decimal('5.00'),
+        help_text='House edge as a percentage (e.g. 5.00 = 5%). Applies uniformly regardless of cash-out timing.')
+    min_bet    = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('10.00'))
+    max_bet    = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('5000.00'))
+    is_active  = models.BooleanField(default=True, help_text='Show/hide Crash on the homepage')
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Crash Settings'
+        verbose_name_plural = 'Crash Settings'
+
+    def __str__(self):
+        return f'Crash Settings (updated {self.updated_at})'
+
+    @classmethod
+    def get_singleton(cls):
+        obj, _ = cls.objects.get_or_create(pk=1)
+        return obj
+
+
+class CrashRound(models.Model):
+    """Records every Crash round. crash_multiplier is committed at bet
+    time and hidden from the player until the round resolves."""
+    STATUS_CHOICES = [
+        ('active',   'Active'),
+        ('resolved', 'Resolved'),
+    ]
+    OUTCOME_CHOICES = [
+        ('win',  'Win'),
+        ('lose', 'Lose'),
+    ]
+    user               = models.ForeignKey(User, on_delete=models.CASCADE, related_name='crash_rounds')
+    bet_amount         = models.DecimalField(max_digits=10, decimal_places=2)
+    crash_multiplier   = models.DecimalField(max_digits=10, decimal_places=2)
+    cashout_multiplier = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    status             = models.CharField(max_length=8, choices=STATUS_CHOICES, default='active')
+    outcome            = models.CharField(max_length=4, choices=OUTCOME_CHOICES, blank=True)
+    payout             = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    started_at         = models.DateTimeField(auto_now_add=True)
+    resolved_at        = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['-started_at']
+
+    def __str__(self):
+        if self.status == 'active':
+            return f"{self.user.username} | ₹{self.bet_amount} | round in progress"
+        return f"{self.user.username} | ₹{self.bet_amount} | crashed at {self.crash_multiplier}x | {self.outcome.upper()}"
+
+
 class SpinMachineSettings(models.Model):
     """
     Singleton model (id=1). Admin sets spin pack pricing and the jackpot

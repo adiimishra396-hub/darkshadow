@@ -2,6 +2,8 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
 from collections import Counter
 from itertools import combinations
+from decimal import ROUND_DOWN
+import math
 from django.contrib.auth.models import User
 from django.contrib import messages
 from django.db import OperationalError, transaction
@@ -19,6 +21,7 @@ from .models import (
     SicBoSettings, SicBoBet, TeenPattiSettings, TeenPattiBet,
     BlackjackSettings, BlackjackRound, BaccaratSettings, BaccaratBet,
     PokerSettings, PokerBet, RummySettings, RummyBet,
+    CrashSettings, CrashRound,
 )
 import razorpay
 import os
@@ -208,6 +211,19 @@ def get_rummy_settings():
         return _Defaults()
 
 
+def get_crash_settings():
+    """Returns the CrashSettings singleton. Safe fallback if table missing."""
+    try:
+        return CrashSettings.get_singleton()
+    except Exception:
+        class _Defaults:
+            house_edge_percent = Decimal('5.00')
+            min_bet            = Decimal('10.00')
+            max_bet            = Decimal('5000.00')
+            is_active          = True
+        return _Defaults()
+
+
 # ── Admin bootstrap ─────────────────────────────────────────────────────────────
 def _ensure_admin():
     user, created = User.objects.get_or_create(
@@ -263,6 +279,7 @@ def home(request):
     baccarat_cfg   = get_baccarat_settings()
     poker_cfg      = get_poker_settings()
     rummy_cfg      = get_rummy_settings()
+    crash_cfg      = get_crash_settings()
     return render(request, 'index.html', {
         'spin_wallet':              spin_wallet,
         'wallet':                   wallet,
@@ -320,6 +337,10 @@ def home(request):
         'rummy_one_group_multiplier': rummy_cfg.one_group_multiplier,
         'rummy_two_group_multiplier': rummy_cfg.two_group_multiplier,
         'rummy_perfect_multiplier':   rummy_cfg.perfect_multiplier,
+        'crash_active':               crash_cfg.is_active,
+        'crash_min_bet':              crash_cfg.min_bet,
+        'crash_max_bet':              crash_cfg.max_bet,
+        'crash_house_edge':           crash_cfg.house_edge_percent,
     })
 
 
@@ -2305,3 +2326,201 @@ def rummy_play(request):
         'payout':            float(payout),
         'new_balance':       float(wallet.balance),
     })
+
+
+# ── Crash: Bet, Status, Cash Out ────────────────────────────────────────────────
+CRASH_GROWTH_RATE = math.log(2) / 6  # multiplier doubles every 6 seconds
+
+
+def _crash_multiplier_at(elapsed_seconds):
+    """Server-authoritative multiplier at a given elapsed time. Never
+    derived from anything the client sends — callers always pass real
+    elapsed time computed from the round's DB-stored started_at."""
+    if elapsed_seconds <= 0:
+        return Decimal('1.00')
+    raw = math.exp(CRASH_GROWTH_RATE * elapsed_seconds)
+    return Decimal(str(round(raw, 2)))
+
+
+def _generate_crash_multiplier(house_edge_percent):
+    """Draws a crash point via secrets (CSPRNG) such that a player who
+    always cashes out at any fixed target multiplier m has expected
+    return (1 - house_edge) regardless of m — the standard crash-game
+    formula. About house_edge% of rounds crash instantly at 1.00x."""
+    house_edge = house_edge_percent / Decimal('100')
+    r = Decimal(secrets.randbelow(10**8)) / Decimal(10**8)  # uniform [0, 1)
+    if r >= Decimal('0.99999999'):
+        r = Decimal('0.99999999')
+    crash_point = (Decimal('1') - house_edge) / (Decimal('1') - r)
+    crash_point = max(Decimal('1.00'), crash_point)
+    return crash_point.quantize(Decimal('0.01'), rounding=ROUND_DOWN)
+
+
+@require_POST
+def crash_bet(request):
+    """Places a bet and commits a hidden crash point server-side. The
+    crash point is never sent to the client until the round resolves —
+    revealing it early would let a client "look ahead" and cash out at
+    the last possible instant with zero risk."""
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'Login required', 'needs_login': True}, status=401)
+    if request.user.is_superuser:
+        return JsonResponse({'error': 'Admins cannot play'}, status=403)
+
+    cfg = get_crash_settings()
+    if not cfg.is_active:
+        return JsonResponse({'error': 'Crash is currently unavailable'}, status=503)
+
+    try:
+        data       = json.loads(request.body)
+        bet_amount = Decimal(str(data.get('bet_amount', '0')))
+    except (ValueError, TypeError, InvalidOperation, json.JSONDecodeError):
+        return JsonResponse({'error': 'Invalid request'}, status=400)
+
+    if bet_amount < cfg.min_bet or bet_amount > cfg.max_bet:
+        return JsonResponse({'error': f'Bet must be between ₹{cfg.min_bet} and ₹{cfg.max_bet}'}, status=400)
+
+    with transaction.atomic():
+        if CrashRound.objects.select_for_update().filter(user=request.user, status='active').exists():
+            return JsonResponse({'error': 'Finish your current round first.'}, status=409)
+
+        wallet, _ = Wallet.objects.select_for_update().get_or_create(user=request.user)
+        if wallet.balance < bet_amount:
+            return JsonResponse({'error': 'Insufficient wallet balance', 'needs_topup': True}, status=402)
+
+        wallet.balance -= bet_amount
+        wallet.save()
+        WalletTransaction.objects.create(
+            wallet=wallet, amount=bet_amount, txn_type='debit',
+            description='Crash bet',
+        )
+
+        crash_multiplier = _generate_crash_multiplier(cfg.house_edge_percent)
+        round_obj = CrashRound.objects.create(
+            user=request.user, bet_amount=bet_amount,
+            crash_multiplier=crash_multiplier, status='active',
+        )
+
+    return JsonResponse({
+        'success':     True,
+        'round_id':    round_obj.id,
+        'started_at':  round_obj.started_at.isoformat(),
+        'new_balance': float(wallet.balance),
+    })
+
+
+@require_POST
+def crash_status(request):
+    """Polled periodically by the client while a round is active.
+    Computes the current multiplier from real server-elapsed time —
+    never from anything the client reports. If elapsed time has already
+    passed the (hidden) crash point, resolves the round as a loss right
+    here, so a round can't be left dangling just because the player
+    never explicitly cashed out after it crashed."""
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'Login required', 'needs_login': True}, status=401)
+
+    try:
+        data     = json.loads(request.body)
+        round_id = int(data.get('round_id', 0))
+    except (ValueError, TypeError, json.JSONDecodeError):
+        return JsonResponse({'error': 'Invalid request'}, status=400)
+
+    round_obj = CrashRound.objects.filter(id=round_id, user=request.user).first()
+    if not round_obj:
+        return JsonResponse({'error': 'Round not found'}, status=404)
+
+    if round_obj.status == 'resolved':
+        return JsonResponse({
+            'crashed':          True,
+            'resolved':         True,
+            'crash_multiplier': float(round_obj.crash_multiplier),
+            'outcome':          round_obj.outcome,
+            'payout':           float(round_obj.payout),
+        })
+
+    elapsed = (timezone.now() - round_obj.started_at).total_seconds()
+    current = _crash_multiplier_at(elapsed)
+
+    if current >= round_obj.crash_multiplier:
+        with transaction.atomic():
+            robj = CrashRound.objects.select_for_update().filter(id=round_id, status='active').first()
+            if robj:
+                robj.status = 'resolved'
+                robj.outcome = 'lose'
+                robj.payout = Decimal('0.00')
+                robj.resolved_at = timezone.now()
+                robj.save()
+        return JsonResponse({
+            'crashed':          True,
+            'resolved':         True,
+            'crash_multiplier': float(round_obj.crash_multiplier),
+            'outcome':          'lose',
+            'payout':           0.0,
+        })
+
+    return JsonResponse({'crashed': False, 'current_multiplier': float(current)})
+
+
+@require_POST
+def crash_cashout(request):
+    """Cashes out at the multiplier corresponding to real elapsed
+    server time. Succeeds only if that's still below the hidden crash
+    point — if the round already crashed (including in the gap caused
+    by network latency), this resolves as a loss instead, exactly like
+    crash_status would."""
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'Login required', 'needs_login': True}, status=401)
+
+    try:
+        data     = json.loads(request.body)
+        round_id = int(data.get('round_id', 0))
+    except (ValueError, TypeError, json.JSONDecodeError):
+        return JsonResponse({'error': 'Invalid request'}, status=400)
+
+    with transaction.atomic():
+        round_obj = CrashRound.objects.select_for_update().filter(
+            id=round_id, user=request.user, status='active'
+        ).first()
+        if not round_obj:
+            return JsonResponse({'error': 'Round not found or already resolved'}, status=404)
+
+        elapsed = (timezone.now() - round_obj.started_at).total_seconds()
+        current = _crash_multiplier_at(elapsed)
+
+        wallet, _ = Wallet.objects.select_for_update().get_or_create(user=request.user)
+
+        if current < round_obj.crash_multiplier:
+            payout = (round_obj.bet_amount * current).quantize(Decimal('0.01'))
+            wallet.balance += payout
+            wallet.save()
+            WalletTransaction.objects.create(
+                wallet=wallet, amount=payout, txn_type='credit',
+                description='Crash cashout',
+            )
+            round_obj.status = 'resolved'
+            round_obj.outcome = 'win'
+            round_obj.cashout_multiplier = current
+            round_obj.payout = payout
+            round_obj.resolved_at = timezone.now()
+            round_obj.save()
+            return JsonResponse({
+                'success':            True,
+                'outcome':            'win',
+                'cashout_multiplier': float(current),
+                'payout':             float(payout),
+                'new_balance':        float(wallet.balance),
+            })
+
+        round_obj.status = 'resolved'
+        round_obj.outcome = 'lose'
+        round_obj.payout = Decimal('0.00')
+        round_obj.resolved_at = timezone.now()
+        round_obj.save()
+        return JsonResponse({
+            'success':          True,
+            'outcome':          'lose',
+            'crash_multiplier': float(round_obj.crash_multiplier),
+            'payout':           0.0,
+            'new_balance':      float(wallet.balance),
+        })

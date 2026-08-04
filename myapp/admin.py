@@ -9,6 +9,7 @@ from .models import (
     SicBoSettings, SicBoBet, TeenPattiSettings, TeenPattiBet,
     BlackjackSettings, BlackjackRound, BaccaratSettings, BaccaratBet,
     PokerSettings, PokerBet, RummySettings, RummyBet,
+    CrashSettings, CrashRound,
 )
 
 
@@ -275,3 +276,20 @@ class RummyBetAdmin(admin.ModelAdmin):
     list_filter = ('outcome', 'valid_group_count')
     search_fields = ('user__username',)
     readonly_fields = ('created_at',)
+
+
+@admin.register(CrashSettings)
+class CrashSettingsAdmin(admin.ModelAdmin):
+    list_display = ('house_edge_percent', 'min_bet', 'max_bet', 'is_active', 'updated_at')
+    readonly_fields = ('updated_at',)
+
+    def has_add_permission(self, request):
+        return not CrashSettings.objects.exists()
+
+
+@admin.register(CrashRound)
+class CrashRoundAdmin(admin.ModelAdmin):
+    list_display = ('user', 'bet_amount', 'crash_multiplier', 'cashout_multiplier', 'status', 'outcome', 'payout', 'started_at')
+    list_filter = ('status', 'outcome')
+    search_fields = ('user__username',)
+    readonly_fields = ('started_at', 'resolved_at')

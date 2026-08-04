@@ -68,4 +68,9 @@ urlpatterns = [
 
     # Rummy
     path('rummy/play/', views.rummy_play, name='rummy_play'),
+
+    # Crash
+    path('crash/bet/', views.crash_bet, name='crash_bet'),
+    path('crash/status/', views.crash_status, name='crash_status'),
+    path('crash/cashout/', views.crash_cashout, name='crash_cashout'),
 ]
