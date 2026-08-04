@@ -830,3 +830,20 @@ class SpinMachineSettings(models.Model):
     def get_singleton(cls):
         obj, _ = cls.objects.get_or_create(pk=1)
         return obj
+
+
+class ContactMessage(models.Model):
+    """A query/support message submitted via the homepage Contact Us form."""
+    name       = models.CharField(max_length=150)
+    email      = models.EmailField()
+    subject    = models.CharField(max_length=200, blank=True)
+    message    = models.TextField()
+    user       = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='contact_messages')
+    resolved   = models.BooleanField(default=False, help_text='Mark as resolved once handled')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.name} <{self.email}> — {self.subject or 'No subject'} ({'resolved' if self.resolved else 'open'})"

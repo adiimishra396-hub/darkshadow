@@ -1,5 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
+from django.urls import reverse
 from collections import Counter
 from itertools import combinations
 from decimal import ROUND_DOWN
@@ -21,7 +22,7 @@ from .models import (
     SicBoSettings, SicBoBet, TeenPattiSettings, TeenPattiBet,
     BlackjackSettings, BlackjackRound, BaccaratSettings, BaccaratBet,
     PokerSettings, PokerBet, RummySettings, RummyBet,
-    CrashSettings, CrashRound,
+    CrashSettings, CrashRound, ContactMessage,
 )
 import razorpay
 import os
@@ -435,11 +436,35 @@ def signup_view(request):
             user=user, last_name=last_name, age=int(age),
             phone_number=phone, is_above_18=True, agreed_to_terms=True,
         )
-        Wallet.objects.create(user=user)
+        wallet = Wallet.objects.create(user=user, balance=Decimal('20.00'))
+        WalletTransaction.objects.create(
+            wallet=wallet, amount=Decimal('20.00'), txn_type='credit',
+            description='Welcome bonus — new account signup',
+        )
         SpinWallet.objects.create(user=user)
-        messages.success(request, f'Account created successfully! Welcome to Darkshadow, {first_name}! 🎉 Please log in.')
+        messages.success(request, f'Account created successfully! Welcome to Darkshadow, {first_name}! 🎉 We\'ve added ₹20 to your wallet. Please log in.')
         return redirect('login')
     return render(request, 'signup.html')
+
+
+# ── Contact Us ───────────────────────────────────────────────────────────────────
+@require_POST
+def contact_submit(request):
+    name    = request.POST.get('name', '').strip()
+    email   = request.POST.get('email', '').strip().lower()
+    subject = request.POST.get('subject', '').strip()
+    message = request.POST.get('message', '').strip()
+
+    if not name or not email or not message:
+        messages.error(request, 'Please fill in your name, email, and message.')
+        return redirect(f"{reverse('home')}#contact")
+
+    ContactMessage.objects.create(
+        name=name, email=email, subject=subject, message=message,
+        user=request.user if request.user.is_authenticated else None,
+    )
+    messages.success(request, "Thanks for reaching out! We've received your message and will get back to you soon.")
+    return redirect(f"{reverse('home')}#contact")
 
 
 # ── Logout ─────────────────────────────────────────────────────────────────────

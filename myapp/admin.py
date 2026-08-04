@@ -9,7 +9,7 @@ from .models import (
     SicBoSettings, SicBoBet, TeenPattiSettings, TeenPattiBet,
     BlackjackSettings, BlackjackRound, BaccaratSettings, BaccaratBet,
     PokerSettings, PokerBet, RummySettings, RummyBet,
-    CrashSettings, CrashRound,
+    CrashSettings, CrashRound, ContactMessage,
 )
 
 
@@ -293,3 +293,12 @@ class CrashRoundAdmin(admin.ModelAdmin):
     list_filter = ('status', 'outcome')
     search_fields = ('user__username',)
     readonly_fields = ('started_at', 'resolved_at')
+
+
+@admin.register(ContactMessage)
+class ContactMessageAdmin(admin.ModelAdmin):
+    list_display = ('name', 'email', 'subject', 'resolved', 'created_at')
+    list_filter = ('resolved',)
+    search_fields = ('name', 'email', 'subject', 'message')
+    readonly_fields = ('created_at',)
+    list_editable = ('resolved',)

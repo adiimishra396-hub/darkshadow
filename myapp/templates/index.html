@@ -127,7 +127,7 @@
   .legacy-stat.featured .s-num{font-size:38px;}
   .legacy-stat.featured .s-lbl{font-size:13px;}
   /* Game Category Cards */
-  .cat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;}
+  .cat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;}
   .cat-card{background:var(--white);border:1px solid var(--line);border-radius:var(--radius);padding:26px;position:relative;overflow:hidden;transition:transform .2s ease,box-shadow .2s ease,border-color .2s ease;display:block;cursor:pointer;text-decoration:none;}
   .cat-card:hover{transform:translateY(-6px);box-shadow:0 20px 40px rgba(15,46,130,0.14);border-color:var(--blue);}
   .cat-card .icon{width:52px;height:52px;border-radius:12px;background:var(--navy);display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:18px;color:var(--gold);}
@@ -231,9 +231,35 @@
   .reveal{opacity:0;transform:translateY(24px);transition:opacity .6s ease,transform .6s ease;}
   .reveal.in-view{opacity:1;transform:translateY(0);}
   @media(max-width:1080px){header .wrap{padding:10px;}.nav-links{gap:22px;}}
-  @media(max-width:980px){.hero-inner{grid-template-columns:1fr;}.hero h1{font-size:42px;}.cat-grid{grid-template-columns:repeat(2,1fr);}.steps{grid-template-columns:1fr;}.foot-grid{grid-template-columns:1fr 1fr;}.promo{flex-direction:column;gap:26px;text-align:center;align-items:center;}.promo-left{max-width:100%;}.legacy-inner{grid-template-columns:1fr;}.legacy-right{grid-template-columns:repeat(4,1fr);}.games-grid{grid-template-columns:repeat(2,1fr);}}
-  @media(max-width:640px){.nav-links,.nav-cta .btn-outline{display:none;}.menu-toggle{display:block;}header .wrap{padding:0 20px;}.hero{padding:60px 0 70px;}.hero h1{font-size:32px;}.hero-stats{flex-wrap:wrap;gap:20px;}.cat-grid{grid-template-columns:1fr;}.wins-row{grid-template-columns:1.4fr 1fr 1fr;font-size:12px;}.wins-row .device{display:none;}.foot-grid{grid-template-columns:1fr;}.promo{padding:34px 26px;}.logo .brand-name{font-size:15px;}.popup-box{padding:34px 24px;}.popup-box h2{font-size:18px;}.foot-bottom{flex-direction:column;align-items:flex-start;}.games-grid{grid-template-columns:1fr;}}
+  /* Desktop nav (logo + 5 links + auth buttons) doesn't actually fit until
+     well past typical tablet widths — switch to the hamburger menu here
+     rather than at phone-only widths, so tablets (768-834px etc.) don't
+     get horizontal overflow from an uncollapsed nav row. */
+  @media(max-width:900px){.nav-links,.nav-cta .btn-outline{display:none;}.menu-toggle{display:block;}header .wrap{padding:10px 15px;}}
+  @media(max-width:980px){.hero-inner{grid-template-columns:1fr;}.hero h1{font-size:42px;}.cat-grid{grid-template-columns:repeat(2,1fr);}.steps{grid-template-columns:1fr;}.foot-grid{grid-template-columns:1fr 1fr;}.promo{flex-direction:column;gap:26px;text-align:center;align-items:center;}.promo-left{max-width:100%;}.legacy-inner{grid-template-columns:1fr;}.games-grid{grid-template-columns:repeat(2,1fr);}}
+  @media(max-width:640px){header .wrap{padding:0 20px;}.hero{padding:60px 0 70px;}.hero h1{font-size:32px;}.hero-stats{flex-wrap:wrap;gap:20px;}.cat-grid{grid-template-columns:1fr;}.wins-row{grid-template-columns:1.4fr 1fr 1fr;font-size:12px;}.wins-row .device{display:none;}.foot-grid{grid-template-columns:1fr;}.promo{padding:34px 26px;}.logo .brand-name{font-size:15px;}.popup-box{padding:34px 24px;}.popup-box h2{font-size:18px;}.foot-bottom{flex-direction:column;align-items:flex-start;}.games-grid{grid-template-columns:1fr;}}
   @media(max-width:980px){.gallery-grid{grid-template-columns:repeat(2,1fr);}}
+  @media(max-width:480px){.legacy-right{grid-template-columns:1fr;}.legacy-stat.featured{grid-column:span 1;}}
+  /* Header content (logo + auth button/greeting + hamburger) doesn't fit
+     narrow phones even with the desktop nav-links already hidden —
+     shrink the logo mark and the CTA/greeting button so the row fits
+     down to 320px viewports without forcing horizontal page scroll.
+     Must come after the 640px block above (equal-specificity CSS
+     cascade: later source wins), or its header .wrap padding gets
+     silently overridden back to the wider 640px value. */
+  @media(max-width:480px){
+    header .wrap{padding:8px 14px;}
+    nav{gap:10px;}
+    .menu-toggle{margin-left:0;font-size:22px;}
+    .logo{gap:8px;}
+    .logo .icon-box{width:34px;height:34px;font-size:15px;border-radius:9px;}
+    .logo .brand-name{font-size:12px;letter-spacing:1px;}
+    .logo .brand-tag{display:none;}
+    .nav-cta{gap:6px;}
+    .nav-cta .btn-small{padding:8px 12px;font-size:12px;min-width:0;}
+    .user-greeting-btn{padding:5px 8px 5px 5px;gap:4px;}
+    .user-greeting-btn .user-greeting-text{display:none;}
+  }
   @media(max-width:640px){.gallery-grid{grid-template-columns:1fr;}}
 </style>
 </head>
@@ -246,22 +272,18 @@
       <span class="popup-gift">&#127873;</span>
       <div class="popup-eyebrow">&#9889; Exclusive Welcome Offer</div>
       <h2>Welcome to <span>Darkshadow</span></h2>
-      <p>Join India's most trusted gaming platform — trusted by <strong>2.4 million+</strong> players for over <strong>10 years</strong>. Sign up now and claim your welcome bonus!</p>
+      <p>Join India's most trusted gaming platform — trusted by <strong>2.4 million+</strong> players for over <strong>10 years</strong>. Sign up now and we'll add ₹20 to your wallet, instantly!</p>
       <div class="popup-bonus-strip">
-        <div class="pb-item"><div class="pb-val">150%</div><div class="pb-lbl">Bonus Match</div></div>
-        <div class="pb-div"></div>
-        <div class="pb-item"><div class="pb-val">&#8377;30,000</div><div class="pb-lbl">Max Bonus</div></div>
-        <div class="pb-div"></div>
-        <div class="pb-item"><div class="pb-val">50</div><div class="pb-lbl">Free Spins</div></div>
+        <div class="pb-item"><div class="pb-val">&#8377;20</div><div class="pb-lbl">Added to Your Wallet</div></div>
       </div>
-      <a href="{% url 'signup' %}" class="popup-btn" onclick="closePopup()">&#127942; Claim My Bonus Now</a>
+      <a href="{% url 'signup' %}" class="popup-btn" onclick="closePopup()">&#127942; Get My &#8377;20 Now</a>
       <button class="popup-skip" onclick="closePopup()">No thanks, I'll play without a bonus</button>
     </div>
   </div>
   {% endif %}
 
   <div class="marquee-strip">
-    <span class="marquee-track">&#9889; TRUSTED GAMING PLATFORM SINCE 2016 &nbsp; &bull; &nbsp; &#127881; WELCOME BONUS 150% UP TO &#8377;30,000 &nbsp; &bull; &nbsp; &#128293; IPL SPECIAL ODDS LIVE NOW &nbsp; &bull; &nbsp; &#128176; INSTANT WITHDRAWALS &nbsp; &bull; &nbsp; &#127942; 10 YEARS OF GAMING EXCELLENCE &nbsp; &bull; &nbsp; &#127881; JOIN 2.4M+ WINNERS TODAY &nbsp;</span>
+    <span class="marquee-track">&#9889; TRUSTED GAMING PLATFORM SINCE 2016 &nbsp; &bull; &nbsp; &#127881; GET &#8377;20 FREE ON SIGNUP &nbsp; &bull; &nbsp; &#127920; 12 IN-HOUSE GAMES LIVE NOW &nbsp; &bull; &nbsp; &#128176; INSTANT WITHDRAWALS &nbsp; &bull; &nbsp; &#127942; 10 YEARS OF GAMING EXCELLENCE &nbsp; &bull; &nbsp; &#127881; JOIN 2.4M+ WINNERS TODAY &nbsp;</span>
   </div>
 
   {% if messages %}
@@ -290,16 +312,16 @@
       <ul class="nav-links">
         <li><a href="#games">Games</a></li>
         <li><a href="#all-games">All Games</a></li>
-        <li><a href="#sports">Sports</a></li>
         <li><a href="#promos">Promotions</a></li>
         <li><a href="#how">How It Works</a></li>
+        <li><a href="#contact">Contact</a></li>
       </ul>
       <div class="nav-cta">
         {% if user.is_authenticated %}
           <div class="user-greeting" id="userGreeting">
             <button class="user-greeting-btn" id="userGreetingBtn" type="button" aria-haspopup="true" aria-expanded="false">
               <span class="user-avatar">{{ user.first_name|default:user.username|slice:":1"|upper }}</span>
-              Hi, {{ user.first_name|default:user.username }} &#128075;
+              <span class="user-greeting-text">Hi, {{ user.first_name|default:user.username }} &#128075;</span>
               <span class="chevron"></span>
             </button>
             <div class="user-dropdown" id="userDropdown" role="menu">
@@ -332,7 +354,7 @@
       <ul style="display:flex;flex-direction:column;gap:14px;">
         <li><a href="#games" style="font-family:'Rajdhani',sans-serif;font-weight:600;font-size:16px;color:var(--navy);text-transform:uppercase;" onclick="document.getElementById('mobileMenu').classList.remove('open')">Games</a></li>
         <li><a href="#all-games" style="font-family:'Rajdhani',sans-serif;font-weight:600;font-size:16px;color:var(--navy);text-transform:uppercase;" onclick="document.getElementById('mobileMenu').classList.remove('open')">All Games</a></li>
-        <li><a href="#sports" style="font-family:'Rajdhani',sans-serif;font-weight:600;font-size:16px;color:var(--navy);text-transform:uppercase;" onclick="document.getElementById('mobileMenu').classList.remove('open')">Sports</a></li>
+        <li><a href="#contact" style="font-family:'Rajdhani',sans-serif;font-weight:600;font-size:16px;color:var(--navy);text-transform:uppercase;" onclick="document.getElementById('mobileMenu').classList.remove('open')">Contact</a></li>
         <li><a href="#promos" style="font-family:'Rajdhani',sans-serif;font-weight:600;font-size:16px;color:var(--navy);text-transform:uppercase;" onclick="document.getElementById('mobileMenu').classList.remove('open')">Promotions</a></li>
         <li><a href="#how" style="font-family:'Rajdhani',sans-serif;font-weight:600;font-size:16px;color:var(--navy);text-transform:uppercase;" onclick="document.getElementById('mobileMenu').classList.remove('open')">How It Works</a></li>
         <li style="display:flex;gap:10px;margin-top:6px;">
@@ -354,9 +376,9 @@
       <div>
         <span class="eyebrow"><span class="dot"></span> Live Now &mdash; 24,318 Players Online</span>
         <h1>Play Big.<br>Win <span>Bigger.</span></h1>
-        <p>Sports betting, live casino and slot games on one platform. Trusted by millions since 2016. Fast KYC, instant payouts, and odds that don't hide the fine print.</p>
+        <p>Card games, live casino and slot games on one platform. Trusted by millions since 2016. Fast KYC, instant payouts, and odds that don't hide the fine print.</p>
         <div class="hero-ctas">
-          <a href="{% url 'signup' %}" class="btn btn-gold">Claim &#8377;30,000 Bonus</a>
+          <a href="{% url 'signup' %}" class="btn btn-gold">Get &#8377;20 Free</a>
           <a href="#all-games" class="btn btn-ghost">Explore Games</a>
         </div>
         <div class="hero-stats">
@@ -398,9 +420,9 @@
         <div class="badge-10"><span class="num-10">10</span><span class="txt-10">Years of Gaming Excellence</span></div>
         <h2>A Decade of <span>Winning</span><br>Together</h2>
         <p>Since 2016, Darkshadow has been India's most trusted online gaming destination. We started with a simple promise — fair odds, real winnings, and a platform players can rely on. Today, over 2.4 million players call us home.</p>
-        <div class="legacy-earn"><span class="earn-icon">&#128176;</span><div><h4>Sign Up &amp; Start Earning</h4><p>Create your free account in under 60 seconds. Claim your 150% welcome bonus, place your first bet or spin, and withdraw your winnings instantly to your UPI or bank account — no hidden fees, no delays.</p></div></div>
+        <div class="legacy-earn"><span class="earn-icon">&#128176;</span><div><h4>Sign Up &amp; Start Earning</h4><p>Create your free account in under 60 seconds. We'll add ₹20 to your wallet instantly, place your first bet or spin, and withdraw your winnings instantly to your UPI or bank account — no hidden fees, no delays.</p></div></div>
         <div class="legacy-cta-row">
-          <a href="{% url 'signup' %}" class="btn btn-gold">Join Free &mdash; Claim Bonus</a>
+          <a href="{% url 'signup' %}" class="btn btn-gold">Join Free &mdash; Get &#8377;20</a>
           <a href="#how" class="btn btn-ghost" style="border-color:rgba(255,255,255,0.3);">How It Works</a>
         </div>
       </div>
@@ -420,7 +442,7 @@
       <div class="sec-head reveal">
         <span class="sec-eyebrow">&#127914; Game Categories</span>
         <h2>Pick Your Game</h2>
-        <p>From classic card games to live sports — find your perfect game and start winning today.</p>
+        <p>From classic card games to live casino action — find your perfect game and start winning today.</p>
       </div>
       <div class="cat-grid reveal">
         <a href="#all-games" class="cat-card" onclick="filterGames('cards')">
@@ -428,7 +450,7 @@
           <div class="icon">&#127183;</div>
           <h3>Card Games</h3>
           <p>Teen Patti, Rummy, Poker, Andar Bahar & more classic Indian card games.</p>
-          <span class="cnt">&#9654; 8 Games Available</span>
+          <span class="cnt">&#9654; 5 Games Available</span>
         </a>
         <a href="#all-games" class="cat-card" onclick="filterGames('casino')">
           <span class="badge">Live</span>
@@ -437,18 +459,12 @@
           <p>Slots, Blackjack, Baccarat, Roulette — Vegas-style thrills at your fingertips.</p>
           <span class="cnt">&#9654; 6 Games Available</span>
         </a>
-        <a href="#all-games" class="cat-card" onclick="filterGames('sports')">
-          <div class="icon">&#127944;</div>
-          <h3>Sports Betting</h3>
-          <p>IPL, Cricket, Football, Kabaddi — bet on live events with real-time odds.</p>
-          <span class="cnt">&#9654; 10+ Sports</span>
-        </a>
         <a href="#all-games" class="cat-card" onclick="filterGames('table')">
           <span class="badge">New</span>
           <div class="icon">&#9929;</div>
           <h3>Table &amp; Board</h3>
-          <p>Ludo, Pool, Dice, Satta Matka — fast games with instant results.</p>
-          <span class="cnt">&#9654; 5 Games Available</span>
+          <p>Dice Roll, Sic Bo — fast games with instant results.</p>
+          <span class="cnt">&#9654; 2 Games Available</span>
         </a>
       </div>
     </div>
@@ -466,7 +482,6 @@
         <button class="gf-btn active" onclick="filterGames('all')" data-cat="all">All Games</button>
         <button class="gf-btn" onclick="filterGames('cards')" data-cat="cards">&#127183; Card Games</button>
         <button class="gf-btn" onclick="filterGames('casino')" data-cat="casino">&#127922; Casino</button>
-        <button class="gf-btn" onclick="filterGames('sports')" data-cat="sports">&#127944; Sports</button>
         <button class="gf-btn" onclick="filterGames('table')" data-cat="table">&#9929; Table &amp; Board</button>
       </div>
       <div class="games-grid" id="gamesGrid">
@@ -662,15 +677,15 @@
     <div class="wrap">
       <div class="promo reveal">
         <div class="promo-left">
-          <span class="sec-eyebrow">&#127873; Limited Time Offer</span>
+          <span class="sec-eyebrow">&#127873; New Player Offer</span>
           <h2>New Player Welcome Bonus</h2>
-          <p>Sign up today and get a 150% match bonus on your first deposit — up to &#8377;30,000 plus 50 free spins on Lucky Slots. No complex wagering. Just play and win.</p>
-          <a href="{% url 'signup' %}" class="btn btn-gold">Claim Bonus Now</a>
+          <p>Sign up today and we'll add ₹20 to your wallet instantly — no deposit needed, no wagering requirements. Just play and win.</p>
+          <a href="{% url 'signup' %}" class="btn btn-gold">Get &#8377;20 Now</a>
         </div>
         <div class="promo-badge">
-          <div class="pct">150%</div>
-          <div class="lbl">Welcome Bonus</div>
-          <div style="font-size:11px;margin-top:6px;opacity:0.8;">Up to &#8377;30,000</div>
+          <div class="pct">&#8377;20</div>
+          <div class="lbl">Welcome Credit</div>
+          <div style="font-size:11px;margin-top:6px;opacity:0.8;">Added instantly on signup</div>
         </div>
       </div>
     </div>
@@ -729,7 +744,7 @@
           <span>Desktop</span>
         </div>
         <div class="wins-row">
-          <span class="player">Sneha R.</span><span>Cricket Bet</span><span class="amt">&#8377;2,14,000</span>
+          <span class="player">Sneha R.</span><span>Roulette</span><span class="amt">&#8377;2,14,000</span>
           <span><span class="live-dot"><span class="d"></span> Live</span></span>
         </div>
         <div class="wins-row">
@@ -737,9 +752,50 @@
           <span>Mobile</span>
         </div>
         <div class="wins-row">
-          <span class="player">Deepa N.</span><span>8-Ball Pool</span><span class="amt">&#8377;19,800</span>
+          <span class="player">Deepa N.</span><span>Sic Bo Dice</span><span class="amt">&#8377;19,800</span>
           <span>Desktop</span>
         </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ CONTACT US ═══ -->
+  <section id="contact" style="background:var(--white);">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <span class="sec-eyebrow">&#128172; Get In Touch</span>
+        <h2>Contact Us</h2>
+        <p>Questions, issues with a deposit or withdrawal, or anything else — send us a message and we'll get back to you.</p>
+      </div>
+      <div class="reveal" style="max-width:640px;margin:0 auto;background:var(--navy);border-radius:20px;padding:40px 36px;">
+        <form method="post" action="{% url 'contact_submit' %}">
+          {% csrf_token %}
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+            <div>
+              <label for="contactName" style="display:block;color:#9FB0D8;font-family:'Rajdhani',sans-serif;font-weight:600;font-size:12px;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;">Name</label>
+              <input type="text" id="contactName" name="name" required
+                {% if user.is_authenticated %}value="{{ user.get_full_name|default:user.username }}"{% endif %}
+                style="width:100%;padding:12px 14px;border-radius:10px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.06);color:#fff;font-size:14px;box-sizing:border-box;">
+            </div>
+            <div>
+              <label for="contactEmail" style="display:block;color:#9FB0D8;font-family:'Rajdhani',sans-serif;font-weight:600;font-size:12px;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;">Email</label>
+              <input type="email" id="contactEmail" name="email" required
+                {% if user.is_authenticated %}value="{{ user.email }}"{% endif %}
+                style="width:100%;padding:12px 14px;border-radius:10px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.06);color:#fff;font-size:14px;box-sizing:border-box;">
+            </div>
+          </div>
+          <div style="margin-bottom:16px;">
+            <label for="contactSubject" style="display:block;color:#9FB0D8;font-family:'Rajdhani',sans-serif;font-weight:600;font-size:12px;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;">Subject</label>
+            <input type="text" id="contactSubject" name="subject" placeholder="e.g. Withdrawal query, account issue..."
+              style="width:100%;padding:12px 14px;border-radius:10px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.06);color:#fff;font-size:14px;box-sizing:border-box;">
+          </div>
+          <div style="margin-bottom:22px;">
+            <label for="contactMessage" style="display:block;color:#9FB0D8;font-family:'Rajdhani',sans-serif;font-weight:600;font-size:12px;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;">Message</label>
+            <textarea id="contactMessage" name="message" rows="5" required
+              style="width:100%;padding:12px 14px;border-radius:10px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.06);color:#fff;font-size:14px;box-sizing:border-box;resize:vertical;font-family:inherit;"></textarea>
+          </div>
+          <button type="submit" class="btn btn-gold" style="width:100%;">Send Message</button>
+        </form>
       </div>
     </div>
   </section>
@@ -766,7 +822,6 @@
           <ul>
             <li><a href="#all-games" onclick="filterGames('cards')">Card Games</a></li>
             <li><a href="#all-games" onclick="filterGames('casino')">Casino Games</a></li>
-            <li><a href="#all-games" onclick="filterGames('sports')">Sports Betting</a></li>
             <li><a href="#all-games" onclick="filterGames('table')">Table Games</a></li>
             <li><a href="#all-games">All Games</a></li>
           </ul>
@@ -790,7 +845,7 @@
             <li><a href="#">Responsible Gaming</a></li>
             <li><a href="#">Privacy Policy</a></li>
             <li><a href="#">Terms &amp; Conditions</a></li>
-            <li><a href="#">Contact Us</a></li>
+            <li><a href="#contact">Contact Us</a></li>
           </ul>
         </div>
       </div>

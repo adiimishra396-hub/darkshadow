@@ -21,7 +21,7 @@
       animation: jackpot-pulse 2s infinite;
     ">
     <span style="font-size:1.5rem;">🎰</span>
-    <span>Today's Jackpot</span>
+    <span class="jackpot-trigger-label">Today's Jackpot</span>
     {% if spin_wallet and spin_wallet.spins > 0 %}
       <span id="spinBadge" style="
         background:#e74c3c;color:#fff;
@@ -238,6 +238,14 @@
 @keyframes jackpot-pulse {
   0%,100% { box-shadow: 0 4px 20px rgba(255,210,0,.55); }
   50%      { box-shadow: 0 4px 40px rgba(255,210,0,.9); }
+}
+
+/* Floating jackpot trigger — shrink on narrow screens so it never
+   overflows off the edge of the viewport (esp. with a 3-digit spin badge) */
+@media (max-width:480px) {
+  #jackpot-trigger-wrapper { right:14px; bottom:14px; }
+  #jackpotTriggerBtn { padding:10px 14px; font-size:.85rem; gap:6px; }
+  #jackpotTriggerBtn .jackpot-trigger-label { display:none; }
 }
 
 /* Reel cell — each symbol cell in the strip */
