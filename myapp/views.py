@@ -9,7 +9,7 @@ from django.contrib.auth.models import User
 from django.contrib import messages
 from django.db import OperationalError, transaction
 from django.db.models import Sum, Count, Q
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.core.mail import get_connection, EmailMessage
 from django.views.decorators.http import require_POST
 from django.utils import timezone
@@ -25,6 +25,7 @@ from .models import (
     PokerSettings, PokerBet, RummySettings, RummyBet,
     CrashSettings, CrashRound, ContactMessage,
     SiteSettings, PlatformEarning, SMTPSettings,
+    SiteCustomization, PWASettings,
 )
 import razorpay
 import os
@@ -246,6 +247,34 @@ def get_smtp_settings():
         return None
 
 
+def get_site_customization():
+    """Returns the SiteCustomization singleton. Safe fallback if table missing."""
+    try:
+        return SiteCustomization.get_singleton()
+    except Exception:
+        class _Defaults:
+            site_name = 'DARKSHADOW'
+            use_logo_image = False
+            logo = None
+            favicon = None
+            signup_bonus_amount = Decimal('20.00')
+        return _Defaults()
+
+
+def get_pwa_settings():
+    """Returns the PWASettings singleton. Safe fallback if table missing."""
+    try:
+        return PWASettings.get_singleton()
+    except Exception:
+        class _Defaults:
+            app_name = 'Darkshadow'
+            short_name = 'Darkshadow'
+            icon = None
+            theme_color = '#0A1A3C'
+            is_active = True
+        return _Defaults()
+
+
 def _send_contact_notification_email(contact_msg):
     """Emails the admin-configured notify address about a new Contact Us
     submission, using the admin-configured SMTP settings. Silently no-ops
@@ -339,10 +368,12 @@ def home(request):
     poker_cfg      = get_poker_settings()
     rummy_cfg      = get_rummy_settings()
     crash_cfg      = get_crash_settings()
+    site_custom_cfg = get_site_customization()
     return render(request, 'index.html', {
         'spin_wallet':              spin_wallet,
         'wallet':                   wallet,
         'razorpay_key_id':          key_id,
+        'signup_bonus_amount':      site_custom_cfg.signup_bonus_amount,
         'spin_pack_amount':         spin_cfg.spin_pack_amount,
         'spin_pack_spins':          spin_cfg.spin_pack_spins,
         'spin_machine_active':      spin_cfg.is_active,
@@ -494,13 +525,15 @@ def signup_view(request):
             user=user, last_name=last_name, age=int(age),
             phone_number=phone, is_above_18=True, agreed_to_terms=True,
         )
-        wallet = Wallet.objects.create(user=user, balance=Decimal('20.00'))
+        bonus_amount = get_site_customization().signup_bonus_amount
+        wallet = Wallet.objects.create(user=user, balance=bonus_amount)
         WalletTransaction.objects.create(
-            wallet=wallet, amount=Decimal('20.00'), txn_type='credit',
+            wallet=wallet, amount=bonus_amount, txn_type='credit',
             description='Welcome bonus — new account signup',
         )
         SpinWallet.objects.create(user=user)
-        messages.success(request, f'Account created successfully! Welcome to Darkshadow, {first_name}! 🎉 We\'ve added ₹20 to your wallet. Please log in.')
+        bonus_display = bonus_amount.to_integral_value() if bonus_amount == bonus_amount.to_integral_value() else bonus_amount.normalize()
+        messages.success(request, f'Account created successfully! Welcome to Darkshadow, {first_name}! 🎉 We\'ve added ₹{bonus_display} to your wallet. Please log in.')
         return redirect('login')
     return render(request, 'signup.html')
 
@@ -840,6 +873,18 @@ def admin_panel_view(request):
     site_cfg = get_site_settings()
     smtp_cfg = get_smtp_settings()
 
+    # Contact Us submissions
+    try:
+        contact_messages = list(ContactMessage.objects.all()[:100])
+        contact_open_count = ContactMessage.objects.filter(resolved=False).count()
+        contact_total_count = ContactMessage.objects.count()
+    except OperationalError:
+        contact_messages = []
+        contact_open_count = contact_total_count = 0
+
+    site_custom_cfg = get_site_customization()
+    pwa_settings_cfg = get_pwa_settings()
+
     return render(request, 'admin_panel.html', {
         'user_data':             user_data,
         'total_users':           len(user_data),
@@ -869,6 +914,13 @@ def admin_panel_view(request):
         'recent_earnings':        recent_earnings,
         'site_cfg':               site_cfg,
         'smtp_cfg':               smtp_cfg,
+        # Contact Us
+        'contact_messages':       contact_messages,
+        'contact_open_count':     contact_open_count,
+        'contact_total_count':    contact_total_count,
+        # Customization / PWA
+        'site_custom_cfg':        site_custom_cfg,
+        'pwa_settings_cfg':       pwa_settings_cfg,
     })
 
 
@@ -935,6 +987,109 @@ def save_smtp_settings(request):
     except Exception as e:
         messages.error(request, f'Error saving SMTP settings: {e}')
     return redirect('admin_panel')
+
+
+# ── Admin: Toggle Contact Message Resolved ─────────────────────────────────────
+@require_POST
+def toggle_contact_resolved(request, message_id):
+    if not request.user.is_authenticated or not request.user.is_superuser:
+        messages.error(request, 'Access denied.')
+        return redirect('login')
+    msg = get_object_or_404(ContactMessage, pk=message_id)
+    msg.resolved = not msg.resolved
+    msg.save()
+    return redirect('admin_panel')
+
+
+# ── Admin: Save Site Customization (favicon, logo, signup bonus) ──────────────
+@require_POST
+def save_site_customization(request):
+    if not request.user.is_authenticated or not request.user.is_superuser:
+        messages.error(request, 'Access denied.')
+        return redirect('login')
+    try:
+        cfg = SiteCustomization.get_singleton()
+        site_name = request.POST.get('site_name', '').strip()
+        cfg.site_name = site_name or 'DARKSHADOW'
+        cfg.use_logo_image = bool(request.POST.get('use_logo_image'))
+        bonus = Decimal(request.POST.get('signup_bonus_amount', '20.00') or '20.00')
+        if bonus < 0:
+            raise ValueError('Signup bonus cannot be negative')
+        cfg.signup_bonus_amount = bonus
+        if request.FILES.get('logo'):
+            cfg.logo = request.FILES['logo']
+        if request.FILES.get('favicon'):
+            cfg.favicon = request.FILES['favicon']
+        cfg.save()
+        messages.success(request, '✅ Customization saved! Changes are now live across the site.')
+    except Exception as e:
+        messages.error(request, f'Error saving customization: {e}')
+    return redirect('admin_panel')
+
+
+# ── Admin: Save PWA Settings ────────────────────────────────────────────────────
+@require_POST
+def save_pwa_settings(request):
+    if not request.user.is_authenticated or not request.user.is_superuser:
+        messages.error(request, 'Access denied.')
+        return redirect('login')
+    try:
+        cfg = PWASettings.get_singleton()
+        cfg.app_name = request.POST.get('pwa_app_name', '').strip() or 'Darkshadow'
+        cfg.short_name = request.POST.get('pwa_short_name', '').strip() or 'Darkshadow'
+        cfg.theme_color = request.POST.get('pwa_theme_color', '').strip() or '#0A1A3C'
+        cfg.is_active = bool(request.POST.get('pwa_is_active'))
+        if request.FILES.get('pwa_icon'):
+            cfg.icon = request.FILES['pwa_icon']
+        cfg.save()
+        messages.success(request, '✅ PWA settings saved! Install prompt updated site-wide.')
+    except Exception as e:
+        messages.error(request, f'Error saving PWA settings: {e}')
+    return redirect('admin_panel')
+
+
+# ── PWA: Web App Manifest ──────────────────────────────────────────────────────
+def pwa_manifest_view(request):
+    cfg = get_pwa_settings()
+    if cfg.icon:
+        icon_url = request.build_absolute_uri(cfg.icon.url)
+    else:
+        icon_url = request.build_absolute_uri('/static/icons/icon-512.png')
+    manifest = {
+        'name': cfg.app_name,
+        'short_name': cfg.short_name,
+        'start_url': '/',
+        'scope': '/',
+        'display': 'standalone',
+        'background_color': '#0A1A3C',
+        'theme_color': cfg.theme_color,
+        'icons': [
+            {'src': icon_url, 'sizes': '192x192', 'type': 'image/png', 'purpose': 'any maskable'},
+            {'src': icon_url, 'sizes': '512x512', 'type': 'image/png', 'purpose': 'any maskable'},
+        ],
+    }
+    return JsonResponse(manifest, content_type='application/manifest+json')
+
+
+# ── PWA: Service Worker ─────────────────────────────────────────────────────────
+_SERVICE_WORKER_JS = """
+// Minimal service worker — enables PWA installability. No offline caching
+// is attempted (games need live server data), just a pass-through fetch
+// handler, which browsers require to be present for the install prompt.
+self.addEventListener('install', function(event) {
+  self.skipWaiting();
+});
+self.addEventListener('activate', function(event) {
+  event.waitUntil(self.clients.claim());
+});
+self.addEventListener('fetch', function(event) {
+  event.respondWith(fetch(event.request));
+});
+"""
+
+
+def service_worker_view(request):
+    return HttpResponse(_SERVICE_WORKER_JS, content_type='application/javascript')
 
 
 # ── Admin: Toggle Site Disabled (kill-switch) ──────────────────────────────────

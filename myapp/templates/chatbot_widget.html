@@ -32,6 +32,10 @@
   </div>
 </div>
 
+{% if pwa_cfg and pwa_cfg.is_active %}
+<button type="button" id="pwaInstallBtn" aria-label="Install App">&#128241; Install App</button>
+{% endif %}
+
 <style>
   #cbWidget{position:fixed;right:22px;bottom:22px;z-index:10050;font-family:'Rajdhani',sans-serif;}
   #cbLauncher{
@@ -85,6 +89,18 @@
     #cbWidget{right:14px;bottom:14px;}
     #cbPanel{right:-6px;width:92vw;}
   }
+  /* PWA install button — bottom-left, opposite the chatbot/spin stack
+     on the right, so it never competes for the same corner. */
+  #pwaInstallBtn{
+    position:fixed;left:22px;bottom:22px;z-index:10050;display:none;
+    align-items:center;gap:8px;font-family:'Rajdhani',sans-serif;font-weight:700;
+    font-size:13px;letter-spacing:0.5px;text-transform:uppercase;
+    padding:12px 18px;border-radius:50px;border:none;cursor:pointer;
+    background:linear-gradient(135deg,#f7971e,#ffd200);color:#1a1a2e;
+    box-shadow:0 6px 20px rgba(255,210,0,.45);transition:transform .2s ease;
+  }
+  #pwaInstallBtn:hover{transform:scale(1.05);}
+  @media (max-width:480px){#pwaInstallBtn{left:14px;bottom:14px;padding:10px 14px;font-size:12px;}}
 </style>
 
 <script>
@@ -165,4 +181,32 @@
       chips.appendChild(btn);
     });
   })();
+
+  // ── PWA: service worker registration + Install App prompt
+  {% if pwa_cfg and pwa_cfg.is_active %}
+  (function(){
+    if('serviceWorker' in navigator){
+      navigator.serviceWorker.register('/sw.js').catch(function(){});
+    }
+    var installBtn = document.getElementById('pwaInstallBtn');
+    var deferredPrompt = null;
+    window.addEventListener('beforeinstallprompt', function(e){
+      e.preventDefault();
+      deferredPrompt = e;
+      if(installBtn) installBtn.style.display = 'flex';
+    });
+    if(installBtn){
+      installBtn.addEventListener('click', function(){
+        installBtn.style.display = 'none';
+        if(!deferredPrompt) return;
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.finally(function(){ deferredPrompt = null; });
+      });
+    }
+    window.addEventListener('appinstalled', function(){
+      if(installBtn) installBtn.style.display = 'none';
+      deferredPrompt = null;
+    });
+  })();
+  {% endif %}
 </script>

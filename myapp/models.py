@@ -924,3 +924,67 @@ class SMTPSettings(models.Model):
     @property
     def is_configured(self):
         return bool(self.host and self.username and self.password and self.notify_email)
+
+
+class SiteCustomization(models.Model):
+    """
+    Singleton model (id=1). Branding & onboarding controls editable from
+    the admin panel's Customization tab: favicon, logo (with a toggle to
+    fall back to the built-in text logo), site display name, and the
+    default wallet credit new users receive on signup.
+    """
+    site_name = models.CharField(max_length=100, default='DARKSHADOW',
+        help_text='Site name shown in the header/footer logo and browser tab title')
+    logo = models.ImageField(upload_to='branding/', blank=True, null=True,
+        help_text='Uploaded logo image — only shown when "Use logo image" is ON below')
+    use_logo_image = models.BooleanField(default=False,
+        help_text='ON: show the uploaded logo image. OFF: show the built-in text logo.')
+    favicon = models.ImageField(upload_to='branding/', blank=True, null=True,
+        help_text='Browser tab icon. Falls back to the built-in icon if not set.')
+    signup_bonus_amount = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('20.00'),
+        help_text='₹ credited to a new user\'s wallet automatically on signup')
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Site Customization'
+        verbose_name_plural = 'Site Customization'
+
+    def __str__(self):
+        return f'Site Customization (updated {self.updated_at})'
+
+    @classmethod
+    def get_singleton(cls):
+        obj, _ = cls.objects.get_or_create(pk=1)
+        return obj
+
+
+class PWASettings(models.Model):
+    """
+    Singleton model (id=1). Controls the installable PWA (Add to Home
+    Screen) manifest — app name, icon, theme color, and an on/off switch.
+    When is_active is off, the manifest link + service worker registration
+    are omitted from every page, so no install prompt is offered.
+    """
+    app_name    = models.CharField(max_length=100, default='Darkshadow',
+        help_text='Full app name shown on the install prompt/splash screen')
+    short_name  = models.CharField(max_length=30, default='Darkshadow',
+        help_text='Short name shown under the home-screen icon (keep it brief)')
+    icon        = models.ImageField(upload_to='pwa/', blank=True, null=True,
+        help_text='Home-screen icon (square PNG, ideally 512x512). Falls back to a built-in icon if not set.')
+    theme_color = models.CharField(max_length=7, default='#0A1A3C',
+        help_text='Hex color for the browser/OS chrome around the installed app (e.g. #0A1A3C)')
+    is_active   = models.BooleanField(default=True,
+        help_text='When ON, visitors are offered the "Install App" PWA prompt site-wide')
+    updated_at  = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'PWA Settings'
+        verbose_name_plural = 'PWA Settings'
+
+    def __str__(self):
+        return f'PWA Settings (updated {self.updated_at})'
+
+    @classmethod
+    def get_singleton(cls):
+        obj, _ = cls.objects.get_or_create(pk=1)
+        return obj

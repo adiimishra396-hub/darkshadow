@@ -4,6 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Darkshadow — Where Legends Play.</title>
+{% if site_custom and site_custom.favicon %}<link rel="icon" href="{{ site_custom.favicon.url }}">{% else %}<link rel="icon" href="/static/icons/icon-192.png">{% endif %}
+{% if pwa_cfg and pwa_cfg.is_active %}
+<link rel="manifest" href="{% url 'pwa_manifest' %}">
+<meta name="theme-color" content="{{ pwa_cfg.theme_color }}">
+<link rel="apple-touch-icon" href="{% if pwa_cfg.icon %}{{ pwa_cfg.icon.url }}{% else %}/static/icons/icon-192.png{% endif %}">
+{% endif %}
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Rajdhani:wght@500;600;700&family=Sora:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -236,7 +242,14 @@
      well past typical tablet widths — switch to the hamburger menu here
      rather than at phone-only widths, so tablets (768-834px etc.) don't
      get horizontal overflow from an uncollapsed nav row. */
-  @media(max-width:900px){.nav-links,.nav-cta .btn-outline{display:none;}.menu-toggle{display:block;}header .wrap{padding:10px 15px;}}
+  @media(max-width:900px){.nav-links,.nav-cta .btn-outline{display:none;}.menu-toggle{display:block;}header .wrap{padding:10px 15px;}
+    /* With .nav-links removed from flow, nav's justify-content:space-between
+       spreads the 3 remaining flex items (logo, nav-cta, menu-toggle) evenly,
+       stranding nav-cta (profile dropdown / Join Now) in the visual center
+       instead of next to the hamburger. margin-left:auto packs it — and
+       everything after it — against the right edge instead. */
+    .nav-cta{margin-left:auto;}
+  }
   @media(max-width:980px){.hero-inner{grid-template-columns:1fr;}.hero h1{font-size:42px;}.cat-grid{grid-template-columns:repeat(2,1fr);}.steps{grid-template-columns:1fr;}.foot-grid{grid-template-columns:1fr 1fr;}.promo{flex-direction:column;gap:26px;text-align:center;align-items:center;}.promo-left{max-width:100%;}.legacy-inner{grid-template-columns:1fr;}.games-grid{grid-template-columns:repeat(2,1fr);}}
   @media(max-width:640px){header .wrap{padding:0 20px;}.hero{padding:60px 0 70px;}.hero h1{font-size:32px;}.hero-stats{flex-wrap:wrap;gap:20px;}.cat-grid{grid-template-columns:1fr;}.wins-row{grid-template-columns:1.4fr 1fr 1fr;font-size:12px;}.wins-row .device{display:none;}.foot-grid{grid-template-columns:1fr;}.promo{padding:34px 26px;}.logo .brand-name{font-size:15px;}.popup-box{padding:34px 24px;}.popup-box h2{font-size:18px;}.foot-bottom{flex-direction:column;align-items:flex-start;}.games-grid{grid-template-columns:1fr;}}
   @media(max-width:980px){.gallery-grid{grid-template-columns:repeat(2,1fr);}}
@@ -273,18 +286,18 @@
       <span class="popup-gift">&#127873;</span>
       <div class="popup-eyebrow">&#9889; Exclusive Welcome Offer</div>
       <h2>Welcome to <span>Darkshadow</span></h2>
-      <p>Join India's most trusted gaming platform — trusted by <strong>2.4 million+</strong> players for over <strong>10 years</strong>. Sign up now and we'll add ₹20 to your wallet, instantly!</p>
+      <p>Join India's most trusted gaming platform — trusted by <strong>2.4 million+</strong> players for over <strong>10 years</strong>. Sign up now and we'll add ₹{{ signup_bonus_amount|floatformat:"-2" }} to your wallet, instantly!</p>
       <div class="popup-bonus-strip">
-        <div class="pb-item"><div class="pb-val">&#8377;20</div><div class="pb-lbl">Added to Your Wallet</div></div>
+        <div class="pb-item"><div class="pb-val">&#8377;{{ signup_bonus_amount|floatformat:"-2" }}</div><div class="pb-lbl">Added to Your Wallet</div></div>
       </div>
-      <a href="{% url 'signup' %}" class="popup-btn" onclick="closePopup()">&#127942; Get My &#8377;20 Now</a>
+      <a href="{% url 'signup' %}" class="popup-btn" onclick="closePopup()">&#127942; Get My &#8377;{{ signup_bonus_amount|floatformat:"-2" }} Now</a>
       <button class="popup-skip" onclick="closePopup()">No thanks, I'll play without a bonus</button>
     </div>
   </div>
   {% endif %}
 
   <div class="marquee-strip">
-    <span class="marquee-track">&#9889; TRUSTED GAMING PLATFORM SINCE 2016 &nbsp; &bull; &nbsp; &#127881; GET &#8377;20 FREE ON SIGNUP &nbsp; &bull; &nbsp; &#127920; 12 IN-HOUSE GAMES LIVE NOW &nbsp; &bull; &nbsp; &#128176; INSTANT WITHDRAWALS &nbsp; &bull; &nbsp; &#127942; 10 YEARS OF GAMING EXCELLENCE &nbsp; &bull; &nbsp; &#127881; JOIN 2.4M+ WINNERS TODAY &nbsp;</span>
+    <span class="marquee-track">&#9889; TRUSTED GAMING PLATFORM SINCE 2016 &nbsp; &bull; &nbsp; &#127881; GET &#8377;{{ signup_bonus_amount|floatformat:"-2" }} FREE ON SIGNUP &nbsp; &bull; &nbsp; &#127920; 12 IN-HOUSE GAMES LIVE NOW &nbsp; &bull; &nbsp; &#128176; INSTANT WITHDRAWALS &nbsp; &bull; &nbsp; &#127942; 10 YEARS OF GAMING EXCELLENCE &nbsp; &bull; &nbsp; &#127881; JOIN 2.4M+ WINNERS TODAY &nbsp;</span>
   </div>
 
   {% if messages %}
@@ -304,9 +317,13 @@
   <header>
     <nav class="wrap">
       <a href="{% url 'home' %}" class="logo">
-        <span class="icon-box">D</span>
+        {% if site_custom and site_custom.use_logo_image and site_custom.logo %}
+          <img src="{{ site_custom.logo.url }}" alt="{{ site_custom.site_name }}" style="width:48px;height:48px;border-radius:11px;object-fit:cover;flex-shrink:0;">
+        {% else %}
+          <span class="icon-box">D</span>
+        {% endif %}
         <span class="brand">
-          <span class="brand-name">DARKSHADOW</span>
+          <span class="brand-name">{{ site_custom.site_name|default:"DARKSHADOW" }}</span>
           <span class="brand-tag">Where Legends Play</span>
         </span>
       </a>
@@ -379,7 +396,7 @@
         <h1>Play Big.<br>Win <span>Bigger.</span></h1>
         <p>Card games, live casino and slot games on one platform. Trusted by millions since 2016. Fast KYC, instant payouts, and odds that don't hide the fine print.</p>
         <div class="hero-ctas">
-          <a href="{% url 'signup' %}" class="btn btn-gold">Get &#8377;20 Free</a>
+          <a href="{% url 'signup' %}" class="btn btn-gold">Get &#8377;{{ signup_bonus_amount|floatformat:"-2" }} Free</a>
           <a href="#all-games" class="btn btn-ghost">Explore Games</a>
         </div>
         <div class="hero-stats">
@@ -421,9 +438,9 @@
         <div class="badge-10"><span class="num-10">10</span><span class="txt-10">Years of Gaming Excellence</span></div>
         <h2>A Decade of <span>Winning</span><br>Together</h2>
         <p>Since 2016, Darkshadow has been India's most trusted online gaming destination. We started with a simple promise — fair odds, real winnings, and a platform players can rely on. Today, over 2.4 million players call us home.</p>
-        <div class="legacy-earn"><span class="earn-icon">&#128176;</span><div><h4>Sign Up &amp; Start Earning</h4><p>Create your free account in under 60 seconds. We'll add ₹20 to your wallet instantly, place your first bet or spin, and withdraw your winnings instantly to your UPI or bank account — no hidden fees, no delays.</p></div></div>
+        <div class="legacy-earn"><span class="earn-icon">&#128176;</span><div><h4>Sign Up &amp; Start Earning</h4><p>Create your free account in under 60 seconds. We'll add ₹{{ signup_bonus_amount|floatformat:"-2" }} to your wallet instantly, place your first bet or spin, and withdraw your winnings instantly to your UPI or bank account — no hidden fees, no delays.</p></div></div>
         <div class="legacy-cta-row">
-          <a href="{% url 'signup' %}" class="btn btn-gold">Join Free &mdash; Get &#8377;20</a>
+          <a href="{% url 'signup' %}" class="btn btn-gold">Join Free &mdash; Get &#8377;{{ signup_bonus_amount|floatformat:"-2" }}</a>
           <a href="#how" class="btn btn-ghost" style="border-color:rgba(255,255,255,0.3);">How It Works</a>
         </div>
       </div>
@@ -680,11 +697,11 @@
         <div class="promo-left">
           <span class="sec-eyebrow">&#127873; New Player Offer</span>
           <h2>New Player Welcome Bonus</h2>
-          <p>Sign up today and we'll add ₹20 to your wallet instantly — no deposit needed, no wagering requirements. Just play and win.</p>
-          <a href="{% url 'signup' %}" class="btn btn-gold">Get &#8377;20 Now</a>
+          <p>Sign up today and we'll add ₹{{ signup_bonus_amount|floatformat:"-2" }} to your wallet instantly — no deposit needed, no wagering requirements. Just play and win.</p>
+          <a href="{% url 'signup' %}" class="btn btn-gold">Get &#8377;{{ signup_bonus_amount|floatformat:"-2" }} Now</a>
         </div>
         <div class="promo-badge">
-          <div class="pct">&#8377;20</div>
+          <div class="pct">&#8377;{{ signup_bonus_amount|floatformat:"-2" }}</div>
           <div class="lbl">Welcome Credit</div>
           <div style="font-size:11px;margin-top:6px;opacity:0.8;">Added instantly on signup</div>
         </div>
@@ -809,7 +826,14 @@
       <div class="foot-grid">
         <div>
           <div class="foot-logo-wrap">
-            <div class="foot-logo"><span class="x">D</span> DARKSHADOW</div>
+            <div class="foot-logo">
+              {% if site_custom and site_custom.use_logo_image and site_custom.logo %}
+                <img src="{{ site_custom.logo.url }}" alt="{{ site_custom.site_name }}" style="width:32px;height:32px;border-radius:8px;object-fit:cover;">
+              {% else %}
+                <span class="x">D</span>
+              {% endif %}
+              {{ site_custom.site_name|default:"DARKSHADOW" }}
+            </div>
             <span class="foot-tagline">Where Legends Play</span>
           </div>
           <p class="foot-desc">India's most trusted online gaming platform since 2016. Licensed, RNG-certified and committed to responsible gaming for 2.4 million+ players.</p>
@@ -856,7 +880,7 @@
       <hr class="foot-divider">
       <div class="foot-bottom">
         <div class="foot-bottom-left">
-          <span class="copy">&copy; 2024 Darkshadow Gaming Pvt. Ltd. All rights reserved.</span>
+          <span class="copy">&copy; 2026 Darkshadow Gaming Pvt. Ltd. All rights reserved.</span>
           <span class="disclaimer">&#128286; 18+ only. Gambling can be addictive. Play responsibly. This platform is for entertainment purposes only.</span>
         </div>
         <div class="foot-bottom-right">

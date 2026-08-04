@@ -399,6 +399,12 @@
       <a href="#" id="tab-earnings-link" onclick="switchTab('earnings',this);return false;">
         <span class="icon">&#128176;</span><span>Earnings</span>
       </a>
+      <a href="#" id="tab-contact-link" onclick="switchTab('contact',this);return false;">
+        <span class="icon">&#128172;</span><span>Contact Us</span>{% if contact_open_count %}<span class="badge" style="margin-left:auto;">{{ contact_open_count }}</span>{% endif %}
+      </a>
+      <a href="#" id="tab-customization-link" onclick="switchTab('customization',this);return false;">
+        <span class="icon">&#127912;</span><span>Customization</span>
+      </a>
       <a href="#" id="tab-settings-link" onclick="switchTab('settings',this);return false;">
         <span class="icon">&#9881;</span><span>Settings</span>
       </a>
@@ -724,6 +730,173 @@
 
     </div><!-- /earnings -->
 
+    <!-- ══ CONTACT US TAB ═══════════════════════════════════════════════════ -->
+    <div id="tab-contact" class="tab-content">
+      <div class="stats-row" style="grid-template-columns:repeat(2,1fr);">
+        <div class="stat-card gold">
+          <div class="sc-label">Total Messages</div>
+          <div class="sc-val">{{ contact_total_count }}</div>
+          <div class="sc-sub">All time submissions</div>
+        </div>
+        <div class="stat-card">
+          <div class="sc-label">Open / Unresolved</div>
+          <div class="sc-val" style="color:{% if contact_open_count %}#f97316{% else %}var(--green){% endif %};">{{ contact_open_count }}</div>
+          <div class="sc-sub">Awaiting a response</div>
+        </div>
+      </div>
+      <div class="section-head">
+        <h2>&#128172; Contact Us Submissions</h2>
+        <span class="badge">{{ contact_total_count }} Total</span>
+      </div>
+      <div class="table-wrap">
+        {% if contact_messages %}
+          {% for m in contact_messages %}
+          <div style="padding:18px 22px;border-bottom:1px solid var(--line);">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;">
+              <div>
+                <div style="font-weight:700;color:var(--white);font-size:14px;">{{ m.name }} &nbsp;<span style="font-weight:400;color:var(--grey);font-size:12px;">&lt;{{ m.email }}&gt;</span></div>
+                <div style="font-size:12px;color:var(--gold);margin-top:4px;">{{ m.subject|default:"(no subject)" }}</div>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;flex-shrink:0;">
+                <span class="status-badge {% if m.resolved %}active{% else %}pending{% endif %}"><span class="dot"></span>{% if m.resolved %}Resolved{% else %}Open{% endif %}</span>
+                <span style="font-size:11px;color:var(--grey);">{{ m.created_at|date:"d M Y, H:i" }}</span>
+              </div>
+            </div>
+            <p style="font-size:13px;color:var(--grey);line-height:1.6;margin:10px 0;white-space:pre-wrap;">{{ m.message }}</p>
+            <form method="post" action="{% url 'toggle_contact_resolved' m.id %}" style="display:inline;">
+              {% csrf_token %}
+              {% if m.resolved %}
+                <button type="submit" class="btn-toggle btn-deactivate">Mark Open</button>
+              {% else %}
+                <button type="submit" class="btn-toggle btn-activate">Mark Resolved</button>
+              {% endif %}
+            </form>
+          </div>
+          {% endfor %}
+        {% else %}
+          <div class="empty-state"><div class="empty-icon">&#128172;</div>No Contact Us messages yet.</div>
+        {% endif %}
+      </div>
+    </div><!-- /contact -->
+
+    <!-- ══ CUSTOMIZATION TAB ════════════════════════════════════════════════ -->
+    <div id="tab-customization" class="tab-content">
+
+      <!-- Branding Settings -->
+      <div class="settings-card" style="background:rgba(124,58,237,0.05);border:1px solid rgba(124,58,237,0.2);">
+        <div class="settings-header">
+          <div class="s-icon" style="background:rgba(124,58,237,0.15);border:1px solid rgba(124,58,237,0.3);">&#127912;</div>
+          <h2>Branding</h2>
+          {% if site_custom_cfg.use_logo_image and site_custom_cfg.logo %}
+          <span class="s-status-badge live" style="margin-left:auto;"><span class="sdot"></span> Logo Image Active</span>
+          {% else %}
+          <span class="s-status-badge off" style="margin-left:auto;"><span class="sdot"></span> Text Logo Active</span>
+          {% endif %}
+        </div>
+        <p class="s-desc">
+          Set the site name, upload a logo image or favicon, and choose whether the header/footer show your logo image or the built-in text logo.
+        </p>
+        <form method="post" action="{% url 'save_site_customization' %}" enctype="multipart/form-data">
+          {% csrf_token %}
+          <div class="s-form-grid">
+            <div class="s-field">
+              <label for="site_name">Site Name</label>
+              <input type="text" id="site_name" name="site_name" placeholder="DARKSHADOW"
+                     value="{{ site_custom_cfg.site_name }}">
+              <span class="field-hint">Shown in the header, footer, and browser tab title</span>
+            </div>
+            <div class="s-field">
+              <label for="signup_bonus_amount">New User Signup Bonus (&#8377; INR)</label>
+              <input type="number" id="signup_bonus_amount" name="signup_bonus_amount" min="0" step="0.01"
+                     value="{{ site_custom_cfg.signup_bonus_amount }}" placeholder="20.00">
+              <span class="field-hint">Wallet credit every new signup receives automatically (default &#8377;20)</span>
+            </div>
+            <div class="s-field">
+              <label for="logo">Logo Image</label>
+              <input type="file" id="logo" name="logo" accept="image/*">
+              <span class="field-hint">{% if site_custom_cfg.logo %}Current: {{ site_custom_cfg.logo.name }}{% else %}No logo uploaded yet{% endif %}</span>
+            </div>
+            <div class="s-field">
+              <label for="favicon">Favicon</label>
+              <input type="file" id="favicon" name="favicon" accept="image/*">
+              <span class="field-hint">{% if site_custom_cfg.favicon %}Current: {{ site_custom_cfg.favicon.name }}{% else %}No favicon uploaded yet — using default{% endif %}</span>
+            </div>
+          </div>
+          <div class="toggle-row" style="border-top:none;padding-top:0;">
+            <label class="toggle-switch">
+              <input type="checkbox" name="use_logo_image" {% if site_custom_cfg.use_logo_image %}checked{% endif %}>
+              <span class="toggle-slider"></span>
+            </label>
+            <div>
+              <label style="display:block;">Use Logo Image Instead Of Text Logo</label>
+              <span class="toggle-desc">ON shows your uploaded logo image in the header/footer. OFF shows the built-in "D" text logo.</span>
+            </div>
+          </div>
+          <div class="s-actions" style="margin-top:16px;">
+            <button type="submit" class="btn-save" style="background:linear-gradient(135deg,#5b21b6,#7c3aed);">&#10003; Save Branding</button>
+            <span style="font-family:'Rajdhani',sans-serif;font-size:12px;color:var(--grey);">Last updated: {{ site_custom_cfg.updated_at|date:"d M Y, H:i" }}</span>
+          </div>
+        </form>
+      </div>
+
+      <!-- PWA Settings -->
+      <div class="settings-card spin-settings-card" style="margin-top:24px;">
+        <div class="settings-header">
+          <div class="s-icon">&#128241;</div>
+          <h2>PWA / Install App</h2>
+          {% if pwa_settings_cfg.is_active %}
+          <span class="s-status-badge live" style="margin-left:auto;"><span class="sdot"></span> Install Prompt Active</span>
+          {% else %}
+          <span class="s-status-badge off" style="margin-left:auto;"><span class="sdot"></span> Disabled</span>
+          {% endif %}
+        </div>
+        <p class="s-desc">
+          Controls the "Install App" (Add to Home Screen) prompt shown to visitors. Set the app name and icon used on the home screen.
+        </p>
+        <form method="post" action="{% url 'save_pwa_settings' %}" enctype="multipart/form-data">
+          {% csrf_token %}
+          <div class="s-form-grid-3">
+            <div class="s-field">
+              <label for="pwa_app_name">App Name</label>
+              <input type="text" id="pwa_app_name" name="pwa_app_name" placeholder="Darkshadow"
+                     value="{{ pwa_settings_cfg.app_name }}">
+            </div>
+            <div class="s-field">
+              <label for="pwa_short_name">Short Name</label>
+              <input type="text" id="pwa_short_name" name="pwa_short_name" placeholder="Darkshadow"
+                     value="{{ pwa_settings_cfg.short_name }}">
+              <span class="field-hint">Shown under the home-screen icon</span>
+            </div>
+            <div class="s-field">
+              <label for="pwa_theme_color">Theme Color</label>
+              <input type="color" id="pwa_theme_color" name="pwa_theme_color" style="padding:4px;height:44px;"
+                     value="{{ pwa_settings_cfg.theme_color }}">
+            </div>
+          </div>
+          <div class="s-field" style="margin-bottom:20px;">
+            <label for="pwa_icon">App Icon</label>
+            <input type="file" id="pwa_icon" name="pwa_icon" accept="image/*">
+            <span class="field-hint">{% if pwa_settings_cfg.icon %}Current: {{ pwa_settings_cfg.icon.name }}{% else %}No custom icon uploaded — using the default Darkshadow icon{% endif %}</span>
+          </div>
+          <div class="toggle-row" style="border-top:none;padding-top:0;">
+            <label class="toggle-switch">
+              <input type="checkbox" name="pwa_is_active" {% if pwa_settings_cfg.is_active %}checked{% endif %}>
+              <span class="toggle-slider"></span>
+            </label>
+            <div>
+              <label style="display:block;">Enable Install Prompt</label>
+              <span class="toggle-desc">ON offers visitors the "Install App" button + manifest site-wide. OFF disables it entirely.</span>
+            </div>
+          </div>
+          <div class="s-actions" style="margin-top:16px;">
+            <button type="submit" class="btn-save btn-save-spin">&#10003; Save PWA Settings</button>
+            <span style="font-family:'Rajdhani',sans-serif;font-size:12px;color:var(--grey);">Last updated: {{ pwa_settings_cfg.updated_at|date:"d M Y, H:i" }}</span>
+          </div>
+        </form>
+      </div>
+
+    </div><!-- /customization -->
+
     <!-- ══ SETTINGS TAB ══════════════════════════════════════════════════════ -->
     <div id="tab-settings" class="tab-content">
 
@@ -1012,6 +1185,10 @@
     {% if 'Spin' in message.message or 'spin' in message.message %}
     var link=document.getElementById('tab-spin-link');
     if(link)switchTab('spin',link);
+    {% endif %}
+    {% if 'Customization' in message.message or 'Branding' in message.message or 'PWA' in message.message or 'Install prompt' in message.message %}
+    var link=document.getElementById('tab-customization-link');
+    if(link)switchTab('customization',link);
     {% endif %}
     {% endfor %}
     {% endif %}

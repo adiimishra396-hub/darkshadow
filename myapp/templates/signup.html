@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Sign Up — Darkshadow</title>
+{% if site_custom and site_custom.favicon %}<link rel="icon" href="{{ site_custom.favicon.url }}">{% else %}<link rel="icon" href="/static/icons/icon-192.png">{% endif %}
+{% if pwa_cfg and pwa_cfg.is_active %}<link rel="manifest" href="{% url 'pwa_manifest' %}"><meta name="theme-color" content="{{ pwa_cfg.theme_color }}">{% endif %}
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Rajdhani:wght@500;600;700&family=Sora:wght@400;500;600&display=swap" rel="stylesheet">
@@ -88,9 +90,13 @@
   <header>
     <div class="wrap nav-inner">
       <a href="/" class="logo">
-        <span class="icon-box">D</span>
+        {% if site_custom and site_custom.use_logo_image and site_custom.logo %}
+          <img src="{{ site_custom.logo.url }}" alt="{{ site_custom.site_name }}" style="width:40px;height:40px;border-radius:10px;object-fit:cover;">
+        {% else %}
+          <span class="icon-box">D</span>
+        {% endif %}
         <span class="brand">
-          <span class="brand-name">DARKSHADOW</span>
+          <span class="brand-name">{{ site_custom.site_name|default:"DARKSHADOW" }}</span>
           <span class="brand-tag">Where Legends Play</span>
         </span>
       </a>

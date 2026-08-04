@@ -11,6 +11,7 @@ from .models import (
     PokerSettings, PokerBet, RummySettings, RummyBet,
     CrashSettings, CrashRound, ContactMessage,
     SiteSettings, PlatformEarning, SMTPSettings,
+    SiteCustomization, PWASettings,
 )
 
 
@@ -339,3 +340,21 @@ class SMTPSettingsAdmin(admin.ModelAdmin):
 
     def has_add_permission(self, request):
         return not SMTPSettings.objects.exists()
+
+
+@admin.register(SiteCustomization)
+class SiteCustomizationAdmin(admin.ModelAdmin):
+    list_display = ('site_name', 'use_logo_image', 'signup_bonus_amount', 'updated_at')
+    readonly_fields = ('updated_at',)
+
+    def has_add_permission(self, request):
+        return not SiteCustomization.objects.exists()
+
+
+@admin.register(PWASettings)
+class PWASettingsAdmin(admin.ModelAdmin):
+    list_display = ('app_name', 'short_name', 'is_active', 'updated_at')
+    readonly_fields = ('updated_at',)
+
+    def has_add_permission(self, request):
+        return not PWASettings.objects.exists()

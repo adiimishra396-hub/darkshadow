@@ -27,7 +27,14 @@ urlpatterns = [
     path('admin-panel/toggle-user/<int:user_id>/', views.toggle_user_active, name='toggle_user_active'),
     path('admin-panel/delete-user/<int:user_id>/', views.delete_user, name='delete_user'),
     path('admin-panel/add-user/', views.admin_add_user, name='admin_add_user'),
+    path('admin-panel/toggle-contact/<int:message_id>/', views.toggle_contact_resolved, name='toggle_contact_resolved'),
+    path('admin-panel/save-customization/', views.save_site_customization, name='save_site_customization'),
+    path('admin-panel/save-pwa-settings/', views.save_pwa_settings, name='save_pwa_settings'),
     path('admin-info/', views.admin_info_view, name='admin_info'),
+
+    # PWA
+    path('manifest.webmanifest', views.pwa_manifest_view, name='pwa_manifest'),
+    path('sw.js', views.service_worker_view, name='service_worker'),
 
     # Jackpot / Spin Machine
     path('jackpot/create-order/', views.jackpot_create_order, name='jackpot_create_order'),
