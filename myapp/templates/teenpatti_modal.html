@@ -32,6 +32,18 @@
       Your 3-card hand vs the dealer. Best hand wins {{ teenpatti_win_multiplier }}x. Ties are refunded.
     </p>
 
+    <details class="how-to-play" id="teenpattiHowTo">
+      <summary>❓ How to Play</summary>
+      <div class="htp-body">
+        <ul>
+          <li>Enter your bet — you and the dealer are each dealt a 3-card hand from the same shuffled deck.</li>
+          <li>Standard Teen Patti hand rankings apply (Trail &gt; Pure Sequence &gt; Sequence &gt; Color &gt; Pair &gt; High Card).</li>
+          <li>Higher hand wins <strong>{{ teenpatti_win_multiplier }}x</strong> your bet.</li>
+          <li>Equal hands are a <strong>push</strong> — your bet is refunded, not lost.</li>
+        </ul>
+      </div>
+    </details>
+
     {% if user.is_authenticated %}
       <div style="
         background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);
@@ -132,6 +144,7 @@ function tpRenderHand(containerId, cards) {
 
 function tpResetHand(containerId) {
   const container = document.getElementById(containerId);
+  if (!container) return; // logged-out visitors don't have the hand containers in the DOM
   container.querySelectorAll('.tp-card').forEach(el => {
     el.textContent = '?';
     el.style.background = 'rgba(255,255,255,.08)';
@@ -161,9 +174,11 @@ function tpHideModal(el) {
 function openTeenPattiModal() {
   tpResetHand('tpDealerCards');
   tpResetHand('tpPlayerCards');
-  document.getElementById('tpDealerHandType').textContent = '';
-  document.getElementById('tpPlayerHandType').textContent = '';
-  document.getElementById('tpResult').textContent = '';
+  if (document.getElementById('tpResult')) { // logged-out visitors don't have the game controls in the DOM
+    document.getElementById('tpDealerHandType').textContent = '';
+    document.getElementById('tpPlayerHandType').textContent = '';
+    document.getElementById('tpResult').textContent = '';
+  }
   tpShowModal(document.getElementById('teenPattiModal'));
 }
 function closeTeenPattiModal() {

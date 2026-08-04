@@ -49,6 +49,11 @@
   .nav-links a::after{content:'';position:absolute;bottom:-2px;left:0;width:0;height:2px;background:var(--gold);transition:width .2s ease;}
   .nav-links a:hover::after{width:100%;}
   .nav-cta{display:flex;gap:12px;align-items:center;flex-shrink:0;}
+  .lang-switch{display:flex;gap:4px;background:var(--blue-tint);border-radius:30px;padding:3px;flex-shrink:0;}
+  .lang-switch-btn{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:12px;letter-spacing:0.3px;padding:6px 11px;border-radius:20px;border:none;background:transparent;color:var(--blue-deep);cursor:pointer;transition:background .15s,color .15s;white-space:nowrap;}
+  .lang-switch-btn.active{background:var(--navy);color:var(--gold);}
+  .lang-switch-btn:not(.active):hover{background:rgba(30,95,255,0.12);}
+  .lang-switch-mobile{margin-bottom:16px;justify-content:center;}
   .btn-small{padding:11px 28px;font-size:14px;min-width:96px;white-space:nowrap;}
   .menu-toggle{display:none;background:none;border:none;font-size:26px;color:var(--navy);cursor:pointer;margin-left:8px;}
   .flash-messages{padding:0;list-style:none;}
@@ -237,12 +242,23 @@
   .game-card .g-badge.live{background:#ef4444;color:#fff;}
   .reveal{opacity:0;transform:translateY(24px);transition:opacity .6s ease,transform .6s ease;}
   .reveal.in-view{opacity:1;transform:translateY(0);}
+  /* Shared "How to Play" disclosure panel used inside every game modal —
+     auto-expanded the first time a given game is opened (tracked per-game
+     in localStorage via dsInitHowTo below), collapsible/reopenable after. */
+  .how-to-play{text-align:left;background:rgba(255,210,0,.06);border:1px solid rgba(255,210,0,.25);border-radius:10px;margin-bottom:16px;overflow:hidden;}
+  .how-to-play summary{cursor:pointer;padding:10px 14px;font-weight:700;color:#ffd200;font-size:.85rem;list-style:none;display:flex;align-items:center;gap:6px;user-select:none;}
+  .how-to-play summary::-webkit-details-marker{display:none;}
+  .how-to-play summary::after{content:'\25be';margin-left:auto;transition:transform .2s;}
+  .how-to-play[open] summary::after{transform:rotate(180deg);}
+  .how-to-play .htp-body{padding:0 14px 14px;color:#ccc;font-size:.8rem;line-height:1.6;}
+  .how-to-play .htp-body ul{margin:0;padding-left:18px;}
+  .how-to-play .htp-body li{margin-bottom:6px;}
   @media(max-width:1080px){header .wrap{padding:10px;}.nav-links{gap:22px;}}
   /* Desktop nav (logo + 5 links + auth buttons) doesn't actually fit until
      well past typical tablet widths — switch to the hamburger menu here
      rather than at phone-only widths, so tablets (768-834px etc.) don't
      get horizontal overflow from an uncollapsed nav row. */
-  @media(max-width:900px){.nav-links,.nav-cta .btn-outline{display:none;}.menu-toggle{display:block;}header .wrap{padding:10px 15px;}
+  @media(max-width:900px){.nav-links,.nav-cta .btn-outline,.nav-cta>.lang-switch{display:none;}.menu-toggle{display:block;}header .wrap{padding:10px 15px;}
     /* With .nav-links removed from flow, nav's justify-content:space-between
        spreads the 3 remaining flex items (logo, nav-cta, menu-toggle) evenly,
        stranding nav-cta (profile dropdown / Join Now) in the visual center
@@ -276,28 +292,29 @@
   }
   @media(max-width:640px){.gallery-grid{grid-template-columns:1fr;}}
 </style>
+<script defer src="/static/js/i18n.js"></script>
 </head>
-<body>
+<body data-bonus="{{ signup_bonus_amount|floatformat:'-2' }}" data-brand="{{ site_custom.site_name|default:'Darkshadow' }}">
 
   {% if not user.is_authenticated %}
   <div class="popup-overlay" id="welcomePopup">
     <div class="popup-box">
       <button class="popup-close" onclick="closePopup()" aria-label="Close">&#10005;</button>
       <span class="popup-gift">&#127873;</span>
-      <div class="popup-eyebrow">&#9889; Exclusive Welcome Offer</div>
-      <h2>Welcome to <span>Darkshadow</span></h2>
-      <p>Join India's most trusted gaming platform — trusted by <strong>2.4 million+</strong> players for over <strong>10 years</strong>. Sign up now and we'll add ₹{{ signup_bonus_amount|floatformat:"-2" }} to your wallet, instantly!</p>
+      <div class="popup-eyebrow" data-i18n="popup_eyebrow">&#9889; Exclusive Welcome Offer</div>
+      <h2 data-i18n-html="popup_title_html">Welcome to <span>Darkshadow</span></h2>
+      <p data-i18n-html="popup_desc_html">Join India's most trusted gaming platform — trusted by <strong>2.4 million+</strong> players for over <strong>10 years</strong>. Sign up now and we'll add ₹{{ signup_bonus_amount|floatformat:"-2" }} to your wallet, instantly!</p>
       <div class="popup-bonus-strip">
-        <div class="pb-item"><div class="pb-val">&#8377;{{ signup_bonus_amount|floatformat:"-2" }}</div><div class="pb-lbl">Added to Your Wallet</div></div>
+        <div class="pb-item"><div class="pb-val">&#8377;{{ signup_bonus_amount|floatformat:"-2" }}</div><div class="pb-lbl" data-i18n="popup_bonus_label">Added to Your Wallet</div></div>
       </div>
-      <a href="{% url 'signup' %}" class="popup-btn" onclick="closePopup()">&#127942; Get My &#8377;{{ signup_bonus_amount|floatformat:"-2" }} Now</a>
-      <button class="popup-skip" onclick="closePopup()">No thanks, I'll play without a bonus</button>
+      <a href="{% url 'signup' %}" class="popup-btn" onclick="closePopup()" data-i18n="popup_btn">&#127942; Get My &#8377;{{ signup_bonus_amount|floatformat:"-2" }} Now</a>
+      <button class="popup-skip" onclick="closePopup()" data-i18n="popup_skip">No thanks, I'll play without a bonus</button>
     </div>
   </div>
   {% endif %}
 
   <div class="marquee-strip">
-    <span class="marquee-track">&#9889; TRUSTED GAMING PLATFORM SINCE 2016 &nbsp; &bull; &nbsp; &#127881; GET &#8377;{{ signup_bonus_amount|floatformat:"-2" }} FREE ON SIGNUP &nbsp; &bull; &nbsp; &#127920; 12 IN-HOUSE GAMES LIVE NOW &nbsp; &bull; &nbsp; &#128176; INSTANT WITHDRAWALS &nbsp; &bull; &nbsp; &#127942; 10 YEARS OF GAMING EXCELLENCE &nbsp; &bull; &nbsp; &#127881; JOIN 2.4M+ WINNERS TODAY &nbsp;</span>
+    <span class="marquee-track" data-i18n="marquee">&#9889; TRUSTED GAMING PLATFORM SINCE 2016 &nbsp; &bull; &nbsp; &#127881; GET &#8377;{{ signup_bonus_amount|floatformat:"-2" }} FREE ON SIGNUP &nbsp; &bull; &nbsp; &#127920; 12 IN-HOUSE GAMES LIVE NOW &nbsp; &bull; &nbsp; &#128176; INSTANT WITHDRAWALS &nbsp; &bull; &nbsp; &#127942; 10 YEARS OF GAMING EXCELLENCE &nbsp; &bull; &nbsp; &#127881; JOIN 2.4M+ WINNERS TODAY &nbsp;</span>
   </div>
 
   {% if messages %}
@@ -328,13 +345,18 @@
         </span>
       </a>
       <ul class="nav-links">
-        <li><a href="#games">Games</a></li>
-        <li><a href="#all-games">All Games</a></li>
-        <li><a href="#promos">Promotions</a></li>
-        <li><a href="#how">How It Works</a></li>
-        <li><a href="#contact">Contact</a></li>
+        <li><a href="#games" data-i18n="nav_games">Games</a></li>
+        <li><a href="#all-games" data-i18n="nav_all_games">All Games</a></li>
+        <li><a href="#promos" data-i18n="nav_promotions">Promotions</a></li>
+        <li><a href="#how" data-i18n="nav_how">How It Works</a></li>
+        <li><a href="#contact" data-i18n="nav_contact">Contact</a></li>
       </ul>
       <div class="nav-cta">
+        <div class="lang-switch" role="group" aria-label="Language">
+          <button type="button" class="lang-switch-btn active" data-lang="en">EN</button>
+          <button type="button" class="lang-switch-btn" data-lang="hi">हिं</button>
+          <button type="button" class="lang-switch-btn" data-lang="hinglish">Hinglish</button>
+        </div>
         {% if user.is_authenticated %}
           <div class="user-greeting" id="userGreeting">
             <button class="user-greeting-btn" id="userGreetingBtn" type="button" aria-haspopup="true" aria-expanded="false">
@@ -348,39 +370,44 @@
                 <div class="dd-email">{{ user.email }}</div>
               </div>
               {% if user.is_superuser %}
-                <a href="{% url 'admin_panel' %}" class="admin-link" role="menuitem"><span class="dd-icon">&#9881;</span> Admin Panel</a>
+                <a href="{% url 'admin_panel' %}" class="admin-link" role="menuitem"><span class="dd-icon">&#9881;</span> <span data-i18n="dd_adminpanel">Admin Panel</span></a>
               {% else %}
-                <a href="{% url 'add_money' %}" role="menuitem"><span class="dd-icon">&#128176;</span> Add Money</a>
-                <a href="{% url 'my_wallet' %}" role="menuitem"><span class="dd-icon">&#128179;</span> My Wallet</a>
+                <a href="{% url 'add_money' %}" role="menuitem"><span class="dd-icon">&#128176;</span> <span data-i18n="dd_addmoney">Add Money</span></a>
+                <a href="{% url 'my_wallet' %}" role="menuitem"><span class="dd-icon">&#128179;</span> <span data-i18n="dd_mywallet">My Wallet</span></a>
                 <hr>
-                <a href="{% url 'edit_profile' %}" role="menuitem"><span class="dd-icon">&#9998;</span> Edit Profile</a>
-                <a href="{% url 'change_password' %}" role="menuitem"><span class="dd-icon">&#128274;</span> Change Password</a>
+                <a href="{% url 'edit_profile' %}" role="menuitem"><span class="dd-icon">&#9998;</span> <span data-i18n="dd_editprofile">Edit Profile</span></a>
+                <a href="{% url 'change_password' %}" role="menuitem"><span class="dd-icon">&#128274;</span> <span data-i18n="dd_changepassword">Change Password</span></a>
               {% endif %}
               <hr>
-              <a href="{% url 'logout' %}" role="menuitem" style="color:#dc2626;"><span class="dd-icon">&#128682;</span> Log Out</a>
+              <a href="{% url 'logout' %}" role="menuitem" style="color:#dc2626;"><span class="dd-icon">&#128682;</span> <span data-i18n="btn_logout">Log Out</span></a>
             </div>
           </div>
         {% else %}
-          <a href="{% url 'login' %}" class="btn btn-outline btn-small">Log In</a>
-          <a href="{% url 'signup' %}" class="btn btn-gold btn-small">Join Now</a>
+          <a href="{% url 'login' %}" class="btn btn-outline btn-small" data-i18n="btn_login">Log In</a>
+          <a href="{% url 'signup' %}" class="btn btn-gold btn-small" data-i18n="btn_joinnow">Join Now</a>
         {% endif %}
       </div>
       <button class="menu-toggle" onclick="document.getElementById('mobileMenu').classList.toggle('open')">&#9776;</button>
     </nav>
     <!-- Mobile Menu -->
     <div id="mobileMenu" style="display:none;background:var(--white);border-top:1px solid var(--line);padding:16px 20px;">
+      <div class="lang-switch lang-switch-mobile" role="group" aria-label="Language">
+        <button type="button" class="lang-switch-btn active" data-lang="en">EN</button>
+        <button type="button" class="lang-switch-btn" data-lang="hi">हिं</button>
+        <button type="button" class="lang-switch-btn" data-lang="hinglish">Hinglish</button>
+      </div>
       <ul style="display:flex;flex-direction:column;gap:14px;">
-        <li><a href="#games" style="font-family:'Rajdhani',sans-serif;font-weight:600;font-size:16px;color:var(--navy);text-transform:uppercase;" onclick="document.getElementById('mobileMenu').classList.remove('open')">Games</a></li>
-        <li><a href="#all-games" style="font-family:'Rajdhani',sans-serif;font-weight:600;font-size:16px;color:var(--navy);text-transform:uppercase;" onclick="document.getElementById('mobileMenu').classList.remove('open')">All Games</a></li>
-        <li><a href="#contact" style="font-family:'Rajdhani',sans-serif;font-weight:600;font-size:16px;color:var(--navy);text-transform:uppercase;" onclick="document.getElementById('mobileMenu').classList.remove('open')">Contact</a></li>
-        <li><a href="#promos" style="font-family:'Rajdhani',sans-serif;font-weight:600;font-size:16px;color:var(--navy);text-transform:uppercase;" onclick="document.getElementById('mobileMenu').classList.remove('open')">Promotions</a></li>
-        <li><a href="#how" style="font-family:'Rajdhani',sans-serif;font-weight:600;font-size:16px;color:var(--navy);text-transform:uppercase;" onclick="document.getElementById('mobileMenu').classList.remove('open')">How It Works</a></li>
+        <li><a href="#games" data-i18n="nav_games" style="font-family:'Rajdhani',sans-serif;font-weight:600;font-size:16px;color:var(--navy);text-transform:uppercase;" onclick="document.getElementById('mobileMenu').classList.remove('open')">Games</a></li>
+        <li><a href="#all-games" data-i18n="nav_all_games" style="font-family:'Rajdhani',sans-serif;font-weight:600;font-size:16px;color:var(--navy);text-transform:uppercase;" onclick="document.getElementById('mobileMenu').classList.remove('open')">All Games</a></li>
+        <li><a href="#contact" data-i18n="nav_contact" style="font-family:'Rajdhani',sans-serif;font-weight:600;font-size:16px;color:var(--navy);text-transform:uppercase;" onclick="document.getElementById('mobileMenu').classList.remove('open')">Contact</a></li>
+        <li><a href="#promos" data-i18n="nav_promotions" style="font-family:'Rajdhani',sans-serif;font-weight:600;font-size:16px;color:var(--navy);text-transform:uppercase;" onclick="document.getElementById('mobileMenu').classList.remove('open')">Promotions</a></li>
+        <li><a href="#how" data-i18n="nav_how" style="font-family:'Rajdhani',sans-serif;font-weight:600;font-size:16px;color:var(--navy);text-transform:uppercase;" onclick="document.getElementById('mobileMenu').classList.remove('open')">How It Works</a></li>
         <li style="display:flex;gap:10px;margin-top:6px;">
           {% if user.is_authenticated %}
-            <a href="{% url 'logout' %}" class="btn btn-outline btn-small" style="flex:1;text-align:center;">Log Out</a>
+            <a href="{% url 'logout' %}" class="btn btn-outline btn-small" data-i18n="btn_logout" style="flex:1;text-align:center;">Log Out</a>
           {% else %}
-            <a href="{% url 'login' %}" class="btn btn-outline btn-small" style="flex:1;text-align:center;">Log In</a>
-            <a href="{% url 'signup' %}" class="btn btn-gold btn-small" style="flex:1;text-align:center;">Join Now</a>
+            <a href="{% url 'login' %}" class="btn btn-outline btn-small" data-i18n="btn_login" style="flex:1;text-align:center;">Log In</a>
+            <a href="{% url 'signup' %}" class="btn btn-gold btn-small" data-i18n="btn_joinnow" style="flex:1;text-align:center;">Join Now</a>
           {% endif %}
         </li>
       </ul>
@@ -392,31 +419,31 @@
     <img src="https://images.unsplash.com/photo-1511512578047-dfb367046420?q=80&w=1600&auto=format&fit=crop" alt="Gaming arena background" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0.22;z-index:0;">
     <div class="wrap hero-inner">
       <div>
-        <span class="eyebrow"><span class="dot"></span> Live Now &mdash; 24,318 Players Online</span>
-        <h1>Play Big.<br>Win <span>Bigger.</span></h1>
-        <p>Card games, live casino and slot games on one platform. Trusted by millions since 2016. Fast KYC, instant payouts, and odds that don't hide the fine print.</p>
+        <span class="eyebrow"><span class="dot"></span> <span data-i18n="hero_eyebrow">Live Now &mdash; 24,318 Players Online</span></span>
+        <h1 data-i18n-html="hero_title_html">Play Big.<br>Win <span>Bigger.</span></h1>
+        <p data-i18n="hero_desc">Card games, live casino and slot games on one platform. Trusted by millions since 2016. Fast KYC, instant payouts, and odds that don't hide the fine print.</p>
         <div class="hero-ctas">
-          <a href="{% url 'signup' %}" class="btn btn-gold">Get &#8377;{{ signup_bonus_amount|floatformat:"-2" }} Free</a>
-          <a href="#all-games" class="btn btn-ghost">Explore Games</a>
+          <a href="{% url 'signup' %}" class="btn btn-gold" data-i18n="hero_cta_bonus">Get &#8377;{{ signup_bonus_amount|floatformat:"-2" }} Free</a>
+          <a href="#all-games" class="btn btn-ghost" data-i18n="hero_cta_explore">Explore Games</a>
         </div>
         <div class="hero-stats">
-          <div><div class="num">2.4M+</div><div class="lbl">Registered Users</div></div>
-          <div><div class="num">&#8377;18Cr+</div><div class="lbl">Paid Out Monthly</div></div>
-          <div><div class="num">10 Yrs</div><div class="lbl">In Gaming</div></div>
+          <div><div class="num">2.4M+</div><div class="lbl" data-i18n="hero_stat_users_label">Registered Users</div></div>
+          <div><div class="num">&#8377;18Cr+</div><div class="lbl" data-i18n="hero_stat_payout_label">Paid Out Monthly</div></div>
+          <div><div class="num">10 Yrs</div><div class="lbl" data-i18n="hero_stat_years_label">In Gaming</div></div>
         </div>
       </div>
       <div class="jackpot-card">
         <img src="https://images.unsplash.com/photo-1596838132731-3301c3fd4317?q=80&w=800&auto=format&fit=crop" alt="Slot machine" style="width:100%;height:140px;object-fit:cover;border-radius:10px;margin-bottom:14px;">
-        <div class="tag">Today's Jackpot</div>
+        <div class="tag" data-i18n="jackpot_tag">Today's Jackpot</div>
         <div class="jackpot-amt">&#8377;<span>{{ homepage_jackpot_display|default:"84,52,910" }}</span></div>
-        <div class="jackpot-sub">Growing every second &middot; Next draw in 02:14:36</div>
+        <div class="jackpot-sub" data-i18n="jackpot_sub">Growing every second &middot; Next draw in 02:14:36</div>
         <div class="reel-row">
           <div class="reel">7</div><div class="reel">X</div><div class="reel">7</div>
         </div>
         {% if spin_machine_active %}
-          <button type="button" onclick="openJackpotModal()" class="btn btn-gold" style="width:100%;cursor:pointer;">Spin &amp; Try Your Luck</button>
+          <button type="button" onclick="openJackpotModal()" class="btn btn-gold" style="width:100%;cursor:pointer;" data-i18n="jackpot_spin_btn">Spin &amp; Try Your Luck</button>
         {% else %}
-          <a href="{% url 'signup' %}" class="btn btn-gold">Join Now &amp; Play</a>
+          <a href="{% url 'signup' %}" class="btn btn-gold" data-i18n="jackpot_join_btn">Join Now &amp; Play</a>
         {% endif %}
       </div>
     </div>
@@ -424,11 +451,11 @@
 
   <div class="trust-strip">
     <div class="wrap trust-row">
-      <div class="trust-item"><span class="ico">&#128274;</span> SSL Secured Platform</div>
-      <div class="trust-item"><span class="ico">&#9889;</span> Instant UPI Withdrawals</div>
-      <div class="trust-item"><span class="ico">&#127879;</span> 24/7 Live Support</div>
-      <div class="trust-item"><span class="ico">&#10003;</span> RNG Certified Fair Play</div>
-      <div class="trust-item"><span class="ico">&#128286;</span> 18+ Responsible Gaming</div>
+      <div class="trust-item"><span class="ico">&#128274;</span> <span data-i18n="trust_ssl">SSL Secured Platform</span></div>
+      <div class="trust-item"><span class="ico">&#9889;</span> <span data-i18n="trust_upi">Instant UPI Withdrawals</span></div>
+      <div class="trust-item"><span class="ico">&#127879;</span> <span data-i18n="trust_support">24/7 Live Support</span></div>
+      <div class="trust-item"><span class="ico">&#10003;</span> <span data-i18n="trust_rng">RNG Certified Fair Play</span></div>
+      <div class="trust-item"><span class="ico">&#128286;</span> <span data-i18n="trust_18">18+ Responsible Gaming</span></div>
     </div>
   </div>
 
@@ -458,31 +485,31 @@
   <section id="games" style="background:var(--white);">
     <div class="wrap">
       <div class="sec-head reveal">
-        <span class="sec-eyebrow">&#127914; Game Categories</span>
-        <h2>Pick Your Game</h2>
-        <p>From classic card games to live casino action — find your perfect game and start winning today.</p>
+        <span class="sec-eyebrow" data-i18n="sec_games_eyebrow">&#127914; Game Categories</span>
+        <h2 data-i18n="sec_games_title">Pick Your Game</h2>
+        <p data-i18n="sec_games_desc">From classic card games to live casino action — find your perfect game and start winning today.</p>
       </div>
       <div class="cat-grid reveal">
         <a href="#all-games" class="cat-card" onclick="filterGames('cards')">
-          <span class="badge">Hot</span>
+          <span class="badge" data-i18n="cat_cards_badge">Hot</span>
           <div class="icon">&#127183;</div>
-          <h3>Card Games</h3>
-          <p>Teen Patti, Rummy, Poker, Andar Bahar & more classic Indian card games.</p>
-          <span class="cnt">&#9654; 5 Games Available</span>
+          <h3 data-i18n="cat_cards_title">Card Games</h3>
+          <p data-i18n="cat_cards_desc">Teen Patti, Rummy, Poker, Andar Bahar & more classic Indian card games.</p>
+          <span class="cnt" data-i18n="cat_cards_cnt">&#9654; 5 Games Available</span>
         </a>
         <a href="#all-games" class="cat-card" onclick="filterGames('casino')">
-          <span class="badge">Live</span>
+          <span class="badge" data-i18n="cat_casino_badge">Live</span>
           <div class="icon">&#127922;</div>
-          <h3>Casino</h3>
-          <p>Slots, Blackjack, Baccarat, Roulette — Vegas-style thrills at your fingertips.</p>
-          <span class="cnt">&#9654; 6 Games Available</span>
+          <h3 data-i18n="cat_casino_title">Casino</h3>
+          <p data-i18n="cat_casino_desc">Slots, Blackjack, Baccarat, Roulette — Vegas-style thrills at your fingertips.</p>
+          <span class="cnt" data-i18n="cat_casino_cnt">&#9654; 6 Games Available</span>
         </a>
         <a href="#all-games" class="cat-card" onclick="filterGames('table')">
-          <span class="badge">New</span>
+          <span class="badge" data-i18n="cat_table_badge">New</span>
           <div class="icon">&#9929;</div>
-          <h3>Table &amp; Board</h3>
-          <p>Dice Roll, Sic Bo — fast games with instant results.</p>
-          <span class="cnt">&#9654; 2 Games Available</span>
+          <h3 data-i18n="cat_table_title">Table &amp; Board</h3>
+          <p data-i18n="cat_table_desc">Dice Roll, Sic Bo — fast games with instant results.</p>
+          <span class="cnt" data-i18n="cat_table_cnt">&#9654; 2 Games Available</span>
         </a>
       </div>
     </div>
@@ -492,28 +519,28 @@
   <section class="all-games-section" id="all-games">
     <div class="wrap">
       <div class="sec-head reveal">
-        <span class="sec-eyebrow" style="color:var(--gold);">&#127914; Complete Game Library</span>
-        <h2>All Games</h2>
-        <p>Explore our full collection of betting & gaming titles. Click any game to play now.</p>
+        <span class="sec-eyebrow" style="color:var(--gold);" data-i18n="allgames_eyebrow">&#127914; Complete Game Library</span>
+        <h2 data-i18n="allgames_title">All Games</h2>
+        <p data-i18n="allgames_desc">Explore our full collection of betting & gaming titles. Click any game to play now.</p>
       </div>
       <div class="games-filter" id="gamesFilter">
-        <button class="gf-btn active" onclick="filterGames('all')" data-cat="all">All Games</button>
-        <button class="gf-btn" onclick="filterGames('cards')" data-cat="cards">&#127183; Card Games</button>
-        <button class="gf-btn" onclick="filterGames('casino')" data-cat="casino">&#127922; Casino</button>
-        <button class="gf-btn" onclick="filterGames('table')" data-cat="table">&#9929; Table &amp; Board</button>
+        <button class="gf-btn active" onclick="filterGames('all')" data-cat="all" data-i18n="filter_all">All Games</button>
+        <button class="gf-btn" onclick="filterGames('cards')" data-cat="cards" data-i18n="filter_cards">&#127183; Card Games</button>
+        <button class="gf-btn" onclick="filterGames('casino')" data-cat="casino" data-i18n="filter_casino">&#127922; Casino</button>
+        <button class="gf-btn" onclick="filterGames('table')" data-cat="table" data-i18n="filter_table">&#9929; Table &amp; Board</button>
       </div>
       <div class="games-grid" id="gamesGrid">
 
         {% if coinflip_active %}
         <!-- Coin Flip — in-house, real win/lose game -->
         <a href="javascript:void(0)" onclick="openCoinFlipModal()" class="game-card" data-cat="casino">
-          <span class="g-badge new">Play In-House</span>
+          <span class="g-badge new" data-i18n="game_badge_inhouse">Play In-House</span>
           <img class="game-card-thumb" src="https://images.unsplash.com/photo-1621761191319-c6fb62004040?q=80&w=600&auto=format&fit=crop" alt="Coin Flip">
           <div class="game-card-body">
             <div class="game-card-cat">Casino</div>
             <div class="game-card-title">Coin Flip</div>
             <div class="game-card-desc">Call heads or tails and win {{ coinflip_win_multiplier }}x your bet, right here on Darkshadow.</div>
-            <span class="game-card-play">Play Now</span>
+            <span class="game-card-play" data-i18n="game_play_now">Play Now</span>
           </div>
         </a>
         {% endif %}
@@ -521,13 +548,13 @@
         {% if dice_active %}
         <!-- Dice Roll — in-house, real win/lose game -->
         <a href="javascript:void(0)" onclick="openDiceModal()" class="game-card" data-cat="table">
-          <span class="g-badge new">Play In-House</span>
+          <span class="g-badge new" data-i18n="game_badge_inhouse">Play In-House</span>
           <img class="game-card-thumb" src="https://images.unsplash.com/photo-1505855788694-023053764ae5?q=80&w=600&auto=format&fit=crop" alt="Dice Roll">
           <div class="game-card-body">
             <div class="game-card-cat">Table &amp; Board</div>
             <div class="game-card-title">Dice Roll</div>
             <div class="game-card-desc">Pick your target, roll under or over it, and win a multiplier — right here on Darkshadow.</div>
-            <span class="game-card-play">Play Now</span>
+            <span class="game-card-play" data-i18n="game_play_now">Play Now</span>
           </div>
         </a>
         {% endif %}
@@ -535,13 +562,13 @@
         {% if cardhilo_active %}
         <!-- Card High-Low — in-house, real win/lose game -->
         <a href="javascript:void(0)" onclick="openCardHiLoModal()" class="game-card" data-cat="cards">
-          <span class="g-badge new">Play In-House</span>
+          <span class="g-badge new" data-i18n="game_badge_inhouse">Play In-House</span>
           <img class="game-card-thumb" src="https://images.unsplash.com/photo-1689330691805-6e87670e6cc0?q=80&w=600&auto=format&fit=crop" alt="Card High-Low">
           <div class="game-card-body">
             <div class="game-card-cat">Card Games</div>
             <div class="game-card-title">Card High-Low</div>
             <div class="game-card-desc">A card is dealt — call Higher or Lower on the next one and win a multiplier, right here on Darkshadow.</div>
-            <span class="game-card-play">Play Now</span>
+            <span class="game-card-play" data-i18n="game_play_now">Play Now</span>
           </div>
         </a>
         {% endif %}
@@ -549,13 +576,13 @@
         {% if teenpatti_active %}
         <!-- Teen Patti — in-house, real win/lose game (vs virtual dealer) -->
         <a href="javascript:void(0)" onclick="openTeenPattiModal()" class="game-card" data-cat="cards">
-          <span class="g-badge new">Play In-House</span>
+          <span class="g-badge new" data-i18n="game_badge_inhouse">Play In-House</span>
           <img class="game-card-thumb" src="https://images.unsplash.com/photo-1541278107931-e006523892df?q=80&w=600&auto=format&fit=crop" alt="Teen Patti">
           <div class="game-card-body">
             <div class="game-card-cat">Card Games</div>
             <div class="game-card-title">Teen Patti</div>
             <div class="game-card-desc">Your 3-card hand vs the dealer — win {{ teenpatti_win_multiplier }}x, right here on Darkshadow.</div>
-            <span class="game-card-play">Play Now</span>
+            <span class="game-card-play" data-i18n="game_play_now">Play Now</span>
           </div>
         </a>
         {% endif %}
@@ -563,13 +590,13 @@
         {% if rummy_active %}
         <!-- Rummy — in-house, real win/lose game (9-card instant meld, not full multiplayer Rummy) -->
         <a href="javascript:void(0)" onclick="openRummyModal()" class="game-card" data-cat="cards">
-          <span class="g-badge new">Play In-House</span>
+          <span class="g-badge new" data-i18n="game_badge_inhouse">Play In-House</span>
           <img class="game-card-thumb" src="https://images.unsplash.com/photo-1611996575749-79a3a250f948?q=80&w=600&auto=format&fit=crop" alt="Rummy">
           <div class="game-card-body">
             <div class="game-card-cat">Card Games</div>
             <div class="game-card-title">Quick Rummy</div>
             <div class="game-card-desc">9 cards, form valid Sets or Runs for a payout — right here on Darkshadow.</div>
-            <span class="game-card-play">Play Now</span>
+            <span class="game-card-play" data-i18n="game_play_now">Play Now</span>
           </div>
         </a>
         {% endif %}
@@ -577,13 +604,13 @@
         {% if poker_active %}
         <!-- Poker — in-house, real win/lose game (5-card hand vs virtual dealer, not Hold'em) -->
         <a href="javascript:void(0)" onclick="openPokerModal()" class="game-card" data-cat="cards">
-          <span class="g-badge new">Play In-House</span>
+          <span class="g-badge new" data-i18n="game_badge_inhouse">Play In-House</span>
           <img class="game-card-thumb" src="https://images.unsplash.com/photo-1601597111158-2fceff292cdc?q=80&w=600&auto=format&fit=crop" alt="Poker">
           <div class="game-card-body">
             <div class="game-card-cat">Card Games</div>
             <div class="game-card-title">5-Card Poker</div>
             <div class="game-card-desc">Your 5-card hand vs the dealer — win {{ poker_win_multiplier }}x, right here on Darkshadow.</div>
-            <span class="game-card-play">Play Now</span>
+            <span class="game-card-play" data-i18n="game_play_now">Play Now</span>
           </div>
         </a>
         {% endif %}
@@ -591,13 +618,13 @@
         {% if andarbahar_active %}
         <!-- Andar Bahar — in-house, real win/lose game -->
         <a href="javascript:void(0)" onclick="openAndarBaharModal()" class="game-card" data-cat="cards">
-          <span class="g-badge new">Play In-House</span>
+          <span class="g-badge new" data-i18n="game_badge_inhouse">Play In-House</span>
           <img class="game-card-thumb" src="https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?q=80&w=600&auto=format&fit=crop" alt="Andar Bahar">
           <div class="game-card-body">
             <div class="game-card-cat">Card Games</div>
             <div class="game-card-title">Andar Bahar</div>
             <div class="game-card-desc">Pick Andar or Bahar and win {{ andarbahar_win_multiplier }}x your bet, right here on Darkshadow.</div>
-            <span class="game-card-play">Play Now</span>
+            <span class="game-card-play" data-i18n="game_play_now">Play Now</span>
           </div>
         </a>
         {% endif %}
@@ -605,13 +632,13 @@
         {% if sicbo_active %}
         <!-- Sic Bo — in-house, real win/lose game -->
         <a href="javascript:void(0)" onclick="openSicBoModal()" class="game-card" data-cat="table">
-          <span class="g-badge new">Play In-House</span>
+          <span class="g-badge new" data-i18n="game_badge_inhouse">Play In-House</span>
           <img class="game-card-thumb" src="https://images.unsplash.com/photo-1585504198199-20277593b94f?q=80&w=600&auto=format&fit=crop" alt="Sic Bo">
           <div class="game-card-body">
             <div class="game-card-cat">Table &amp; Board</div>
             <div class="game-card-title">Sic Bo Dice</div>
             <div class="game-card-desc">Bet Big or Small on 3 dice and win a multiplier, right here on Darkshadow.</div>
-            <span class="game-card-play">Play Now</span>
+            <span class="game-card-play" data-i18n="game_play_now">Play Now</span>
           </div>
         </a>
         {% endif %}
@@ -619,13 +646,13 @@
         {% if spin_machine_active %}
         <!-- Lucky Slots — repointed to the existing Spin Machine (already an in-house slot game) -->
         <a href="javascript:void(0)" onclick="openJackpotModal()" class="game-card" data-cat="casino">
-          <span class="g-badge new">Play In-House</span>
+          <span class="g-badge new" data-i18n="game_badge_inhouse">Play In-House</span>
           <img class="game-card-thumb" src="https://images.unsplash.com/photo-1596838132731-3301c3fd4317?q=80&w=600&auto=format&fit=crop" alt="Lucky Slots">
           <div class="game-card-body">
             <div class="game-card-cat">Casino</div>
             <div class="game-card-title">Lucky Slots</div>
             <div class="game-card-desc">Spin the jackpot reels right here on Darkshadow — pay per spin and keep the fun going.</div>
-            <span class="game-card-play">Play Now</span>
+            <span class="game-card-play" data-i18n="game_play_now">Play Now</span>
           </div>
         </a>
         {% endif %}
@@ -633,13 +660,13 @@
         {% if blackjack_active %}
         <!-- Blackjack — in-house, real win/lose game (vs virtual dealer) -->
         <a href="javascript:void(0)" onclick="openBlackjackModal()" class="game-card" data-cat="casino">
-          <span class="g-badge new">Play In-House</span>
+          <span class="g-badge new" data-i18n="game_badge_inhouse">Play In-House</span>
           <img class="game-card-thumb" src="https://images.unsplash.com/photo-1517232115160-ff93364542dd?q=80&w=600&auto=format&fit=crop" alt="Blackjack">
           <div class="game-card-body">
             <div class="game-card-cat">Casino</div>
             <div class="game-card-title">Blackjack 21</div>
             <div class="game-card-desc">Beat the dealer by getting as close to 21 as possible, right here on Darkshadow.</div>
-            <span class="game-card-play">Play Now</span>
+            <span class="game-card-play" data-i18n="game_play_now">Play Now</span>
           </div>
         </a>
         {% endif %}
@@ -647,13 +674,13 @@
         {% if roulette_active %}
         <!-- Roulette — in-house, real win/lose game -->
         <a href="javascript:void(0)" onclick="openRouletteModal()" class="game-card" data-cat="casino">
-          <span class="g-badge new">Play In-House</span>
+          <span class="g-badge new" data-i18n="game_badge_inhouse">Play In-House</span>
           <img class="game-card-thumb" src="https://images.unsplash.com/photo-1606107557195-0e29a4b5b4aa?q=80&w=600&auto=format&fit=crop" alt="Roulette">
           <div class="game-card-body">
             <div class="game-card-cat">Casino</div>
             <div class="game-card-title">Roulette</div>
             <div class="game-card-desc">Bet on red, black, or a single number — right here on Darkshadow.</div>
-            <span class="game-card-play">Play Now</span>
+            <span class="game-card-play" data-i18n="game_play_now">Play Now</span>
           </div>
         </a>
         {% endif %}
@@ -661,13 +688,13 @@
         {% if crash_active %}
         <!-- Crash Game — in-house, real win/lose game -->
         <a href="javascript:void(0)" onclick="openCrashModal()" class="game-card" data-cat="casino">
-          <span class="g-badge new">Play In-House</span>
+          <span class="g-badge new" data-i18n="game_badge_inhouse">Play In-House</span>
           <img class="game-card-thumb" src="https://images.unsplash.com/photo-1611532736597-de2d4265fba3?q=80&w=600&auto=format&fit=crop" alt="Crash Game">
           <div class="game-card-body">
             <div class="game-card-cat">Casino</div>
             <div class="game-card-title">Crash Game</div>
             <div class="game-card-desc">Watch the multiplier rise and cash out before it crashes, right here on Darkshadow.</div>
-            <span class="game-card-play">Play Now</span>
+            <span class="game-card-play" data-i18n="game_play_now">Play Now</span>
           </div>
         </a>
         {% endif %}
@@ -675,13 +702,13 @@
         {% if baccarat_active %}
         <!-- Baccarat — in-house, real win/lose game, standard drawing rules -->
         <a href="javascript:void(0)" onclick="openBaccaratModal()" class="game-card" data-cat="casino">
-          <span class="g-badge new">Play In-House</span>
+          <span class="g-badge new" data-i18n="game_badge_inhouse">Play In-House</span>
           <img class="game-card-thumb" src="https://images.unsplash.com/photo-1509316785289-025f5b846b35?q=80&w=600&auto=format&fit=crop" alt="Baccarat">
           <div class="game-card-body">
             <div class="game-card-cat">Casino</div>
             <div class="game-card-title">Baccarat</div>
             <div class="game-card-desc">Bet on Player, Banker or Tie, right here on Darkshadow.</div>
-            <span class="game-card-play">Play Now</span>
+            <span class="game-card-play" data-i18n="game_play_now">Play Now</span>
           </div>
         </a>
         {% endif %}
@@ -695,15 +722,15 @@
     <div class="wrap">
       <div class="promo reveal">
         <div class="promo-left">
-          <span class="sec-eyebrow">&#127873; New Player Offer</span>
-          <h2>New Player Welcome Bonus</h2>
-          <p>Sign up today and we'll add ₹{{ signup_bonus_amount|floatformat:"-2" }} to your wallet instantly — no deposit needed, no wagering requirements. Just play and win.</p>
-          <a href="{% url 'signup' %}" class="btn btn-gold">Get &#8377;{{ signup_bonus_amount|floatformat:"-2" }} Now</a>
+          <span class="sec-eyebrow" data-i18n="promo_eyebrow">&#127873; New Player Offer</span>
+          <h2 data-i18n="promo_title">New Player Welcome Bonus</h2>
+          <p data-i18n="promo_desc">Sign up today and we'll add ₹{{ signup_bonus_amount|floatformat:"-2" }} to your wallet instantly — no deposit needed, no wagering requirements. Just play and win.</p>
+          <a href="{% url 'signup' %}" class="btn btn-gold" data-i18n="promo_btn">Get &#8377;{{ signup_bonus_amount|floatformat:"-2" }} Now</a>
         </div>
         <div class="promo-badge">
-          <div class="pct">&#8377;{{ signup_bonus_amount|floatformat:"-2" }}</div>
-          <div class="lbl">Welcome Credit</div>
-          <div style="font-size:11px;margin-top:6px;opacity:0.8;">Added instantly on signup</div>
+          <div class="pct" data-i18n="promo_badge_pct">&#8377;{{ signup_bonus_amount|floatformat:"-2" }}</div>
+          <div class="lbl" data-i18n="promo_badge_label">Welcome Credit</div>
+          <div style="font-size:11px;margin-top:6px;opacity:0.8;" data-i18n="promo_badge_sub">Added instantly on signup</div>
         </div>
       </div>
     </div>
@@ -713,25 +740,25 @@
   <section id="how">
     <div class="wrap">
       <div class="sec-head reveal">
-        <span class="sec-eyebrow">&#9654; 3 Simple Steps</span>
-        <h2>How It Works</h2>
-        <p>Getting started on Darkshadow is quick, easy, and completely free.</p>
+        <span class="sec-eyebrow" data-i18n="how_eyebrow">&#9654; 3 Simple Steps</span>
+        <h2 data-i18n="how_title">How It Works</h2>
+        <p data-i18n="how_desc">Getting started on Darkshadow is quick, easy, and completely free.</p>
       </div>
       <div class="steps reveal">
         <div class="step-card">
           <div class="step-num">1</div>
-          <h3>Create Account</h3>
-          <p>Sign up in under 60 seconds with your name, email and mobile number. No documents needed to start.</p>
+          <h3 data-i18n="step1_title">Create Account</h3>
+          <p data-i18n="step1_desc">Sign up in under 60 seconds with your name, email and mobile number. No documents needed to start.</p>
         </div>
         <div class="step-card">
           <div class="step-num">2</div>
-          <h3>Add Money</h3>
-          <p>Deposit via UPI, Net Banking or Card. Instant credit to your Darkshadow wallet. Minimum deposit just &#8377;100.</p>
+          <h3 data-i18n="step2_title">Add Money</h3>
+          <p data-i18n="step2_desc">Deposit via UPI, Net Banking or Card. Instant credit to your Darkshadow wallet. Minimum deposit just &#8377;100.</p>
         </div>
         <div class="step-card">
           <div class="step-num">3</div>
-          <h3>Play &amp; Win</h3>
-          <p>Choose your game, place your bet and win. Withdraw winnings instantly back to your bank account.</p>
+          <h3 data-i18n="step3_title">Play &amp; Win</h3>
+          <p data-i18n="step3_desc">Choose your game, place your bet and win. Withdraw winnings instantly back to your bank account.</p>
         </div>
       </div>
     </div>
@@ -741,13 +768,13 @@
   <section id="sports" style="background:var(--blue-tint);">
     <div class="wrap">
       <div class="sec-head reveal">
-        <span class="sec-eyebrow">&#127942; Recent Big Wins</span>
-        <h2>Today's Winners</h2>
-        <p>Real players, real winnings — updated live every minute.</p>
+        <span class="sec-eyebrow" data-i18n="wins_eyebrow">&#127942; Recent Big Wins</span>
+        <h2 data-i18n="wins_title">Today's Winners</h2>
+        <p data-i18n="wins_desc">Real players, real winnings — updated live every minute.</p>
       </div>
       <div class="wins-table reveal">
         <div class="wins-row head">
-          <span>Player</span><span>Game</span><span>Amount Won</span><span>Device</span>
+          <span data-i18n="wins_col_player">Player</span><span data-i18n="wins_col_game">Game</span><span data-i18n="wins_col_amount">Amount Won</span><span data-i18n="wins_col_device">Device</span>
         </div>
         <div class="wins-row">
           <span class="player">Rahul K.</span><span>Teen Patti</span><span class="amt">&#8377;84,500</span>
@@ -781,39 +808,39 @@
   <section id="contact" style="background:var(--white);">
     <div class="wrap">
       <div class="sec-head reveal">
-        <span class="sec-eyebrow">&#128172; Get In Touch</span>
-        <h2>Contact Us</h2>
-        <p>Questions, issues with a deposit or withdrawal, or anything else — send us a message and we'll get back to you.</p>
+        <span class="sec-eyebrow" data-i18n="contact_eyebrow">&#128172; Get In Touch</span>
+        <h2 data-i18n="contact_title">Contact Us</h2>
+        <p data-i18n="contact_desc">Questions, issues with a deposit or withdrawal, or anything else — send us a message and we'll get back to you.</p>
       </div>
       <div class="reveal" style="max-width:640px;margin:0 auto;background:var(--navy);border-radius:20px;padding:40px 36px;">
         <form method="post" action="{% url 'contact_submit' %}" id="contactForm" onsubmit="return handleContactSubmit()">
           {% csrf_token %}
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
             <div>
-              <label for="contactName" style="display:block;color:#9FB0D8;font-family:'Rajdhani',sans-serif;font-weight:600;font-size:12px;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;">Name</label>
+              <label for="contactName" data-i18n="label_name" style="display:block;color:#9FB0D8;font-family:'Rajdhani',sans-serif;font-weight:600;font-size:12px;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;">Name</label>
               <input type="text" id="contactName" name="name" required
                 {% if user.is_authenticated %}value="{{ user.get_full_name|default:user.username }}"{% endif %}
                 style="width:100%;padding:12px 14px;border-radius:10px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.06);color:#fff;font-size:14px;box-sizing:border-box;">
             </div>
             <div>
-              <label for="contactEmail" style="display:block;color:#9FB0D8;font-family:'Rajdhani',sans-serif;font-weight:600;font-size:12px;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;">Email</label>
+              <label for="contactEmail" data-i18n="label_email" style="display:block;color:#9FB0D8;font-family:'Rajdhani',sans-serif;font-weight:600;font-size:12px;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;">Email</label>
               <input type="email" id="contactEmail" name="email" required
                 {% if user.is_authenticated %}value="{{ user.email }}"{% endif %}
                 style="width:100%;padding:12px 14px;border-radius:10px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.06);color:#fff;font-size:14px;box-sizing:border-box;">
             </div>
           </div>
           <div style="margin-bottom:16px;">
-            <label for="contactSubject" style="display:block;color:#9FB0D8;font-family:'Rajdhani',sans-serif;font-weight:600;font-size:12px;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;">Subject</label>
-            <input type="text" id="contactSubject" name="subject" placeholder="e.g. Withdrawal query, account issue..."
+            <label for="contactSubject" data-i18n="label_subject" style="display:block;color:#9FB0D8;font-family:'Rajdhani',sans-serif;font-weight:600;font-size:12px;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;">Subject</label>
+            <input type="text" id="contactSubject" name="subject" placeholder="e.g. Withdrawal query, account issue..." data-i18n-ph="placeholder_subject"
               style="width:100%;padding:12px 14px;border-radius:10px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.06);color:#fff;font-size:14px;box-sizing:border-box;">
           </div>
           <div style="margin-bottom:22px;">
-            <label for="contactMessage" style="display:block;color:#9FB0D8;font-family:'Rajdhani',sans-serif;font-weight:600;font-size:12px;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;">Message</label>
+            <label for="contactMessage" data-i18n="label_message" style="display:block;color:#9FB0D8;font-family:'Rajdhani',sans-serif;font-weight:600;font-size:12px;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;">Message</label>
             <textarea id="contactMessage" name="message" rows="5" required
               style="width:100%;padding:12px 14px;border-radius:10px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.06);color:#fff;font-size:14px;box-sizing:border-box;resize:vertical;font-family:inherit;"></textarea>
           </div>
           <button type="submit" class="btn btn-gold" id="contactSubmitBtn" style="width:100%;display:flex;align-items:center;justify-content:center;gap:10px;">
-            <span id="contactSubmitLabel">Send Message</span>
+            <span id="contactSubmitLabel" data-i18n="btn_send">Send Message</span>
             <span id="contactSubmitSpinner" style="display:none;width:16px;height:16px;border:2.5px solid rgba(26,26,46,.35);border-top-color:#1a1a2e;border-radius:50%;animation:contactSpin .7s linear infinite;"></span>
           </button>
         </form>
@@ -836,8 +863,8 @@
             </div>
             <span class="foot-tagline">Where Legends Play</span>
           </div>
-          <p class="foot-desc">India's most trusted online gaming platform since 2016. Licensed, RNG-certified and committed to responsible gaming for 2.4 million+ players.</p>
-          <span class="foot-since">&#127942; Est. 2016</span>
+          <p class="foot-desc" data-i18n="foot_desc">India's most trusted online gaming platform since 2016. Licensed, RNG-certified and committed to responsible gaming for 2.4 million+ players.</p>
+          <span class="foot-since" data-i18n="foot_since">&#127942; Est. 2016</span>
           <div class="foot-social">
             <a href="#" aria-label="Facebook">f</a>
             <a href="#" aria-label="Instagram">&#128248;</a>
@@ -846,34 +873,34 @@
           </div>
         </div>
         <div>
-          <h4>Games</h4>
+          <h4 data-i18n="foot_header_games">Games</h4>
           <ul>
-            <li><a href="#all-games" onclick="filterGames('cards')">Card Games</a></li>
-            <li><a href="#all-games" onclick="filterGames('casino')">Casino Games</a></li>
-            <li><a href="#all-games" onclick="filterGames('table')">Table Games</a></li>
-            <li><a href="#all-games">All Games</a></li>
+            <li><a href="#all-games" onclick="filterGames('cards')" data-i18n="foot_link_cardgames">Card Games</a></li>
+            <li><a href="#all-games" onclick="filterGames('casino')" data-i18n="foot_link_casinogames">Casino Games</a></li>
+            <li><a href="#all-games" onclick="filterGames('table')" data-i18n="foot_link_tablegames">Table Games</a></li>
+            <li><a href="#all-games" data-i18n="foot_link_allgames">All Games</a></li>
           </ul>
         </div>
         <div>
-          <h4>Account</h4>
+          <h4 data-i18n="foot_header_account">Account</h4>
           <ul>
-            <li><a href="{% url 'signup' %}">Sign Up</a></li>
-            <li><a href="{% url 'login' %}">Log In</a></li>
+            <li><a href="{% url 'signup' %}" data-i18n="foot_link_signup">Sign Up</a></li>
+            <li><a href="{% url 'login' %}" data-i18n="foot_link_login">Log In</a></li>
             {% if user.is_authenticated and not user.is_superuser %}
-            <li><a href="{% url 'add_money' %}">Add Money</a></li>
-            <li><a href="{% url 'my_wallet' %}">My Wallet</a></li>
-            <li><a href="{% url 'edit_profile' %}">Edit Profile</a></li>
+            <li><a href="{% url 'add_money' %}" data-i18n="dd_addmoney">Add Money</a></li>
+            <li><a href="{% url 'my_wallet' %}" data-i18n="dd_mywallet">My Wallet</a></li>
+            <li><a href="{% url 'edit_profile' %}" data-i18n="dd_editprofile">Edit Profile</a></li>
             {% endif %}
           </ul>
         </div>
         <div>
-          <h4>Support</h4>
+          <h4 data-i18n="foot_header_support">Support</h4>
           <ul>
-            <li><a href="#">Help Centre</a></li>
-            <li><a href="#">Responsible Gaming</a></li>
-            <li><a href="#">Privacy Policy</a></li>
-            <li><a href="#">Terms &amp; Conditions</a></li>
-            <li><a href="#contact">Contact Us</a></li>
+            <li><a href="#" data-i18n="foot_link_help">Help Centre</a></li>
+            <li><a href="#" data-i18n="foot_link_responsible">Responsible Gaming</a></li>
+            <li><a href="#" data-i18n="foot_link_privacy">Privacy Policy</a></li>
+            <li><a href="#" data-i18n="foot_link_terms">Terms &amp; Conditions</a></li>
+            <li><a href="#contact" data-i18n="foot_link_contactus">Contact Us</a></li>
           </ul>
         </div>
       </div>
@@ -881,11 +908,11 @@
       <div class="foot-bottom">
         <div class="foot-bottom-left">
           <span class="copy">&copy; 2026 Darkshadow Gaming Pvt. Ltd. All rights reserved.</span>
-          <span class="disclaimer">&#128286; 18+ only. Gambling can be addictive. Play responsibly. This platform is for entertainment purposes only.</span>
+          <span class="disclaimer" data-i18n="foot_disclaimer">&#128286; 18+ only. Gambling can be addictive. Play responsibly. This platform is for entertainment purposes only.</span>
         </div>
         <div class="foot-bottom-right">
-          <span class="age-badge">18+ Only</span>
-          <span class="ssl-badge">&#128274; SSL Secured</span>
+          <span class="age-badge" data-i18n="foot_age_badge">18+ Only</span>
+          <span class="ssl-badge" data-i18n="foot_ssl_badge">&#128274; SSL Secured</span>
         </div>
       </div>
     </div>
@@ -927,11 +954,23 @@
     if(btn){
       btn.disabled = true;
       btn.style.opacity = '0.75';
-      label.textContent = 'Sending...';
+      label.textContent = (window.dsT && window.dsT('sending_text')) || 'Sending...';
       spinner.style.display = 'inline-block';
     }
     return true;
   }
+  // If the page is restored from bfcache (e.g. user hits Back), reset the
+  // button instead of leaving it stuck disabled.
+  window.addEventListener('pageshow', function(e){
+    if(e.persisted){
+      var btn = document.getElementById('contactSubmitBtn');
+      var label = document.getElementById('contactSubmitLabel');
+      var spinner = document.getElementById('contactSubmitSpinner');
+      if(btn){ btn.disabled = false; btn.style.opacity = ''; }
+      if(label) label.textContent = (window.dsT && window.dsT('btn_send')) || 'Send Message';
+      if(spinner) spinner.style.display = 'none';
+    }
+  });
 
   // ── User Dropdown
   var ug = document.getElementById('userGreeting');
@@ -982,6 +1021,25 @@
     btn.addEventListener('click', function(){
       filterGames(this.getAttribute('data-cat'));
     });
+  });
+
+  // ── Game "How to Play" panels: auto-expand the first time each game is
+  // opened, remember dismissal per-game so returning players aren't nagged.
+  function dsInitHowTo(panelId, gameKey){
+    var panel = document.getElementById(panelId);
+    if(!panel) return;
+    var seenKey = 'ds_seen_howto_' + gameKey;
+    var seen = false;
+    try { seen = localStorage.getItem(seenKey) === '1'; } catch(e){}
+    panel.open = !seen;
+    panel.addEventListener('toggle', function(){
+      if(!panel.open){
+        try { localStorage.setItem(seenKey, '1'); } catch(e){}
+      }
+    });
+  }
+  ['coinflip','dice','cardhilo','andarbahar','roulette','sicbo','teenpatti','blackjack','baccarat','poker','rummy','crash','jackpot'].forEach(function(key){
+    dsInitHowTo(key + 'HowTo', key);
   });
 
   // ── Scroll Reveal

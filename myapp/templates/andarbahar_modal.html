@@ -30,6 +30,17 @@
       Pick a side — win {{ andarbahar_win_multiplier }}x your bet.
     </p>
 
+    <details class="how-to-play" id="andarbaharHowTo">
+      <summary>❓ How to Play</summary>
+      <div class="htp-body">
+        <ul>
+          <li>Enter your bet and pick a side: <strong>Andar</strong> or <strong>Bahar</strong>.</li>
+          <li>A card is drawn to decide the winning side — it's close to a 50/50 chance either way.</li>
+          <li>Guess right and win <strong>{{ andarbahar_win_multiplier }}x</strong> your bet.</li>
+        </ul>
+      </div>
+    </details>
+
     {% if user.is_authenticated %}
       <div style="
         background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);

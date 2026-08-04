@@ -35,6 +35,18 @@
       Cash out before it crashes — the multiplier can drop to zero any moment.
     </p>
 
+    <details class="how-to-play" id="crashHowTo">
+      <summary>❓ How to Play</summary>
+      <div class="htp-body">
+        <ul>
+          <li>Enter your bet and hit <strong>PLACE BET</strong> — a rising multiplier starts climbing from 1.00x.</li>
+          <li>Tap <strong>Cash Out</strong> any time to lock in a win at the current multiplier.</li>
+          <li>The crash point is set the instant you bet and stays hidden — if it crashes before you cash out, you lose the bet.</li>
+          <li>The longer you wait, the higher the multiplier — but the bigger the risk it crashes first.</li>
+        </ul>
+      </div>
+    </details>
+
     {% if user.is_authenticated %}
       <div style="
         background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);
@@ -145,6 +157,7 @@ function resetCrash() {
   crStopPolling();
   crRoundId = null;
   crBetAmountPlaced = 0;
+  if (!document.getElementById('crBetPhase')) return; // logged-out visitors don't have the bet controls in the DOM
   document.getElementById('crBetPhase').style.display = 'block';
   document.getElementById('crActivePhase').style.display = 'none';
   document.getElementById('crPlayAgainPhase').style.display = 'none';

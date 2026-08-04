@@ -1189,6 +1189,13 @@ def admin_info_view(request):
     return render(request, 'admin_login.html')
 
 
+# ── 404: any URL that doesn't match a real route (including under DEBUG,
+# where Django would otherwise show its technical traceback page instead
+# of a real 404 — see the catch-all route in darkshadow/urls.py) ─────────────
+def page_not_found_view(request, *args, **kwargs):
+    return render(request, '404.html', status=404)
+
+
 # ── Jackpot: Create Razorpay Order ─────────────────────────────────────────────
 @require_POST
 def jackpot_create_order(request):

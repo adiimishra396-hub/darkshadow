@@ -37,6 +37,18 @@
       2 groups {{ rummy_two_group_multiplier }}x, all 3 {{ rummy_perfect_multiplier }}x.
     </p>
 
+    <details class="how-to-play" id="rummyHowTo">
+      <summary>❓ How to Play</summary>
+      <div class="htp-body">
+        <ul>
+          <li>Enter your bet — you're dealt 9 cards, automatically split into the best possible 3 groups of 3.</li>
+          <li>Each group of 3 is valid if it's a <strong>Set</strong> (3 same rank, different suits) or a <strong>Run</strong> (3 consecutive same-suit ranks).</li>
+          <li>1 valid group pays <strong>{{ rummy_one_group_multiplier }}x</strong>, 2 valid groups pay <strong>{{ rummy_two_group_multiplier }}x</strong>, all 3 valid (extremely rare) pays <strong>{{ rummy_perfect_multiplier }}x</strong>.</li>
+          <li>This is a quick single-hand format — not multi-round draw/discard Rummy against opponents.</li>
+        </ul>
+      </div>
+    </details>
+
     {% if user.is_authenticated %}
       <div style="
         background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);
@@ -118,6 +130,7 @@ function rmRenderGroups(groups) {
 
 function rmResetGroups() {
   const container = document.getElementById('rmGroups');
+  if (!container) return; // logged-out visitors don't have the game board in the DOM
   container.innerHTML = '';
   for (let i = 0; i < 3; i++) {
     const row = document.createElement('div');
@@ -152,7 +165,7 @@ function rmHideModal(el) {
 }
 function openRummyModal() {
   rmResetGroups();
-  document.getElementById('rmResult').textContent = '';
+  if (document.getElementById('rmResult')) document.getElementById('rmResult').textContent = ''; // logged-out visitors don't have the game controls in the DOM
   rmShowModal(document.getElementById('rummyModal'));
 }
 function closeRummyModal() {

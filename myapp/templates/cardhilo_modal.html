@@ -32,6 +32,18 @@
       A card is dealt. Call whether the next one is Higher or Lower.
     </p>
 
+    <details class="how-to-play" id="cardhiloHowTo">
+      <summary>❓ How to Play</summary>
+      <div class="htp-body">
+        <ul>
+          <li>Enter your bet — a card is dealt and shown to you.</li>
+          <li>Call whether the <strong>next</strong> card will be <strong>Higher</strong> or <strong>Lower</strong>.</li>
+          <li>The payout multiplier reflects the real odds for that card (e.g. calling Higher on a 2 pays more than on a King).</li>
+          <li>Guess right and win the multiplier shown; guess wrong and you lose the bet.</li>
+        </ul>
+      </div>
+    </details>
+
     {% if user.is_authenticated %}
       <!-- Wallet balance -->
       <div style="
@@ -174,6 +186,7 @@ function closeCardHiLoModal() {
 function resetCardHiLo() {
   chRoundId = null;
   chBetAmountPlaced = 0;
+  if (!document.getElementById('chBetPhase')) return; // logged-out visitors don't have the bet controls in the DOM
   document.getElementById('chBetPhase').style.display = 'block';
   document.getElementById('chCallPhase').style.display = 'none';
   document.getElementById('chPlayAgainPhase').style.display = 'none';

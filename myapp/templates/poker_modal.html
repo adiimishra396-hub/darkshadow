@@ -34,6 +34,18 @@
       Your 5-card hand vs the dealer. Best hand wins {{ poker_win_multiplier }}x. Ties are refunded.
     </p>
 
+    <details class="how-to-play" id="pokerHowTo">
+      <summary>❓ How to Play</summary>
+      <div class="htp-body">
+        <ul>
+          <li>Enter your bet and hit deal — you and the dealer each get a 5-card hand from the same shuffled deck (no shared cards).</li>
+          <li>Standard poker hand rankings decide the winner (Straight Flush &gt; Four of a Kind &gt; Full House &gt; Flush &gt; Straight &gt; Trips &gt; Two Pair &gt; Pair &gt; High Card).</li>
+          <li>Note: this is a simplified single-hand format vs a virtual dealer, not full Texas Hold'em with community cards or betting rounds.</li>
+          <li>Better hand wins <strong>{{ poker_win_multiplier }}x</strong>; equal hands push (refund).</li>
+        </ul>
+      </div>
+    </details>
+
     {% if user.is_authenticated %}
       <div style="
         background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);
@@ -141,11 +153,13 @@ function pkHideModal(el) {
   setTimeout(() => { el.style.display = 'none'; }, 260);
 }
 function openPokerModal() {
-  document.getElementById('pkDealerCards').innerHTML = '';
-  document.getElementById('pkPlayerCards').innerHTML = '';
-  document.getElementById('pkDealerHandType').textContent = '';
-  document.getElementById('pkPlayerHandType').textContent = '';
-  document.getElementById('pkResult').textContent = '';
+  if (document.getElementById('pkResult')) { // logged-out visitors don't have the game controls in the DOM
+    document.getElementById('pkDealerCards').innerHTML = '';
+    document.getElementById('pkPlayerCards').innerHTML = '';
+    document.getElementById('pkDealerHandType').textContent = '';
+    document.getElementById('pkPlayerHandType').textContent = '';
+    document.getElementById('pkResult').textContent = '';
+  }
   pkShowModal(document.getElementById('pokerModal'));
 }
 function closePokerModal() {

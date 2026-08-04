@@ -29,6 +29,18 @@
       Pick a target, roll under or over it, win the multiplier.
     </p>
 
+    <details class="how-to-play" id="diceHowTo">
+      <summary>❓ How to Play</summary>
+      <div class="htp-body">
+        <ul>
+          <li>The dice rolls a number from 0 to 99.</li>
+          <li>Pick <strong>Roll Under</strong> or <strong>Roll Over</strong> and set a target number (2-97).</li>
+          <li>A lower win chance pays a bigger multiplier — the payout updates live as you adjust the target.</li>
+          <li>Enter your bet and roll. Win if the result lands on your side of the target.</li>
+        </ul>
+      </div>
+    </details>
+
     {% if user.is_authenticated %}
       <!-- Wallet balance -->
       <div style="
@@ -172,7 +184,9 @@ function selectDiceDirection(direction) {
 }
 
 function updateDiceOdds() {
-  const target = parseInt(document.getElementById('dcTarget').value, 10);
+  const targetEl = document.getElementById('dcTarget');
+  if (!targetEl) return; // logged-out visitors don't have the bet controls in the DOM
+  const target = parseInt(targetEl.value, 10);
   document.getElementById('dcTargetVal').textContent = target;
   const winChance = dcDirection === 'under' ? target : (99 - target);
   const multiplier = (100 - DICE_HOUSE_EDGE) / winChance;

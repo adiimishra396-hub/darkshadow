@@ -30,6 +30,18 @@
       Call it right, win {{ coinflip_win_multiplier }}x your bet.
     </p>
 
+    <details class="how-to-play" id="coinflipHowTo">
+      <summary>❓ How to Play</summary>
+      <div class="htp-body">
+        <ul>
+          <li>Enter your bet amount (between ₹{{ coinflip_min_bet }} and ₹{{ coinflip_max_bet }}).</li>
+          <li>Call <strong>Heads</strong> or <strong>Tails</strong>.</li>
+          <li>Tap <strong>FLIP!</strong> — the result is decided instantly and fairly.</li>
+          <li>Guess right and win <strong>{{ coinflip_win_multiplier }}x</strong> your bet. Guess wrong and you lose the bet.</li>
+        </ul>
+      </div>
+    </details>
+
     {% if user.is_authenticated %}
       <!-- Wallet balance -->
       <div style="

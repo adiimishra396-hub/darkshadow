@@ -36,7 +36,12 @@
   .logo .brand{display:flex;flex-direction:column;line-height:1.1;}
   .logo .brand-name{font-family:'Orbitron',sans-serif;font-weight:900;font-size:18px;letter-spacing:3px;background:linear-gradient(135deg,#fff 0%,var(--gold) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
   .logo .brand-tag{font-family:'Rajdhani',sans-serif;font-weight:600;font-size:9px;letter-spacing:2.5px;text-transform:uppercase;color:var(--gold-deep);-webkit-text-fill-color:var(--gold-deep);}
+  .nav-right{display:flex;align-items:center;}
   .nav-right a{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:13px;letter-spacing:1px;text-transform:uppercase;color:#9FB0D8;transition:color .2s;}
+  .lang-switch{display:flex;gap:4px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:30px;padding:3px;margin-left:14px;}
+  .lang-switch-btn{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:11px;padding:5px 10px;border-radius:20px;border:none;background:transparent;color:var(--grey);cursor:pointer;transition:background .15s,color .15s;white-space:nowrap;}
+  .lang-switch-btn.active{background:var(--gold);color:var(--navy);}
+  .lang-switch-btn:not(.active):hover{background:rgba(255,255,255,0.1);}
   .nav-right a:hover{color:var(--gold);}
   .nav-right span{color:#4a5568;margin:0 10px;}
   .page-body{display:flex;align-items:flex-start;justify-content:center;padding:40px 24px 60px;}
@@ -69,7 +74,10 @@
   .strength-bar{margin-top:8px;display:flex;gap:4px;}
   .bar{flex:1;height:3px;border-radius:2px;background:rgba(255,255,255,0.1);transition:background .3s;}
   .strength-text{font-family:'Rajdhani',sans-serif;font-size:11px;letter-spacing:1px;color:#6B7690;margin-top:4px;}
-  .btn-submit{width:100%;padding:15px;background:linear-gradient(180deg,var(--gold) 0%,var(--gold-deep) 100%);color:var(--navy);border:none;border-radius:10px;font-family:'Orbitron',sans-serif;font-weight:700;font-size:14px;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:transform .15s,box-shadow .15s;box-shadow:0 8px 24px rgba(255,193,7,0.35);margin-top:8px;}
+  .btn-submit{width:100%;padding:15px;background:linear-gradient(180deg,var(--gold) 0%,var(--gold-deep) 100%);color:var(--navy);border:none;border-radius:10px;font-family:'Orbitron',sans-serif;font-weight:700;font-size:14px;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:transform .15s,box-shadow .15s;box-shadow:0 8px 24px rgba(255,193,7,0.35);margin-top:8px;display:flex;align-items:center;justify-content:center;gap:10px;}
+  .btn-submit:disabled{opacity:0.75;cursor:not-allowed;transform:none;}
+  .auth-spinner{width:16px;height:16px;border:2.5px solid rgba(10,26,60,.35);border-top-color:var(--navy);border-radius:50%;animation:authSpin .7s linear infinite;}
+  @keyframes authSpin{to{transform:rotate(360deg);}}
   .btn-submit:hover{transform:translateY(-2px);box-shadow:0 12px 30px rgba(255,193,7,0.5);}
   .login-link{text-align:center;font-size:13px;color:#9FB0D8;font-family:'Rajdhani',sans-serif;font-weight:600;margin-top:20px;}
   .login-link a{color:var(--gold);}
@@ -101,9 +109,14 @@
         </span>
       </a>
       <div class="nav-right">
-        <a href="/">Home</a>
+        <a href="/" data-i18n="nav_home">Home</a>
         <span>|</span>
-        <a href="/login/">Log In</a>
+        <a href="/login/" data-i18n="btn_login">Log In</a>
+        <div class="lang-switch" role="group" aria-label="Language">
+          <button type="button" class="lang-switch-btn active" data-lang="en">EN</button>
+          <button type="button" class="lang-switch-btn" data-lang="hi">हिं</button>
+          <button type="button" class="lang-switch-btn" data-lang="hinglish">Hinglish</button>
+        </div>
       </div>
     </div>
   </header>
@@ -122,7 +135,7 @@
       </div>
       {% endif %}
 
-      <form method="POST" action="/signup/">
+      <form method="POST" action="/signup/" onsubmit="return handleAuthSubmit(this)">
         {% csrf_token %}
 
         <div class="section-label">Personal Info</div>
@@ -206,7 +219,10 @@
           </label>
         </div>
 
-        <button type="submit" class="btn-submit">&#9889; Create My Account</button>
+        <button type="submit" class="btn-submit" id="authSubmitBtn">
+          <span id="authSubmitLabel">&#9889; Create My Account</span>
+          <span id="authSubmitSpinner" class="auth-spinner" style="display:none;"></span>
+        </button>
       </form>
 
       <div class="login-link">Already a member? <a href="/login/">Log In</a></div>
@@ -237,7 +253,34 @@
     txt.textContent = val.length > 0 ? (labels[score-1] || '') : '';
     txt.style.color = score > 0 ? colors[score-1] : '#6B7690';
   }
+
+  // Shows a loading spinner on submit. The form still does a real POST/page
+  // navigation, so we don't need to hide it again — the page unloads.
+  function handleAuthSubmit(form) {
+    const btn = document.getElementById('authSubmitBtn');
+    const label = document.getElementById('authSubmitLabel');
+    const spinner = document.getElementById('authSubmitSpinner');
+    if (btn) {
+      btn.disabled = true;
+      if (label) label.textContent = (window.dsT && window.dsT('creating_account_text')) || 'Creating Account...';
+      if (spinner) spinner.style.display = 'inline-block';
+    }
+    return true;
+  }
+  // If the page is restored from bfcache (e.g. user hits Back after a
+  // validation error), reset the button instead of leaving it stuck disabled.
+  window.addEventListener('pageshow', function(e){
+    if (e.persisted) {
+      const btn = document.getElementById('authSubmitBtn');
+      const label = document.getElementById('authSubmitLabel');
+      const spinner = document.getElementById('authSubmitSpinner');
+      if (btn) btn.disabled = false;
+      if (label) label.textContent = '⚡ Create My Account';
+      if (spinner) spinner.style.display = 'none';
+    }
+  });
 </script>
 {% include 'chatbot_widget.html' %}
+<script defer src="/static/js/i18n.js"></script>
 </body>
 </html>

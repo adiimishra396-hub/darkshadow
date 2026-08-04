@@ -32,6 +32,18 @@
       Bet Player ({{ baccarat_player_multiplier }}x), Banker ({{ baccarat_banker_multiplier }}x), or Tie ({{ baccarat_tie_multiplier }}x).
     </p>
 
+    <details class="how-to-play" id="baccaratHowTo">
+      <summary>❓ How to Play</summary>
+      <div class="htp-body">
+        <ul>
+          <li>Enter your bet and pick <strong>Player</strong>, <strong>Banker</strong>, or <strong>Tie</strong>.</li>
+          <li>Cards are dealt to both hands using standard baccarat drawing rules (automatic, no decisions needed) — whichever hand is closer to 9 wins.</li>
+          <li>Player wins pay <strong>{{ baccarat_player_multiplier }}x</strong>, Banker wins pay <strong>{{ baccarat_banker_multiplier }}x</strong>, Tie pays <strong>{{ baccarat_tie_multiplier }}x</strong>.</li>
+          <li>If you bet Player/Banker and it's a Tie instead, your bet is refunded (push), not lost.</li>
+        </ul>
+      </div>
+    </details>
+
     {% if user.is_authenticated %}
       <div style="
         background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);
@@ -147,11 +159,13 @@ function bcHideModal(el) {
   setTimeout(() => { el.style.display = 'none'; }, 260);
 }
 function openBaccaratModal() {
-  document.getElementById('bcResult').textContent = '';
-  document.getElementById('bcBankerCards').innerHTML = '';
-  document.getElementById('bcPlayerCards').innerHTML = '';
-  document.getElementById('bcBankerTotal').textContent = '';
-  document.getElementById('bcPlayerTotal').textContent = '';
+  if (document.getElementById('bcResult')) { // logged-out visitors don't have the game controls in the DOM
+    document.getElementById('bcResult').textContent = '';
+    document.getElementById('bcBankerCards').innerHTML = '';
+    document.getElementById('bcPlayerCards').innerHTML = '';
+    document.getElementById('bcBankerTotal').textContent = '';
+    document.getElementById('bcPlayerTotal').textContent = '';
+  }
   bcShowModal(document.getElementById('baccaratModal'));
 }
 function closeBaccaratModal() {

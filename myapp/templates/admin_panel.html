@@ -90,6 +90,7 @@
   .msg.success{background:rgba(34,197,94,0.12);border:1px solid rgba(34,197,94,0.25);color:#86efac;}
   .msg.error{background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.25);color:#fca5a5;}
   .stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:32px;}
+  .stats-row-2{grid-template-columns:repeat(2,1fr);}
   .stat-card{
     background:rgba(255,255,255,0.04);border:1px solid var(--line);
     border-radius:14px;padding:22px;transition:border-color .2s;
@@ -357,21 +358,55 @@
   .s-field .toggle-secret:hover{color:var(--white);}
   @media(max-width:900px){
     .sidebar{width:60px;}
-    .sb-logo .brand,.sb-nav a span,.sb-bottom a span{display:none;}
+    /* :not(.icon) — the plain, unclassed label span was hidden by the same
+       rule as the icon span (both are just <span> inside .sb-nav a), which
+       left collapsed mobile nav items completely blank (no icon either).
+       Only the text label should hide; the icon must stay visible. */
+    .sb-logo .brand,.sb-nav a span:not(.icon),.sb-bottom a span:not(.icon){display:none;}
     .sb-logo{padding:0 12px 20px;justify-content:center;}
     .main{margin-left:60px;padding:24px 20px;}
     .stats-row{grid-template-columns:1fr 1fr;}
     .cred-grid{grid-template-columns:1fr;}
     .spin-prize-grid{grid-template-columns:1fr 1fr;}
-    .tbl-head-signups,.tbl-row-signups{grid-template-columns:40px 1fr 1fr 90px 120px;}
+    .tbl-head-signups,.tbl-row-signups{grid-template-columns:40px 1fr 90px 120px;}
     .tbl-row-signups .age-val,.tbl-row-signups .joined,.tbl-row-signups .phone{display:none;}
+    /* The header row's cells are plain unclassed <div>s (unlike the data
+       rows, which have .phone/.age-val/.joined/etc to hide) — without this,
+       the header keeps trying to lay out all 7 columns into the 4 declared
+       tracks above, wrapping "Status"/"Actions" onto a second row. */
+    .tbl-head-signups>div:nth-child(3),.tbl-head-signups>div:nth-child(4),.tbl-head-signups>div:nth-child(5){display:none;}
     .tbl-head-payments,.tbl-row-payments{grid-template-columns:40px 1fr 1fr 90px;}
     .tbl-row-payments .ptxn,.tbl-row-payments .pdate,.tbl-row-payments .pmethod{display:none;}
-    .tbl-head-spin,.tbl-row-spin{grid-template-columns:40px 1fr 80px 90px;}
+    .tbl-head-payments>div:nth-child(4),.tbl-head-payments>div:nth-child(6),.tbl-head-payments>div:nth-child(7){display:none;}
+    .tbl-head-spin,.tbl-row-spin{grid-template-columns:40px 1fr 80px 90px 90px;}
     .tbl-row-spin .sp-date,.tbl-row-spin .sp-orderid{display:none;}
+    .tbl-head-spin>div:nth-child(6),.tbl-head-spin>div:nth-child(7){display:none;}
     .form-grid{grid-template-columns:1fr;}
     .form-field.full{grid-column:span 1;}
     .s-form-grid,.s-form-grid-3{grid-template-columns:1fr;}
+    .topbar{flex-wrap:wrap;gap:12px;}
+    .settings-header{flex-wrap:wrap;row-gap:8px;}
+    .settings-header .s-status-badge{margin-left:0 !important;}
+  }
+  /* Phones — the 900px breakpoint above assumes tablet-width tables still
+     fit; on real phones the grid-based table rows (fixed-px + 1fr columns
+     whose text content refuses to shrink below min-content) overflow their
+     .table-wrap box. .table-wrap clips with overflow:hidden, so that
+     overflow was silently clipping data instead of visibly breaking the
+     page — invisible but still "not responsive". Let those rows scroll
+     horizontally inside their own box instead of being clipped or busting
+     page width. */
+  @media(max-width:600px){
+    .main{padding:20px 14px;}
+    .stats-row,.spin-prize-grid{grid-template-columns:1fr;}
+    .table-wrap{overflow-x:auto;}
+    .tbl-head-signups,.tbl-row-signups{min-width:520px;}
+    .tbl-head-payments,.tbl-row-payments{min-width:460px;}
+    .tbl-head-spin,.tbl-row-spin{min-width:420px;}
+    .modal-box{padding:24px 20px;}
+    .cred-item{flex-wrap:wrap;gap:10px;}
+    .topbar h1{font-size:17px;}
+    .topbar .admin-tag span{font-size:11px;}
   }
 </style>
 </head>
@@ -732,7 +767,7 @@
 
     <!-- ══ CONTACT US TAB ═══════════════════════════════════════════════════ -->
     <div id="tab-contact" class="tab-content">
-      <div class="stats-row" style="grid-template-columns:repeat(2,1fr);">
+      <div class="stats-row stats-row-2">
         <div class="stat-card gold">
           <div class="sc-label">Total Messages</div>
           <div class="sc-val">{{ contact_total_count }}</div>

@@ -32,6 +32,18 @@
       Beat the dealer. Blackjack pays {{ blackjack_blackjack_multiplier }}x, standard win pays {{ blackjack_win_multiplier }}x.
     </p>
 
+    <details class="how-to-play" id="blackjackHowTo">
+      <summary>❓ How to Play</summary>
+      <div class="htp-body">
+        <ul>
+          <li>Enter your bet and hit <strong>DEAL</strong> — you and the dealer each get 2 cards.</li>
+          <li><strong>Hit</strong> to take another card, or <strong>Stand</strong> to hold your total. Go over 21 and you bust (lose instantly).</li>
+          <li>The dealer stands on 17 or higher.</li>
+          <li>Closer to 21 than the dealer without busting wins <strong>{{ blackjack_win_multiplier }}x</strong>; a natural 2-card 21 (Blackjack) pays <strong>{{ blackjack_blackjack_multiplier }}x</strong>. Equal totals push (refund).</li>
+        </ul>
+      </div>
+    </details>
+
     {% if user.is_authenticated %}
       <div style="
         background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);
@@ -171,6 +183,7 @@ function closeBlackjackModal() {
 
 function resetBlackjack() {
   bjRoundId = null;
+  if (!document.getElementById('bjBetPhase')) return; // logged-out visitors don't have the bet controls in the DOM
   document.getElementById('bjBetPhase').style.display = 'block';
   document.getElementById('bjActionPhase').style.display = 'none';
   document.getElementById('bjPlayAgainPhase').style.display = 'none';
