@@ -527,17 +527,19 @@
         </a>
         {% endif %}
 
-        <!-- Rummy -->
-        <a href="https://www.rummycircle.com/" target="_blank" rel="noopener" class="game-card" data-cat="cards">
-          <span class="g-badge">Hot</span>
+        {% if rummy_active %}
+        <!-- Rummy — in-house, real win/lose game (9-card instant meld, not full multiplayer Rummy) -->
+        <a href="javascript:void(0)" onclick="openRummyModal()" class="game-card" data-cat="cards">
+          <span class="g-badge new">Play In-House</span>
           <img class="game-card-thumb" src="https://images.unsplash.com/photo-1611996575749-79a3a250f948?q=80&w=600&auto=format&fit=crop" alt="Rummy">
           <div class="game-card-body">
             <div class="game-card-cat">Card Games</div>
-            <div class="game-card-title">Rummy</div>
-            <div class="game-card-desc">Classic 13-card Indian Rummy. Form sets & sequences to declare and win.</div>
+            <div class="game-card-title">Quick Rummy</div>
+            <div class="game-card-desc">9 cards, form valid Sets or Runs for a payout — right here on Darkshadow.</div>
             <span class="game-card-play">Play Now</span>
           </div>
         </a>
+        {% endif %}
 
         {% if poker_active %}
         <!-- Poker — in-house, real win/lose game (5-card hand vs virtual dealer, not Hold'em) -->
@@ -815,6 +817,7 @@
   {% include 'blackjack_modal.html' %}
   {% include 'baccarat_modal.html' %}
   {% include 'poker_modal.html' %}
+  {% include 'rummy_modal.html' %}
 
 <script>
   // ── Popup

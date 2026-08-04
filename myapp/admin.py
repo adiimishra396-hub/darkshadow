@@ -8,7 +8,7 @@ from .models import (
     AndarBaharSettings, AndarBaharBet, RouletteSettings, RouletteBet,
     SicBoSettings, SicBoBet, TeenPattiSettings, TeenPattiBet,
     BlackjackSettings, BlackjackRound, BaccaratSettings, BaccaratBet,
-    PokerSettings, PokerBet,
+    PokerSettings, PokerBet, RummySettings, RummyBet,
 )
 
 
@@ -256,5 +256,22 @@ class PokerSettingsAdmin(admin.ModelAdmin):
 class PokerBetAdmin(admin.ModelAdmin):
     list_display = ('user', 'bet_amount', 'player_hand_type', 'dealer_hand_type', 'outcome', 'payout', 'created_at')
     list_filter = ('outcome', 'player_hand_type')
+    search_fields = ('user__username',)
+    readonly_fields = ('created_at',)
+
+
+@admin.register(RummySettings)
+class RummySettingsAdmin(admin.ModelAdmin):
+    list_display = ('one_group_multiplier', 'two_group_multiplier', 'perfect_multiplier', 'min_bet', 'max_bet', 'is_active', 'updated_at')
+    readonly_fields = ('updated_at',)
+
+    def has_add_permission(self, request):
+        return not RummySettings.objects.exists()
+
+
+@admin.register(RummyBet)
+class RummyBetAdmin(admin.ModelAdmin):
+    list_display = ('user', 'bet_amount', 'valid_group_count', 'outcome', 'multiplier', 'payout', 'created_at')
+    list_filter = ('outcome', 'valid_group_count')
     search_fields = ('user__username',)
     readonly_fields = ('created_at',)

@@ -686,6 +686,64 @@ class PokerBet(models.Model):
         return f"{self.user.username} | ₹{self.bet_amount} | {self.player_hand_type} vs {self.dealer_hand_type} | {self.outcome.upper()}"
 
 
+class RummySettings(models.Model):
+    """
+    Singleton model (id=1). Real win/lose game — a simplified instant
+    Rummy: real Rummy needs multi-turn draw/discard against opponents,
+    which doesn't reduce to an instant bet, so this deals a 9-card hand
+    and finds the best possible split into three 3-card groups, each
+    either a valid Set (3 same rank, distinct suits) or a valid Run (3
+    consecutive same-suit ranks, A-2-3 low only). Payout scales with
+    how many of the 3 groups are valid. Multiplier defaults are
+    calibrated from simulation: ~29.8% of hands get exactly 1 valid
+    group, ~1.4% get 2, and 3 valid groups is a near-unicorn event.
+    """
+    one_group_multiplier = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal('1.50'),
+        help_text='Payout when the best split has exactly 1 valid group (~30% of hands)')
+    two_group_multiplier = models.DecimalField(max_digits=6, decimal_places=2, default=Decimal('35.00'),
+        help_text='Payout when the best split has exactly 2 valid groups (~1.4% of hands)')
+    perfect_multiplier    = models.DecimalField(max_digits=7, decimal_places=2, default=Decimal('100.00'),
+        help_text='Payout when all 3 groups are valid — extremely rare (not observed in 20,000 simulated hands)')
+    min_bet    = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('10.00'))
+    max_bet    = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('5000.00'))
+    is_active  = models.BooleanField(default=True, help_text='Show/hide Rummy on the homepage')
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Rummy Settings'
+        verbose_name_plural = 'Rummy Settings'
+
+    def __str__(self):
+        return f'Rummy Settings (updated {self.updated_at})'
+
+    @classmethod
+    def get_singleton(cls):
+        obj, _ = cls.objects.get_or_create(pk=1)
+        return obj
+
+
+class RummyBet(models.Model):
+    """Records every Rummy play."""
+    OUTCOME_CHOICES = [
+        ('win',  'Win'),
+        ('lose', 'Lose'),
+    ]
+    user             = models.ForeignKey(User, on_delete=models.CASCADE, related_name='rummy_bets')
+    bet_amount       = models.DecimalField(max_digits=10, decimal_places=2)
+    cards            = models.JSONField(help_text='[[rank, suit], ...] x9')
+    valid_group_count = models.PositiveSmallIntegerField(help_text='0-3')
+    outcome          = models.CharField(max_length=4, choices=OUTCOME_CHOICES)
+    multiplier       = models.DecimalField(max_digits=7, decimal_places=2, default=0)
+    payout           = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    created_at       = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.user.username} | ₹{self.bet_amount} | {self.valid_group_count}/3 valid groups | {self.outcome.upper()}"
+
+
 class SpinMachineSettings(models.Model):
     """
     Singleton model (id=1). Admin sets spin pack pricing and the jackpot

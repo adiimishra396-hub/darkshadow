@@ -65,4 +65,7 @@ urlpatterns = [
 
     # Poker
     path('poker/play/', views.poker_play, name='poker_play'),
+
+    # Rummy
+    path('rummy/play/', views.rummy_play, name='rummy_play'),
 ]

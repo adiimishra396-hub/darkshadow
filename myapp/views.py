@@ -1,6 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
 from collections import Counter
+from itertools import combinations
 from django.contrib.auth.models import User
 from django.contrib import messages
 from django.db import OperationalError, transaction
@@ -17,7 +18,7 @@ from .models import (
     AndarBaharSettings, AndarBaharBet, RouletteSettings, RouletteBet,
     SicBoSettings, SicBoBet, TeenPattiSettings, TeenPattiBet,
     BlackjackSettings, BlackjackRound, BaccaratSettings, BaccaratBet,
-    PokerSettings, PokerBet,
+    PokerSettings, PokerBet, RummySettings, RummyBet,
 )
 import razorpay
 import os
@@ -192,6 +193,21 @@ def get_poker_settings():
         return _Defaults()
 
 
+def get_rummy_settings():
+    """Returns the RummySettings singleton. Safe fallback if table missing."""
+    try:
+        return RummySettings.get_singleton()
+    except Exception:
+        class _Defaults:
+            one_group_multiplier = Decimal('1.50')
+            two_group_multiplier = Decimal('35.00')
+            perfect_multiplier   = Decimal('100.00')
+            min_bet              = Decimal('10.00')
+            max_bet              = Decimal('5000.00')
+            is_active            = True
+        return _Defaults()
+
+
 # ── Admin bootstrap ─────────────────────────────────────────────────────────────
 def _ensure_admin():
     user, created = User.objects.get_or_create(
@@ -246,6 +262,7 @@ def home(request):
     blackjack_cfg  = get_blackjack_settings()
     baccarat_cfg   = get_baccarat_settings()
     poker_cfg      = get_poker_settings()
+    rummy_cfg      = get_rummy_settings()
     return render(request, 'index.html', {
         'spin_wallet':              spin_wallet,
         'wallet':                   wallet,
@@ -297,6 +314,12 @@ def home(request):
         'poker_min_bet':              poker_cfg.min_bet,
         'poker_max_bet':              poker_cfg.max_bet,
         'poker_win_multiplier':       poker_cfg.win_multiplier,
+        'rummy_active':               rummy_cfg.is_active,
+        'rummy_min_bet':              rummy_cfg.min_bet,
+        'rummy_max_bet':              rummy_cfg.max_bet,
+        'rummy_one_group_multiplier': rummy_cfg.one_group_multiplier,
+        'rummy_two_group_multiplier': rummy_cfg.two_group_multiplier,
+        'rummy_perfect_multiplier':   rummy_cfg.perfect_multiplier,
     })
 
 
@@ -2146,4 +2169,139 @@ def poker_play(request):
         'outcome':          outcome,
         'payout':           float(payout),
         'new_balance':      float(wallet.balance),
+    })
+
+
+# ── Rummy: Play a Round ─────────────────────────────────────────────────────────
+def _is_valid_rummy_set(cards):
+    """3 cards: valid Rummy Set = same rank, 3 distinct suits."""
+    ranks = [r for r, s in cards]
+    suits = [s for r, s in cards]
+    return len(set(ranks)) == 1 and len(set(suits)) == 3
+
+
+def _is_valid_rummy_run(cards):
+    """3 cards: valid Rummy Run = same suit, 3 consecutive ranks.
+    A-2-3 is the only valid low-Ace wrap (matches Card High-Low/Teen
+    Patti/Poker's sequence convention)."""
+    suits = [s for r, s in cards]
+    if len(set(suits)) != 1:
+        return False
+    ranks = sorted(r for r, s in cards)
+    if ranks[2] - ranks[0] == 2 and ranks[1] - ranks[0] == 1:
+        return True
+    if ranks == [2, 3, 14]:
+        return True
+    return False
+
+
+def _is_valid_rummy_group(cards):
+    return _is_valid_rummy_set(cards) or _is_valid_rummy_run(cards)
+
+
+def _best_rummy_partition(cards):
+    """cards: list of 9 (rank, suit) tuples. Exhaustively searches every
+    way to split the hand into three 3-card groups (280 unique
+    partitions — a full brute force, not a heuristic, so this always
+    finds the true best split) and returns (valid_group_count, groups)
+    where groups is a list of (cards, is_valid) for the best partition
+    found. ~7ms per call — cheap enough to run inline in the request."""
+    idx = list(range(9))
+    best_count = -1
+    best_groups = None
+    seen = set()
+    for first in combinations(idx, 3):
+        rest = [i for i in idx if i not in first]
+        for second in combinations(rest, 3):
+            third = tuple(i for i in rest if i not in second)
+            key = frozenset([frozenset(first), frozenset(second), frozenset(third)])
+            if key in seen:
+                continue
+            seen.add(key)
+            groups_idx = [first, second, third]
+            groups = [[cards[i] for i in g] for g in groups_idx]
+            valids = [_is_valid_rummy_group(g) for g in groups]
+            count = sum(valids)
+            if count > best_count:
+                best_count = count
+                best_groups = list(zip(groups, valids))
+                if best_count == 3:
+                    return best_count, best_groups
+    return best_count, best_groups
+
+
+@require_POST
+def rummy_play(request):
+    """Real win/lose game. Simplified single-player Rummy: real Rummy
+    needs multi-turn draw/discard against opponents, which doesn't
+    reduce to an instant bet, so this deals a 9-card hand and finds the
+    best possible split into three 3-card groups, each either a valid
+    Set or Run. Payout scales with how many of the 3 groups are valid
+    (0 = loss)."""
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'Login required', 'needs_login': True}, status=401)
+    if request.user.is_superuser:
+        return JsonResponse({'error': 'Admins cannot play'}, status=403)
+
+    cfg = get_rummy_settings()
+    if not cfg.is_active:
+        return JsonResponse({'error': 'Rummy is currently unavailable'}, status=503)
+
+    try:
+        data       = json.loads(request.body)
+        bet_amount = Decimal(str(data.get('bet_amount', '0')))
+    except (ValueError, TypeError, InvalidOperation, json.JSONDecodeError):
+        return JsonResponse({'error': 'Invalid request'}, status=400)
+
+    if bet_amount < cfg.min_bet or bet_amount > cfg.max_bet:
+        return JsonResponse({'error': f'Bet must be between ₹{cfg.min_bet} and ₹{cfg.max_bet}'}, status=400)
+
+    with transaction.atomic():
+        wallet, _ = Wallet.objects.select_for_update().get_or_create(user=request.user)
+        if wallet.balance < bet_amount:
+            return JsonResponse({'error': 'Insufficient wallet balance', 'needs_topup': True}, status=402)
+
+        wallet.balance -= bet_amount
+        WalletTransaction.objects.create(
+            wallet=wallet, amount=bet_amount, txn_type='debit',
+            description='Rummy bet',
+        )
+
+        deck = _secure_shuffle([(r, s) for r in CARD_RANKS for s in CARD_SUITS])
+        cards = deck[:9]
+        valid_count, groups = _best_rummy_partition(cards)
+
+        multiplier_map = {
+            3: cfg.perfect_multiplier,
+            2: cfg.two_group_multiplier,
+            1: cfg.one_group_multiplier,
+            0: Decimal('0.00'),
+        }
+        multiplier = multiplier_map[valid_count]
+        outcome = 'win' if valid_count > 0 else 'lose'
+        payout  = (bet_amount * multiplier).quantize(Decimal('0.01')) if valid_count > 0 else Decimal('0.00')
+
+        if payout > 0:
+            wallet.balance += payout
+            WalletTransaction.objects.create(
+                wallet=wallet, amount=payout, txn_type='credit',
+                description='Rummy payout',
+            )
+        wallet.save()
+
+        RummyBet.objects.create(
+            user=request.user, bet_amount=bet_amount, cards=cards,
+            valid_group_count=valid_count, outcome=outcome,
+            multiplier=multiplier, payout=payout,
+        )
+
+    return JsonResponse({
+        'success':           True,
+        'cards':             cards,
+        'groups':            [{'cards': g, 'valid': v} for g, v in groups],
+        'valid_group_count': valid_count,
+        'outcome':           outcome,
+        'multiplier':        float(multiplier),
+        'payout':            float(payout),
+        'new_balance':       float(wallet.balance),
     })

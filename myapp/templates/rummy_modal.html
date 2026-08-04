@@ -1,0 +1,225 @@
+{% comment %}
+  Rummy — real win/lose game, wallet-integrated. Modal + JS.
+  Simplified single-player: deals a 9-card hand and finds the best split
+  into three 3-card groups (Sets or Runs). Real Rummy needs multi-turn
+  draw/discard against opponents, which doesn't reduce to an instant
+  bet — this is an honest simplification, same spirit as Teen Patti/Poker.
+  Requires context: wallet, rummy_active, rummy_min_bet, rummy_max_bet,
+                    rummy_one_group_multiplier, rummy_two_group_multiplier,
+                    rummy_perfect_multiplier
+  Opened via openRummyModal() from a game-card in the All Games section.
+{% endcomment %}
+
+{% if rummy_active %}
+<div id="rummyModal" style="
+  display:none;position:fixed;inset:0;z-index:10012;
+  background:rgba(0,0,0,.8);backdrop-filter:blur(6px);
+  align-items:center;justify-content:center;
+  opacity:0;transition:opacity .25s ease;
+">
+  <div style="
+    background:linear-gradient(160deg,#1a1a2e 0%,#16213e 60%,#0f3460 100%);
+    border:1px solid rgba(255,210,0,.3);border-radius:20px;
+    padding:32px 30px;max-width:480px;width:92%;text-align:center;
+    box-shadow:0 0 60px rgba(255,210,0,.15);
+    position:relative;
+    transform:scale(0.92);transition:transform .25s cubic-bezier(.34,1.56,.64,1);
+    max-height:90vh;overflow-y:auto;
+  ">
+    <button onclick="closeRummyModal()" style="
+      position:absolute;top:14px;right:18px;
+      background:none;border:none;color:#aaa;font-size:1.4rem;cursor:pointer;
+    ">✕</button>
+
+    <h2 style="color:#ffd200;font-size:1.5rem;margin-bottom:4px;">♦ Rummy</h2>
+    <p style="color:#aaa;font-size:.85rem;margin-bottom:18px;">
+      9 cards, 3 groups of 3. Each valid Set/Run pays: 1 group {{ rummy_one_group_multiplier }}x,
+      2 groups {{ rummy_two_group_multiplier }}x, all 3 {{ rummy_perfect_multiplier }}x.
+    </p>
+
+    {% if user.is_authenticated %}
+      <div style="
+        background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);
+        border-radius:10px;padding:12px 16px;margin-bottom:18px;
+        display:flex;align-items:center;justify-content:space-between;
+      ">
+        <span style="color:#aaa;font-size:.88rem;">💰 Wallet Balance</span>
+        <span style="color:#4ade80;font-weight:700;font-size:1rem;" id="rmWalletBalance">
+          ₹{% if wallet %}{{ wallet.balance|floatformat:2 }}{% else %}0.00{% endif %}
+        </span>
+      </div>
+
+      <!-- Hand: 3 groups of 3 -->
+      <div id="rmGroups" style="display:flex;flex-direction:column;gap:10px;margin-bottom:14px;"></div>
+
+      <div id="rmResult" style="min-height:32px;font-size:1.05rem;font-weight:700;margin:10px 0;"></div>
+
+      <div style="text-align:left;margin-bottom:18px;">
+        <label style="color:#aaa;font-size:.82rem;display:block;margin-bottom:6px;">
+          Bet Amount (₹{{ rummy_min_bet }} – ₹{{ rummy_max_bet }})
+        </label>
+        <input type="number" id="rmBetAmount" value="{{ rummy_min_bet }}"
+          min="{{ rummy_min_bet }}" max="{{ rummy_max_bet }}" step="1"
+          style="width:100%;padding:12px 14px;border-radius:10px;
+            border:1px solid rgba(255,210,0,.3);background:rgba(255,255,255,.06);
+            color:#fff;font-size:1rem;box-sizing:border-box;">
+      </div>
+
+      <button id="rmPlayBtn" onclick="playRummy()" style="
+        width:100%;padding:14px;border:none;border-radius:14px;
+        background:linear-gradient(135deg,#f7971e,#ffd200);
+        color:#1a1a2e;font-size:1.1rem;font-weight:800;
+        cursor:pointer;box-shadow:0 4px 18px rgba(255,210,0,.45);
+      ">♦ DEAL!</button>
+    {% else %}
+      <a href="{% url 'login' %}" style="
+        display:block;width:100%;padding:14px;border:none;border-radius:12px;
+        background:linear-gradient(135deg,#f7971e,#ffd200);
+        color:#1a1a2e;font-size:1.1rem;font-weight:800;text-decoration:none;
+        box-shadow:0 4px 15px rgba(255,210,0,.4);
+      ">Login to Play ♦</a>
+    {% endif %}
+
+    <p style="color:#666;font-size:.78rem;margin-top:16px;">18+ only · Gamble responsibly</p>
+  </div>
+</div>
+
+<script>
+const RM_RANK_LABELS = {11: 'J', 12: 'Q', 13: 'K', 14: 'A'};
+const RM_SUIT_SYMBOLS = {S: '♠', H: '♥', D: '♦', C: '♣'};
+const RM_RED_SUITS = ['H', 'D'];
+
+function rmCardEl(rank, suit) {
+  const el = document.createElement('div');
+  const label = RM_RANK_LABELS[rank] || String(rank);
+  el.textContent = label + RM_SUIT_SYMBOLS[suit];
+  el.style.cssText = 'width:44px;height:60px;border-radius:6px;background:#fff;display:flex;align-items:center;justify-content:center;font-size:1rem;font-weight:800;color:' + (RM_RED_SUITS.includes(suit) ? '#dc2626' : '#111');
+  return el;
+}
+
+function rmRenderGroups(groups) {
+  const container = document.getElementById('rmGroups');
+  container.innerHTML = '';
+  groups.forEach((group, i) => {
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:8px;justify-content:center;padding:8px;border-radius:10px;background:' +
+      (group.valid ? 'rgba(74,222,128,.12);border:1px solid rgba(74,222,128,.4);' : 'rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);');
+    const cardsWrap = document.createElement('div');
+    cardsWrap.style.cssText = 'display:flex;gap:6px;';
+    group.cards.forEach(([rank, suit]) => cardsWrap.appendChild(rmCardEl(rank, suit)));
+    const badge = document.createElement('span');
+    badge.textContent = group.valid ? '✓ Valid' : '✗';
+    badge.style.cssText = 'font-size:.78rem;font-weight:700;color:' + (group.valid ? '#4ade80' : '#666') + ';min-width:50px;';
+    row.appendChild(cardsWrap);
+    row.appendChild(badge);
+    container.appendChild(row);
+  });
+}
+
+function rmResetGroups() {
+  const container = document.getElementById('rmGroups');
+  container.innerHTML = '';
+  for (let i = 0; i < 3; i++) {
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;gap:6px;justify-content:center;min-height:60px;';
+    for (let j = 0; j < 3; j++) {
+      const placeholder = document.createElement('div');
+      placeholder.style.cssText = 'width:44px;height:60px;border-radius:6px;background:rgba(255,255,255,.08);border:2px dashed rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;color:#666;';
+      placeholder.textContent = '?';
+      row.appendChild(placeholder);
+    }
+    container.appendChild(row);
+  }
+}
+
+function rmGetCsrf() {
+  const m = document.cookie.match(/(?:^|;\s*)csrftoken=([^;]+)/);
+  return m ? m[1] : '';
+}
+function rmShowModal(el) {
+  el.style.display = 'flex';
+  requestAnimationFrame(() => { requestAnimationFrame(() => {
+    el.style.opacity = '1';
+    const inner = el.querySelector('div');
+    if (inner) inner.style.transform = 'scale(1)';
+  }); });
+}
+function rmHideModal(el) {
+  el.style.opacity = '0';
+  const inner = el.querySelector('div');
+  if (inner) inner.style.transform = 'scale(0.92)';
+  setTimeout(() => { el.style.display = 'none'; }, 260);
+}
+function openRummyModal() {
+  {% if not user.is_authenticated %}
+    window.location.href = '{% url "login" %}';
+    return;
+  {% endif %}
+  rmResetGroups();
+  document.getElementById('rmResult').textContent = '';
+  rmShowModal(document.getElementById('rummyModal'));
+}
+function closeRummyModal() {
+  rmHideModal(document.getElementById('rummyModal'));
+}
+
+async function playRummy() {
+  {% if not user.is_authenticated %}
+    window.location.href = '{% url "login" %}';
+    return;
+  {% endif %}
+  const betInput = document.getElementById('rmBetAmount');
+  const playBtn  = document.getElementById('rmPlayBtn');
+  const resultEl = document.getElementById('rmResult');
+  const betAmount = parseFloat(betInput.value);
+
+  if (!betAmount || betAmount <= 0) { alert('Enter a valid bet amount.'); return; }
+
+  playBtn.disabled = true;
+  betInput.disabled = true;
+  resultEl.textContent = '';
+  rmResetGroups();
+
+  let data;
+  try {
+    const res = await fetch('{% url "rummy_play" %}', {
+      method: 'POST',
+      headers: { 'X-CSRFToken': rmGetCsrf(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ bet_amount: betAmount })
+    });
+    data = await res.json();
+  } catch (e) {
+    alert('Network error — your bet was not placed. Please try again.');
+    playBtn.disabled = false; betInput.disabled = false;
+    return;
+  }
+
+  if (!data.success) {
+    if (data.needs_topup) {
+      const go = confirm('⚠️ ' + (data.error || 'Insufficient balance.') + '\n\nAdd money to your wallet now?');
+      if (go) window.location.href = '{% url "add_money" %}';
+    } else {
+      alert(data.error || 'Could not place bet');
+    }
+    playBtn.disabled = false; betInput.disabled = false;
+    return;
+  }
+
+  rmRenderGroups(data.groups);
+
+  const balanceEl = document.getElementById('rmWalletBalance');
+  if (balanceEl) balanceEl.textContent = '₹' + Number(data.new_balance).toFixed(2);
+
+  if (data.outcome === 'win') {
+    resultEl.style.color = '#4ade80';
+    resultEl.textContent = `🎉 ${data.valid_group_count}/3 valid groups — you won ₹${data.payout.toFixed(2)} (${data.multiplier}x)`;
+  } else {
+    resultEl.style.color = '#ef4444';
+    resultEl.textContent = `😔 No valid groups — you lost ₹${betAmount.toFixed(2)}`;
+  }
+
+  playBtn.disabled = false;
+  betInput.disabled = false;
+}
+</script>
+{% endif %}
